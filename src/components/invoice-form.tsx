@@ -10,11 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { VoiceToggle } from '@/components/voice/voice-toggle'
+import { useVoiceCommands } from '@/hooks/use-voice-commands'
 import { Plus, Trash2, Download, Loader2, AlertCircle } from 'lucide-react'
 
 export function InvoiceForm() {
   const invoice = useInvoiceStore()
   const { isGenerating, error, downloadPDF, clearError } = usePDFDownload()
+  const { processVoiceCommand } = useVoiceCommands()
 
   const {
     // Data
@@ -34,8 +37,18 @@ export function InvoiceForm() {
     await downloadPDF(invoice)
   }
 
+  const handleVoiceCommand = async (transcript: string) => {
+    await processVoiceCommand(transcript)
+  }
+
   return (
     <div className="space-y-6">
+      {/* Voice Mode Toggle */}
+      <VoiceToggle
+        onVoiceCommand={handleVoiceCommand}
+        disabled={isGenerating}
+      />
+
       {/* Sender Information */}
       <Card>
         <CardHeader>
