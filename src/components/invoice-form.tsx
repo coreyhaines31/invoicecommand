@@ -1,15 +1,21 @@
 'use client'
 
 import { useInvoiceStore } from '@/stores/invoice-store'
+import { usePDFDownload } from '@/hooks/use-pdf-download'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { Plus, Trash2, Download, Loader2, AlertCircle } from 'lucide-react'
 
 export function InvoiceForm() {
+  const invoice = useInvoiceStore()
+  const { isGenerating, error, downloadPDF, clearError } = usePDFDownload()
+
   const {
     // Data
     senderName, senderEmail, senderAddress, senderCity, senderState, senderZip, senderPhone,
@@ -22,7 +28,11 @@ export function InvoiceForm() {
     updateTax, updateDiscount,
     addItem, updateItem, removeItem,
     resetInvoice
-  } = useInvoiceStore()
+  } = invoice
+
+  const handlePDFDownload = async () => {
+    await downloadPDF(invoice)
+  }
 
   return (
     <div className="space-y-6">
@@ -365,19 +375,64 @@ export function InvoiceForm() {
         </CardContent>
       </Card>
 
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearError}
+              className="h-auto p-1 hover:bg-transparent"
+            >
+              ×
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button
-          onClick={resetInvoice}
-          variant="outline"
-          className="flex-1"
-        >
-          Reset Invoice
-        </Button>
-        <Button className="flex-1 bg-primary hover:bg-primary/90">
-          Download PDF
-        </Button>
-      </div>
+      <ErrorBoundary>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={resetInvoice}
+            variant="outline"
+            className="flex-1"
+            disabled={isGenerating}
+          >
+            Reset Invoice
+          </Button>
+          <Button
+            onClick={handlePDFDownload}
+            disabled={isGenerating}
+            className="flex-1 bg-primary hover:bg-primary/90"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* PDF Generation Info */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>
+            PDF will be generated with filename: <br />
+            <span className="font-mono text-xs">
+              Invoice_{invoiceNumber}_{clientName || 'Client'}_{new Date().toISOString().split('T')[0]}.pdf
+            </span>
+          </p>
+        </div>
+      </ErrorBoundary>
     </div>
   )
 }
