@@ -132,9 +132,23 @@ export async function POST(request: NextRequest) {
     const body: VoiceParseRequest = await request.json()
     const { transcript, currentInvoice } = body
 
+    // Input validation and sanitization
     if (!transcript?.trim()) {
       return NextResponse.json(
         { error: 'Transcript is required' },
+        { status: 400 }
+      )
+    }
+
+    // Basic input sanitization
+    const sanitizedTranscript = transcript
+      .trim()
+      .slice(0, 1000) // Limit length
+      .replace(/[<>]/g, '') // Remove potential HTML/XML tags
+
+    if (sanitizedTranscript.length < 2) {
+      return NextResponse.json(
+        { error: 'Transcript too short' },
         { status: 400 }
       )
     }
@@ -150,7 +164,7 @@ export async function POST(request: NextRequest) {
     const userPrompt = `Current Invoice Data:
 ${JSON.stringify(currentInvoice, null, 2)}
 
-Voice Command: "${transcript}"
+Voice Command: "${sanitizedTranscript}"
 
 Parse this voice command and return the appropriate invoice update as JSON. Be precise and only make changes that are clearly requested.`
 
@@ -213,7 +227,7 @@ Parse this voice command and return the appropriate invoice update as JSON. Be p
     return NextResponse.json({
       success: true,
       update: parsedUpdate,
-      originalTranscript: transcript
+      originalTranscript: sanitizedTranscript
     })
 
   } catch (error) {
