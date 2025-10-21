@@ -39,7 +39,7 @@ interface VoiceParseRequest {
 
 interface InvoiceUpdate {
   field?: string
-  value?: any
+  value?: string | number | boolean
   action?: 'add_item' | 'update_item' | 'remove_item' | 'update_field'
   itemIndex?: number
   item?: {
@@ -177,7 +177,7 @@ Parse this voice command and return the appropriate invoice update as JSON. Be p
     let parsedUpdate: InvoiceUpdate
     try {
       parsedUpdate = JSON.parse(response)
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse AI response:', response)
       return NextResponse.json(
         { error: 'Invalid response format from AI' },
