@@ -4,15 +4,19 @@ import { InvoicePreview } from './invoice-preview'
 import { InvoiceForm } from './invoice-form'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Logo } from './logo'
 
 export function InvoiceBuilder() {
   return (
     <div className="container mx-auto p-4 min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">
-          InvoiceCommand
-        </h1>
+        <div className="flex items-center gap-4 mb-4">
+          <Logo width={48} height={48} className="text-primary" />
+          <h1 className="text-4xl font-bold text-foreground">
+            Invoice Command
+          </h1>
+        </div>
         <p className="text-muted-foreground text-lg">
           Build, preview, and edit invoices in real time
         </p>

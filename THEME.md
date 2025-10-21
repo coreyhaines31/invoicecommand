@@ -6,7 +6,7 @@
 - **Name**: Cool Money
 - **Source**: tweakcn
 - **URL**: https://tweakcn.com/r/themes/cmgya34ad000604le4z2cf1l2
-- **Purpose**: Professional, finance-focused interface perfect for InvoiceCommand
+- **Purpose**: Professional, finance-focused interface perfect for Invoice Command
 
 ## Core Colors
 ```css

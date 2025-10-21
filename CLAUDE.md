@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**InvoiceCommand** is a free, single-page invoicing app with AI voice dictation and Stripe payments integration. Built with Next.js 15 and designed for programmatic SEO across 200+ profession-specific invoice templates.
+**Invoice Command** is a free, single-page invoicing app with AI voice dictation and Stripe payments integration. Built with Next.js 15 and designed for programmatic SEO across 200+ profession-specific invoice templates.
 
 ### Tech Stack
 - **Framework**: Next.js 15.5.6 with Turbopack

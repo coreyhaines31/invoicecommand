@@ -1,6 +1,6 @@
-# 🎤 Voice Commands Guide for InvoiceCommand
+# 🎤 Voice Commands Guide for Invoice Command
 
-InvoiceCommand supports natural language voice commands powered by OpenAI GPT-4o-mini. Simply toggle **Voice Mode** in the invoice form and speak your commands naturally.
+Invoice Command supports natural language voice commands powered by OpenAI GPT-4o-mini. Simply toggle **Voice Mode** in the invoice form and speak your commands naturally.
 
 ## 🚀 Getting Started
 

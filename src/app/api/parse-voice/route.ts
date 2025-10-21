@@ -50,7 +50,7 @@ interface InvoiceUpdate {
   explanation?: string
 }
 
-const SYSTEM_PROMPT = `You are an AI assistant that converts natural language voice commands into structured invoice updates for InvoiceCommand, a professional invoicing application.
+const SYSTEM_PROMPT = `You are an AI assistant that converts natural language voice commands into structured invoice updates for Invoice Command, a professional invoicing application.
 
 Your job is to parse voice commands and return JSON updates that can be applied to an invoice. You must be very precise and only make changes that are clearly requested.
 

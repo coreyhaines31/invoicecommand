@@ -1,6 +1,6 @@
 # 🧾 Product Requirements Document (PRD)
 
-### Project: **InvoiceCommand**
+### Project: **Invoice Command**
 
 ### Version: v1.0 (MVP + Scalable Architecture)
 
@@ -8,7 +8,7 @@
 
 ## 1. 🎯 **Product Summary**
 
-**InvoiceCommand** is a free, single-page invoicing app that lets users
+**Invoice Command** is a free, single-page invoicing app that lets users
 **build, preview, and edit invoices in real time** --- either manually
 or by **speaking naturally** and having AI translate their words into
 structured invoice updates.

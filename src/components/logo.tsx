@@ -1,0 +1,50 @@
+interface LogoProps {
+  width?: number
+  height?: number
+  className?: string
+}
+
+export function Logo({ width = 64, height = 64, className = "" }: LogoProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 113 114"
+      width={width}
+      height={height}
+      className={className}
+    >
+      {/* Three concentric circles of dots */}
+      <g fill="currentColor">
+        {/* Outer circle - 12 dots */}
+        <circle cx="56.5" cy="10" r="3"/>
+        <circle cx="81" cy="18" r="3"/>
+        <circle cx="98" cy="35" r="3"/>
+        <circle cx="105" cy="57" r="3"/>
+        <circle cx="98" cy="79" r="3"/>
+        <circle cx="81" cy="96" r="3"/>
+        <circle cx="56.5" cy="104" r="3"/>
+        <circle cx="32" cy="96" r="3"/>
+        <circle cx="15" cy="79" r="3"/>
+        <circle cx="8" cy="57" r="3"/>
+        <circle cx="15" cy="35" r="3"/>
+        <circle cx="32" cy="18" r="3"/>
+
+        {/* Middle circle - 8 dots */}
+        <circle cx="56.5" cy="25" r="2.5"/>
+        <circle cx="74" cy="32" r="2.5"/>
+        <circle cx="81" cy="57" r="2.5"/>
+        <circle cx="74" cy="82" r="2.5"/>
+        <circle cx="56.5" cy="89" r="2.5"/>
+        <circle cx="39" cy="82" r="2.5"/>
+        <circle cx="32" cy="57" r="2.5"/>
+        <circle cx="39" cy="32" r="2.5"/>
+
+        {/* Inner circle - 4 dots */}
+        <circle cx="56.5" cy="42" r="2"/>
+        <circle cx="66" cy="57" r="2"/>
+        <circle cx="56.5" cy="72" r="2"/>
+        <circle cx="47" cy="57" r="2"/>
+      </g>
+    </svg>
+  )
+}
