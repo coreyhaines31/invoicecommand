@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+// Initialize OpenAI client conditionally
+let openai: OpenAI | null = null
+
+function getOpenAIClient() {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    })
+  }
+  return openai
+}
 
 interface VoiceParseRequest {
   transcript: string
@@ -147,8 +154,17 @@ Voice Command: "${transcript}"
 
 Parse this voice command and return the appropriate invoice update as JSON. Be precise and only make changes that are clearly requested.`
 
+    // Get OpenAI client
+    const client = getOpenAIClient()
+    if (!client) {
+      return NextResponse.json(
+        { error: 'OpenAI client not available' },
+        { status: 500 }
+      )
+    }
+
     // Call OpenAI API
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
