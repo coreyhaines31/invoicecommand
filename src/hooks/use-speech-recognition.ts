@@ -56,7 +56,7 @@ export function useSpeechRecognition(
   const [confidence, setConfidence] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<any>(null)
   const finalTranscriptRef = useRef('')
 
   // Check browser support
