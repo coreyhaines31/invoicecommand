@@ -43,10 +43,11 @@ export function SignupForm() {
       } else if (data.user) {
         // Success! User is signed up and can immediately access the app
         setMessage('Account created! Redirecting to dashboard...')
+
+        // Small delay to show success message, then redirect
         setTimeout(() => {
-          router.push('/dashboard')
-          router.refresh()
-        }, 1000)
+          window.location.href = '/dashboard'
+        }, 1500)
       }
     } catch (err) {
       setError('An unexpected error occurred')
