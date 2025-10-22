@@ -117,36 +117,35 @@ export function PrivacyControls() {
     return null
   }
 
-  // Privacy consent banner
+  // Privacy consent banner - compact bottom-right style
   if (showBanner) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur border-t border-border">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-2">
-                Your Privacy Matters
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                We use analytics and session recordings to improve your experience.
-                You can customize these preferences at any time.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleConsentEssential}
-              >
-                Essential Only
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleConsentAll}
-              >
-                Accept All
-              </Button>
-            </div>
+      <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-background/95 backdrop-blur border border-border rounded-lg shadow-lg p-4">
+        <div className="space-y-3">
+          <div>
+            <h3 className="font-semibold text-foreground text-sm mb-1">
+              Privacy Settings
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              We use analytics to improve your experience.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleConsentEssential}
+              className="flex-1 text-xs h-8"
+            >
+              Essential
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConsentAll}
+              className="flex-1 text-xs h-8"
+            >
+              Accept All
+            </Button>
           </div>
         </div>
       </div>
