@@ -1,8 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { professions, professionSlugs, ProfessionData } from '@/data/professions-expanded';
-import { InvoiceBuilder } from '@/components/invoice-builder';
-import { ProfessionInfo } from '@/components/profession-info';
+import { ProfessionInvoiceBuilder } from '@/components/profession-invoice-builder';
 
 interface Props {
   params: { profession: string };
@@ -112,8 +111,7 @@ export default function ProfessionPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="min-h-screen bg-background">
-        <ProfessionInfo profession={profession} />
-        <InvoiceBuilder />
+        <ProfessionInvoiceBuilder profession={profession} />
       </div>
     </>
   );
