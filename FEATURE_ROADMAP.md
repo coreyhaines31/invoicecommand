@@ -234,6 +234,9 @@ Users who subscribe to unlock advanced business features and team collaboration.
   - [ ] Approval workflows
   - [ ] Team activity dashboard
 
+- [ ] **Premium Support**
+  - [ ] **Live chat customer support**
+
 ---
 
 ## 🎯 **FEATURE PRIORITIZATION**
