@@ -5,6 +5,8 @@ import { InvoiceForm } from './invoice-form'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Logo } from './logo'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 
 export function InvoiceBuilder() {
   return (
@@ -28,11 +30,17 @@ export function InvoiceBuilder() {
           <p className="text-muted-foreground text-lg">
             Create professional invoices instantly with our free invoice builder. Perfect for freelancers, consultants, and small businesses.
           </p>
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mb-6">
             <span className="bg-primary/10 text-primary px-2 py-1 rounded">✨ AI Voice Commands</span>
             <span className="bg-primary/10 text-primary px-2 py-1 rounded">📄 PDF Export</span>
             <span className="bg-primary/10 text-primary px-2 py-1 rounded">⚡ Real-time Preview</span>
             <span className="bg-primary/10 text-primary px-2 py-1 rounded">🔒 Privacy First</span>
+          </div>
+          <div className="text-center">
+            <Link href="/invoice-templates" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium">
+              Browse 405+ Industry-Specific Templates
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </header>
