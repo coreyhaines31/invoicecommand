@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Logo } from './logo'
 import Link from 'next/link'
-import { ArrowRight, User } from 'lucide-react'
+import { ArrowRight, User, Mic, FileDown, Zap, Shield } from 'lucide-react'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 
 export function InvoiceBuilder() {
@@ -49,10 +49,22 @@ export function InvoiceBuilder() {
             Create professional invoices instantly with our free invoice builder. Perfect for freelancers, consultants, and small businesses.
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mb-6">
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded">✨ AI Voice Commands</span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded">📄 PDF Export</span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded">⚡ Real-time Preview</span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded">🔒 Privacy First</span>
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+              <Mic className="w-3 h-3" />
+              AI Voice Commands
+            </span>
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+              <FileDown className="w-3 h-3" />
+              PDF Export
+            </span>
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+              <Zap className="w-3 h-3" />
+              Real-time Preview
+            </span>
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              Privacy First
+            </span>
           </div>
         </div>
       </header>
