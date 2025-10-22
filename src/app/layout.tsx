@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://invoicecommand.com'),
-  title: "Free Invoice Template Generator | Invoice Command - Professional Invoice Builder",
+  title: "Free Invoice Template Generator | Invoice Command",
   description: "Create professional invoices instantly with our free invoice template generator. AI-powered voice commands, real-time preview, and PDF export. Perfect for freelancers, consultants, and small businesses.",
   keywords: [
     "free invoice template",
@@ -68,8 +68,14 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   alternates: {
     canonical: 'https://invoicecommand.com',
