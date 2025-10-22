@@ -14,6 +14,7 @@ export interface InvoiceData {
   senderState: string
   senderZip: string
   senderPhone: string
+  senderLogo?: string // Logo URL
 
   // Recipient Info
   clientName: string
@@ -53,7 +54,7 @@ export interface InvoiceData {
 
 interface InvoiceStore extends InvoiceData {
   // Actions
-  updateSender: (field: keyof Pick<InvoiceData, 'senderName' | 'senderEmail' | 'senderAddress' | 'senderCity' | 'senderState' | 'senderZip' | 'senderPhone'>, value: string) => void
+  updateSender: (field: keyof Pick<InvoiceData, 'senderName' | 'senderEmail' | 'senderAddress' | 'senderCity' | 'senderState' | 'senderZip' | 'senderPhone' | 'senderLogo'>, value: string) => void
   updateClient: (field: keyof Pick<InvoiceData, 'clientName' | 'clientEmail' | 'clientAddress' | 'clientCity' | 'clientState' | 'clientZip'>, value: string) => void
   updateInvoiceDetails: (field: keyof Pick<InvoiceData, 'invoiceNumber' | 'invoiceDate' | 'dueDate' | 'notes' | 'terms'>, value: string) => void
   updateTax: (rate: number) => void
@@ -91,6 +92,7 @@ const defaultInvoice: InvoiceData = {
   senderState: '',
   senderZip: '',
   senderPhone: '',
+  senderLogo: '',
 
   // Client
   clientName: '',
@@ -301,6 +303,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             sender_state: state.senderState,
             sender_zip: state.senderZip,
             sender_phone: state.senderPhone,
+            sender_logo: state.senderLogo,
             client_email: state.clientEmail,
             client_address: state.clientAddress,
             client_city: state.clientCity,
@@ -387,6 +390,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             senderState: data.sender_state || '',
             senderZip: data.sender_zip || '',
             senderPhone: data.sender_phone || '',
+            senderLogo: data.sender_logo || '',
             clientEmail: data.client_email || '',
             clientAddress: data.client_address || '',
             clientCity: data.client_city || '',

@@ -34,6 +34,7 @@ CREATE TABLE public.invoices (
     sender_state TEXT,
     sender_zip TEXT,
     sender_phone TEXT,
+    sender_logo TEXT, -- Logo URL
 
     -- Invoice Items and Calculations
     items JSONB NOT NULL DEFAULT '[]',

@@ -49,6 +49,18 @@ export function InvoicePreview() {
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
             From
           </h3>
+
+          {/* Logo */}
+          {invoice.senderLogo && (
+            <div className="mb-4">
+              <img
+                src={invoice.senderLogo}
+                alt="Company logo"
+                className="max-h-16 max-w-32 object-contain"
+              />
+            </div>
+          )}
+
           <div className="space-y-1">
             <div className="font-semibold text-foreground">
               {invoice.senderName || 'Your Business Name'}

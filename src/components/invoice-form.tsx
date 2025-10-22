@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { VoiceToggle } from '@/components/voice/voice-toggle'
+import { LogoUpload } from '@/components/logo-upload'
 import { useVoiceCommands } from '@/hooks/use-voice-commands'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 import { useState } from 'react'
@@ -29,7 +30,7 @@ export function InvoiceForm() {
 
   const {
     // Data
-    senderName, senderEmail, senderAddress, senderCity, senderState, senderZip, senderPhone,
+    senderName, senderEmail, senderAddress, senderCity, senderState, senderZip, senderPhone, senderLogo,
     clientName, clientEmail, clientAddress, clientCity, clientState, clientZip,
     invoiceNumber, invoiceDate, dueDate,
     items, taxRate, discountRate, notes, terms,
@@ -153,6 +154,19 @@ export function InvoiceForm() {
               placeholder="(555) 123-4567"
             />
           </div>
+
+          {/* Logo Upload */}
+          <LogoUpload
+            currentLogo={senderLogo}
+            onLogoChange={(logoUrl) => {
+              if (logoUrl) {
+                updateSender('senderLogo', logoUrl)
+              } else {
+                updateSender('senderLogo', '')
+              }
+            }}
+            disabled={isGenerating || isSaving}
+          />
         </CardContent>
       </Card>
 
