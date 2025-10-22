@@ -41,10 +41,34 @@ export function SignupForm() {
       if (error) {
         setError(error.message)
       } else if (data.user) {
-        // Success! User is signed up and can immediately access the app
-        setMessage('Account created! Redirecting to dashboard...')
+        // Check if user needs confirmation
+        if (!data.user.email_confirmed_at) {
+          try {
+            setMessage('Account created! Confirming access...')
 
-        // Small delay to show success message, then redirect
+            // Auto-confirm the user via API
+            const confirmResponse = await fetch('/api/auth/confirm-user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId: data.user.id })
+            })
+
+            if (confirmResponse.ok) {
+              setMessage('Account confirmed! Redirecting to dashboard...')
+            } else {
+              setMessage('Account created! Redirecting to dashboard...')
+            }
+          } catch (error) {
+            console.error('Auto-confirm failed:', error)
+            setMessage('Account created! Redirecting to dashboard...')
+          }
+        } else {
+          setMessage('Account created! Redirecting to dashboard...')
+        }
+
+        // Redirect after confirmation
         setTimeout(() => {
           window.location.href = '/dashboard'
         }, 1500)
