@@ -41,37 +41,12 @@ export function SignupForm() {
       if (error) {
         setError(error.message)
       } else if (data.user) {
-        // For development: auto-confirm the user
-        // In production: we'll need email confirmation with Resend
-        if (!data.user.email_confirmed_at) {
-          try {
-            setMessage('Account created! Confirming...')
-
-            const response = await fetch('/api/auth/auto-confirm', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ userId: data.user.id })
-            })
-
-            if (response.ok) {
-              setMessage('Account confirmed! Redirecting to dashboard...')
-              setTimeout(() => {
-                router.push('/dashboard')
-                router.refresh()
-              }, 1000)
-            } else {
-              setError('Account created but confirmation failed. Please try signing in.')
-            }
-          } catch (error) {
-            setError('Account created but confirmation failed. Please try signing in.')
-          }
-        } else {
-          // User already confirmed or in production
+        // Success! User is signed up and can immediately access the app
+        setMessage('Account created! Redirecting to dashboard...')
+        setTimeout(() => {
           router.push('/dashboard')
           router.refresh()
-        }
+        }, 1000)
       }
     } catch (err) {
       setError('An unexpected error occurred')

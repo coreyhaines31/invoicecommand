@@ -73,7 +73,26 @@ STRIPE_WEBHOOK_SECRET=
 - **URL**: https://mglvipgetrvmanyzfyfp.supabase.co
 - **Schema**: Run `database-schema.sql` in SQL Editor
 - **Tables**: `users`, `invoices` with RLS policies
-- **Auth**: Enabled for Stripe-connected users
+- **Auth**: Enabled for seamless user onboarding
+
+### Supabase Authentication Configuration
+
+**IMPORTANT**: For production deployment, configure these settings in Supabase Dashboard > Authentication > Settings:
+
+1. **Disable Email Confirmations**:
+   - Go to "User Signups" section
+   - **Turn OFF** "Enable email confirmations"
+   - This eliminates signup friction and allows immediate app access
+
+2. **Enable Sign Up**:
+   - Ensure "Enable sign up" is ON
+   - Set "Allow password-based sign-up" to ON
+
+3. **Site URL**:
+   - Set to your production domain: `https://invoicecommand.com`
+   - For development: `http://localhost:3001`
+
+This configuration allows users to sign up and immediately access the dashboard without email verification, significantly reducing conversion friction.
 
 ## Key Features to Implement
 
