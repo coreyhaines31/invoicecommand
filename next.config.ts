@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   },
   // Performance optimizations
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['@/components/ui', '@/lib'],
   },
   // Image optimization
@@ -20,8 +19,6 @@ const nextConfig: NextConfig = {
   },
   // Compression
   compress: true,
-  // PWA and caching
-  generateStaticParams: true,
   // SEO optimizations
   trailingSlash: false,
   // Security headers for SEO (restored from security audit)
