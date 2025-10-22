@@ -2,10 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition'
 import {
@@ -25,7 +22,6 @@ interface VoiceToggleProps {
 }
 
 export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceToggleProps) {
-  const [isVoiceMode, setIsVoiceMode] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
 
@@ -50,14 +46,6 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     }
   })
 
-  const handleVoiceModeToggle = (enabled: boolean) => {
-    setIsVoiceMode(enabled)
-    if (!enabled && isListening) {
-      stopListening()
-    }
-    resetTranscript()
-    setProcessingError(null)
-  }
 
   const handleStartRecording = () => {
     if (!isSupported) return
@@ -93,12 +81,6 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     }
   }
 
-  const getRecordingStatus = () => {
-    if (isProcessing) return { text: 'Processing...', variant: 'secondary' as const }
-    if (isListening) return { text: 'Listening...', variant: 'default' as const }
-    if (transcript) return { text: 'Ready to Send', variant: 'default' as const }
-    return { text: 'Ready', variant: 'outline' as const }
-  }
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return 'text-green-600'
@@ -118,130 +100,106 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   }
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg text-foreground">Voice Mode</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="voice-mode" className="text-sm text-muted-foreground">
-              {isVoiceMode ? 'ON' : 'OFF'}
-            </Label>
-            <Switch
-              id="voice-mode"
-              checked={isVoiceMode}
-              onCheckedChange={handleVoiceModeToggle}
-              disabled={disabled}
-            />
-          </div>
+    <div className="space-y-6">
+      {/* Voice Commands Header with Recording Button */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold">Voice Commands</h3>
+          <p className="text-sm text-muted-foreground">
+            Use voice commands to quickly update your invoice
+          </p>
         </div>
-      </CardHeader>
-
-      {isVoiceMode && (
-        <CardContent className="space-y-4">
-          {/* Recording Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Button
-                onClick={isListening ? handleStopRecording : handleStartRecording}
-                disabled={disabled || isProcessing}
-                variant={isListening ? "destructive" : "default"}
-                size="sm"
-                className="min-w-[100px]"
-              >
-                {isListening ? (
-                  <>
-                    <MicOff className="mr-2 h-4 w-4" />
-                    Stop
-                  </>
-                ) : (
-                  <>
-                    <Mic className="mr-2 h-4 w-4" />
-                    Record
-                  </>
-                )}
-              </Button>
-
-              <Badge variant={getRecordingStatus().variant}>
-                {isProcessing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                {getRecordingStatus().text}
-              </Badge>
+        <div className="flex items-center gap-4">
+          {/* Confidence Indicator */}
+          {confidence > 0 && (
+            <div className="flex items-center space-x-2 text-sm">
+              <Volume2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Confidence:</span>
+              <span className={`font-mono font-medium ${getConfidenceColor(confidence)}`}>
+                {Math.round(confidence * 100)}%
+              </span>
             </div>
+          )}
 
-            {confidence > 0 && (
-              <div className="flex items-center space-x-2">
-                <Volume2 className="h-4 w-4 text-muted-foreground" />
-                <span className={`text-sm font-mono ${getConfidenceColor(confidence)}`}>
-                  {Math.round(confidence * 100)}%
-                </span>
-              </div>
+          {/* Recording Button */}
+          <Button
+            onClick={isListening ? handleStopRecording : handleStartRecording}
+            disabled={disabled || isProcessing}
+            variant={isListening ? "destructive" : "default"}
+            size="lg"
+            className="min-w-[140px]"
+          >
+            {isListening ? (
+              <>
+                <MicOff className="mr-2 h-5 w-5" />
+                Stop Recording
+              </>
+            ) : isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Processing
+              </>
+            ) : (
+              <>
+                <Mic className="mr-2 h-5 w-5" />
+                Start Recording
+              </>
             )}
-          </div>
+          </Button>
+        </div>
+      </div>
 
-          {/* Transcript Display */}
-          {transcript && (
-            <div className="space-y-3">
-              <div className="p-3 bg-muted rounded-lg border">
-                <div className="flex items-start justify-between mb-2">
-                  <span className="text-sm font-medium text-muted-foreground">Transcript:</span>
-                  {!isListening && transcript && (
-                    <Button
-                      onClick={handleManualSubmit}
-                      disabled={isProcessing}
-                      size="sm"
-                      variant="outline"
-                      className="ml-2"
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <>
-                          <Send className="mr-1 h-3 w-3" />
-                          Process
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <p className="text-sm text-foreground font-mono">
-                  "{transcript}"
-                </p>
+      {/* Transcript Tray - only show when transcript exists */}
+      {transcript && (
+        <Card className="p-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-foreground">Transcript</h4>
+              <div className="flex items-center gap-2">
+                {!isListening && transcript && (
+                  <Button
+                    onClick={handleManualSubmit}
+                    disabled={isProcessing}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Process
+                  </Button>
+                )}
+                <Button
+                  onClick={resetTranscript}
+                  variant="outline"
+                  size="sm"
+                  disabled={isListening || isProcessing}
+                >
+                  Clear
+                </Button>
               </div>
-
-              <Button
-                onClick={resetTranscript}
-                variant="ghost"
-                size="sm"
-                disabled={isListening || isProcessing}
-                className="w-full"
-              >
-                Clear Transcript
-              </Button>
             </div>
-          )}
 
-          {/* Error Display */}
-          {(speechError || processingError) && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {speechError || processingError}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Instructions */}
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>Voice Commands:</strong></p>
-            <ul className="text-xs space-y-1 ml-4">
-              <li>• "Add $200 design fee to John"</li>
-              <li>• "Set tax rate to 8.5 percent"</li>
-              <li>• "Change client name to ABC Company"</li>
-              <li>• "Set due date to January 15th"</li>
-              <li>• "Add 5 hours of consulting at $150 per hour"</li>
-            </ul>
+            <div className="p-3 bg-muted/50 rounded-lg border-l-4 border-primary">
+              <p className="text-foreground font-mono text-sm leading-relaxed">
+                "{transcript}"
+              </p>
+            </div>
           </div>
-        </CardContent>
+        </Card>
       )}
-    </Card>
+
+      {/* Error Display */}
+      {(speechError || processingError) && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {speechError || processingError}
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
   )
 }
