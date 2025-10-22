@@ -5,16 +5,21 @@ import { InvoiceForm } from './invoice-form'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Logo } from './logo'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, User } from 'lucide-react'
 import { ProfessionData } from '@/data/professions-expanded'
+import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 
 interface ProfessionInvoiceBuilderProps {
   profession: ProfessionData;
 }
 
 export function ProfessionInvoiceBuilder({ profession }: ProfessionInvoiceBuilderProps) {
+  // Initialize invoice numbering
+  useInvoiceInitialization()
+
   return (
     <div className="container mx-auto p-4 min-h-screen">
       {/* Navigation Bar */}
@@ -24,10 +29,18 @@ export function ProfessionInvoiceBuilder({ profession }: ProfessionInvoiceBuilde
             <Logo width={24} height={24} className="text-primary" />
             <span className="text-lg font-semibold text-foreground">Invoice Command</span>
           </div>
-          <Link href="/invoice-templates" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium">
-            Browse 405+ Industry-Specific Templates
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/invoice-templates" className="hidden sm:inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium">
+              Browse 405+ Industry-Specific Templates
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Button asChild>
+              <Link href="/auth/signup" className="inline-flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Create Free Account
+              </Link>
+            </Button>
+          </div>
         </div>
       </nav>
 

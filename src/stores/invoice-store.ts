@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import { produce } from 'immer'
 import type { InvoiceItem } from '@/types/database'
+import { generateInvoiceNumber } from '@/lib/utils'
 
 export interface InvoiceData {
   // Sender Info
@@ -64,6 +64,9 @@ interface InvoiceStore extends InvoiceData {
   // Calculations
   calculateTotals: () => void
 
+  // Invoice numbering
+  initializeInvoiceNumber: (userId?: string) => Promise<void>
+
   // Persistence
   loadFromStorage: () => void
   saveToStorage: () => void
@@ -90,7 +93,7 @@ const defaultInvoice: InvoiceData = {
   clientZip: '',
 
   // Invoice
-  invoiceNumber: `INV-${Date.now()}`,
+  invoiceNumber: '1001',
   invoiceDate: new Date().toISOString().split('T')[0],
   dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days
 
@@ -213,6 +216,15 @@ export const useInvoiceStore = create<InvoiceStore>()(
         state.total = Math.round(state.total * 100) / 100
       }),
 
+      initializeInvoiceNumber: async (userId?: string) => {
+        const invoiceNumber = await generateInvoiceNumber(userId)
+        set((state) => {
+          state.invoiceNumber = invoiceNumber
+          state.isDirty = true
+          state.lastUpdated = Date.now()
+        })
+      },
+
       loadFromStorage: () => {
         if (typeof window !== 'undefined') {
           const stored = localStorage.getItem('invoicecommand-draft')
@@ -252,7 +264,6 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       resetInvoice: () => set(() => ({
         ...defaultInvoice,
-        invoiceNumber: `INV-${Date.now()}`,
         invoiceDate: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       }))
