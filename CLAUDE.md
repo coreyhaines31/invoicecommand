@@ -117,3 +117,47 @@ npx shadcn@latest add https://tweakcn.com/r/themes/cmgya34ad000604le4z2cf1l2
 - ESLint configured for Next.js + TypeScript
 - Row Level Security (RLS) enabled for multi-tenant data isolation
 - Real-time updates target <50ms latency for invoice preview
+
+## Troubleshooting
+
+### Next.js 15 Internal Server Error / Manifest Issues
+
+**Problem**: Development server returns 500 errors with missing manifest files:
+```
+Error: Cannot find module '.next/server/middleware-manifest.json'
+Error: ENOENT: no such file or directory, open '.next/server/pages-manifest.json'
+```
+
+**Root Cause**: Next.js 15 has deprecated certain metadata fields in layout.tsx. Using `viewport` and `themeColor` in the metadata export prevents proper manifest generation.
+
+**Solution Steps**:
+1. **Fix metadata deprecation** (in `src/app/layout.tsx`):
+   ```tsx
+   // Remove from metadata export:
+   // viewport: 'width=device-width, initial-scale=1',
+   // themeColor: '#10b981',
+
+   // Add separate viewport export:
+   export const viewport = {
+     width: 'device-width',
+     initialScale: 1,
+     themeColor: '#10b981',
+   };
+   ```
+
+2. **Nuclear reset** (if cache corruption persists):
+   ```bash
+   # Complete environment reset
+   rm -rf .next node_modules package-lock.json
+   npm install
+   npm run dev
+   ```
+
+3. **Alternative reset** (less aggressive):
+   ```bash
+   # Clear build cache only
+   rm -rf .next
+   npm run dev
+   ```
+
+**Prevention**: Always use the `viewport` export instead of viewport/themeColor in metadata when using Next.js 15+.
