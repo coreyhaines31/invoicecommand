@@ -224,9 +224,12 @@ export function InvoiceBuilder() {
       </section>
 
       {/* Footer Actions */}
-      <footer className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <footer className="mt-8 flex flex-col gap-4 justify-center items-center">
         <div className="text-sm text-muted-foreground text-center">
           Your data is stored locally in your browser. No signup required.
+        </div>
+        <div className="text-sm text-muted-foreground text-center">
+          © 2024 Swipe Files LLC. All rights reserved.
         </div>
       </footer>
     </div>
