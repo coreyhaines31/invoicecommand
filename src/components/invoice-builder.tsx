@@ -70,11 +70,11 @@ export function InvoiceBuilder() {
       </header>
 
       {/* Main Layout: Left Panel (Preview) + Right Panel (Form) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[calc(100vh-200px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:h-[calc(100vh-120px)]">
         {/* Left Panel - Invoice Preview */}
         <div className="order-2 lg:order-1">
-          <Card className="h-full bg-card border-border shadow-lg">
-            <div className="p-6 h-full">
+          <Card className="lg:sticky lg:top-8 bg-card border-border shadow-lg">
+            <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-foreground">
                   Invoice Preview
@@ -85,7 +85,7 @@ export function InvoiceBuilder() {
               </div>
               <Separator className="mb-6" />
 
-              <div className="h-full overflow-auto">
+              <div className="max-h-[calc(100vh-220px)] lg:max-h-[calc(100vh-250px)] overflow-auto">
                 <InvoicePreview />
               </div>
             </div>
@@ -94,8 +94,8 @@ export function InvoiceBuilder() {
 
         {/* Right Panel - Invoice Form */}
         <div className="order-1 lg:order-2">
-          <Card className="h-full bg-card border-border shadow-lg">
-            <div className="p-6 h-full">
+          <Card className="bg-card border-border shadow-lg lg:h-full">
+            <div className="p-6 lg:h-full lg:flex lg:flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-foreground">
                   Invoice Editor
@@ -106,7 +106,7 @@ export function InvoiceBuilder() {
               </div>
               <Separator className="mb-6" />
 
-              <div className="h-full overflow-auto">
+              <div className="lg:flex-1 lg:overflow-auto lg:max-h-[calc(100vh-250px)]">
                 <InvoiceForm />
               </div>
             </div>
@@ -115,9 +115,9 @@ export function InvoiceBuilder() {
       </div>
 
       {/* SEO Content Section */}
-      <section className="mt-12 space-y-8">
+      <section className="mt-20 space-y-12">
         {/* How It Works */}
-        <div className="bg-card border border-border rounded-lg p-6">
+        <div className="bg-card border-border rounded-lg p-6 shadow-lg">
           <h2 className="text-2xl font-bold text-foreground mb-4">How to Create Professional Invoices in 3 Simple Steps</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
@@ -139,7 +139,7 @@ export function InvoiceBuilder() {
         </div>
 
         {/* Features Section */}
-        <div className="bg-card border border-border rounded-lg p-6">
+        <div className="bg-card border-border rounded-lg p-6 shadow-lg">
           <h2 className="text-2xl font-bold text-foreground mb-4">Why Choose Our Free Invoice Template Generator?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -192,7 +192,7 @@ export function InvoiceBuilder() {
         </div>
 
         {/* FAQ Section */}
-        <div className="bg-card border border-border rounded-lg p-6">
+        <div className="bg-card border-border rounded-lg p-6 shadow-lg">
           <h2 className="text-2xl font-bold text-foreground mb-6">Frequently Asked Questions</h2>
           <div className="space-y-4">
             <details className="border-b border-border pb-4">
