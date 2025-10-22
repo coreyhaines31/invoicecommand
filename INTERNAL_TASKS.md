@@ -68,6 +68,15 @@ This document tracks internal development and business tasks that need to be com
   - [ ] Add voice command recognition
   - [ ] Create voice UI components
 
+### Email & Communications ⭐
+- [ ] **Resend Email Service Setup**
+  - [ ] Set up Resend account and API key
+  - [ ] Configure email templates for user signup confirmation
+  - [ ] Implement email verification flow for production
+  - [ ] Add password reset email functionality
+  - [ ] Set up transactional emails for invoice sending
+  - [ ] Configure DKIM/SPF records for domain
+
 ## Notes
 
 - Priority items should be marked with ⭐
