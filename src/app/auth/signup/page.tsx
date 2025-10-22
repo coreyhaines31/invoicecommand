@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* Navigation - Fixed at top */}
+      <nav className="fixed top-0 left-0 right-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="container mx-auto p-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
@@ -26,46 +26,19 @@ export default function SignupPage() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="container mx-auto p-4">
-        <div className="max-w-md mx-auto mt-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Create Your Free Account
+      {/* Main Content - Centered Card */}
+      <div className="w-full max-w-md mx-auto mt-16">
+        <div className="bg-card border border-border rounded-lg shadow-lg p-8">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-semibold text-foreground mb-2">
+              Create an account
             </h1>
-            <p className="text-muted-foreground">
-              Unlock logo uploads, invoice history, and payment collection
+            <p className="text-sm text-muted-foreground">
+              Enter your email below to create your account
             </p>
           </div>
 
           <SignupForm />
-
-          {/* Benefits */}
-          <div className="mt-8 p-6 bg-card border border-border rounded-lg">
-            <h3 className="font-semibold mb-4">What you'll get with a free account:</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                Upload your logo to invoices
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                Save and duplicate all your invoices
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                10 AI voice commands per month
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                Collect payments with Stripe integration
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                Choose from 3 professional invoice styles
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
