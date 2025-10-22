@@ -61,3 +61,68 @@ function setLastAnonymousInvoiceNumber(num: number): void {
   if (typeof window === 'undefined') return
   localStorage.setItem('invoicecommand-last-number', num.toString())
 }
+
+// Voice usage tracking
+const ANONYMOUS_VOICE_LIMIT = 3 // Anonymous users get 3 voice commands per month
+const FREE_USER_VOICE_LIMIT = 10 // Free users get 10 voice commands per month
+
+export function getVoiceUsageThisMonth(userId?: string): { used: number; limit: number } {
+  if (!userId) {
+    // Anonymous users
+    return {
+      used: getAnonymousVoiceUsage(),
+      limit: ANONYMOUS_VOICE_LIMIT
+    }
+  }
+
+  // For authenticated users, we'll need to fetch from database
+  // For now, return the free user limit (we'll implement DB tracking separately)
+  return {
+    used: 0, // Will be fetched from database
+    limit: FREE_USER_VOICE_LIMIT
+  }
+}
+
+export function incrementVoiceUsage(userId?: string): boolean {
+  if (!userId) {
+    // Anonymous users - track in localStorage
+    const currentUsage = getAnonymousVoiceUsage()
+    if (currentUsage >= ANONYMOUS_VOICE_LIMIT) {
+      return false // Usage limit exceeded
+    }
+    setAnonymousVoiceUsage(currentUsage + 1)
+    return true
+  }
+
+  // For authenticated users, we'll implement database tracking
+  // For now, always allow (will be implemented separately)
+  return true
+}
+
+export function canUseVoiceCommand(userId?: string): boolean {
+  const usage = getVoiceUsageThisMonth(userId)
+  return usage.used < usage.limit
+}
+
+function getAnonymousVoiceUsage(): number {
+  if (typeof window === 'undefined') return 0
+
+  const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
+  const storageKey = `invoicecommand-voice-usage-${currentMonth}`
+
+  const stored = localStorage.getItem(storageKey)
+  if (stored) {
+    const num = parseInt(stored)
+    return isNaN(num) ? 0 : num
+  }
+  return 0
+}
+
+function setAnonymousVoiceUsage(count: number): void {
+  if (typeof window === 'undefined') return
+
+  const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
+  const storageKey = `invoicecommand-voice-usage-${currentMonth}`
+
+  localStorage.setItem(storageKey, count.toString())
+}

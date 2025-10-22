@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition'
+import { useUser } from '@/hooks/use-user'
+import { getVoiceUsageThisMonth, incrementVoiceUsage, canUseVoiceCommand } from '@/lib/utils'
 import {
   Mic,
   MicOff,
@@ -24,6 +26,9 @@ interface VoiceToggleProps {
 export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceToggleProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
+  const [voiceUsage, setVoiceUsage] = useState({ used: 0, limit: 10 })
+
+  const { user } = useUser()
 
   const {
     isListening,
@@ -46,6 +51,11 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     }
   })
 
+  // Load voice usage on component mount and when user changes
+  useEffect(() => {
+    const usage = getVoiceUsageThisMonth(user?.id)
+    setVoiceUsage(usage)
+  }, [user])
 
   const handleStartRecording = () => {
     if (!isSupported) return
@@ -61,11 +71,25 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   const handleProcessTranscript = async () => {
     if (!transcript.trim() || !onVoiceCommand) return
 
+    // Check if user has reached their voice command limit
+    if (!canUseVoiceCommand(user?.id)) {
+      setProcessingError(`You've reached your limit of ${voiceUsage.limit} voice commands this month. ${user ? 'Upgrade for unlimited usage!' : 'Create a free account for more commands!'}`)
+      return
+    }
+
     setIsProcessing(true)
     setProcessingError(null)
 
     try {
       await onVoiceCommand(transcript.trim())
+
+      // Increment voice usage and update local state
+      const success = incrementVoiceUsage(user?.id)
+      if (success) {
+        const updatedUsage = getVoiceUsageThisMonth(user?.id)
+        setVoiceUsage(updatedUsage)
+      }
+
       resetTranscript()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to process voice command'
@@ -110,6 +134,14 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
           </p>
         </div>
         <div className="flex items-center gap-4">
+          {/* Usage Counter */}
+          <div className="text-sm text-muted-foreground">
+            <span className="font-mono">
+              {voiceUsage.used}/{voiceUsage.limit}
+            </span>
+            <span className="ml-1">this month</span>
+          </div>
+
           {/* Confidence Indicator */}
           {confidence > 0 && (
             <div className="flex items-center space-x-2 text-sm">
@@ -124,7 +156,7 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
           {/* Recording Button */}
           <Button
             onClick={isListening ? handleStopRecording : handleStartRecording}
-            disabled={disabled || isProcessing}
+            disabled={disabled || isProcessing || (!isListening && !canUseVoiceCommand(user?.id))}
             variant={isListening ? "destructive" : "default"}
             size="lg"
             className="min-w-[140px]"
