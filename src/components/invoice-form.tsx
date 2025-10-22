@@ -12,12 +12,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { VoiceToggle } from '@/components/voice/voice-toggle'
 import { useVoiceCommands } from '@/hooks/use-voice-commands'
+import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 import { Plus, Trash2, Download, Loader2, AlertCircle } from 'lucide-react'
 
 export function InvoiceForm() {
   const invoice = useInvoiceStore()
   const { isGenerating, error, downloadPDF, clearError } = usePDFDownload()
   const { processVoiceCommand } = useVoiceCommands()
+
+  // Initialize invoice number based on user authentication status
+  useInvoiceInitialization()
 
   const {
     // Data
@@ -56,7 +60,7 @@ export function InvoiceForm() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="senderName">Business Name</Label>
               <Input
                 id="senderName"
@@ -65,7 +69,7 @@ export function InvoiceForm() {
                 placeholder="Your Business Name"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="senderEmail">Email</Label>
               <Input
                 id="senderEmail"
@@ -77,7 +81,7 @@ export function InvoiceForm() {
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="senderAddress">Address</Label>
             <Input
               id="senderAddress"
@@ -88,7 +92,7 @@ export function InvoiceForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="senderCity">City</Label>
               <Input
                 id="senderCity"
@@ -97,7 +101,7 @@ export function InvoiceForm() {
                 placeholder="City"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="senderState">State</Label>
               <Input
                 id="senderState"
@@ -106,7 +110,7 @@ export function InvoiceForm() {
                 placeholder="State"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="senderZip">ZIP Code</Label>
               <Input
                 id="senderZip"
@@ -117,7 +121,7 @@ export function InvoiceForm() {
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="senderPhone">Phone (Optional)</Label>
             <Input
               id="senderPhone"
@@ -136,7 +140,7 @@ export function InvoiceForm() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="clientName">Client Name</Label>
               <Input
                 id="clientName"
@@ -145,7 +149,7 @@ export function InvoiceForm() {
                 placeholder="Client Name"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="clientEmail">Client Email</Label>
               <Input
                 id="clientEmail"
@@ -157,7 +161,7 @@ export function InvoiceForm() {
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="clientAddress">Address</Label>
             <Input
               id="clientAddress"
@@ -168,7 +172,7 @@ export function InvoiceForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="clientCity">City</Label>
               <Input
                 id="clientCity"
@@ -177,7 +181,7 @@ export function InvoiceForm() {
                 placeholder="City"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="clientState">State</Label>
               <Input
                 id="clientState"
@@ -186,7 +190,7 @@ export function InvoiceForm() {
                 placeholder="State"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="clientZip">ZIP Code</Label>
               <Input
                 id="clientZip"
@@ -206,16 +210,16 @@ export function InvoiceForm() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="invoiceNumber">Invoice Number</Label>
               <Input
                 id="invoiceNumber"
                 value={invoiceNumber}
                 onChange={(e) => updateInvoiceDetails('invoiceNumber', e.target.value)}
-                placeholder="INV-001"
+                placeholder="1001"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="invoiceDate">Invoice Date</Label>
               <Input
                 id="invoiceDate"
@@ -224,7 +228,7 @@ export function InvoiceForm() {
                 onChange={(e) => updateInvoiceDetails('invoiceDate', e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="dueDate">Due Date</Label>
               <Input
                 id="dueDate"
@@ -272,7 +276,7 @@ export function InvoiceForm() {
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor={`item-description-${index}`}>Description</Label>
                 <Input
                   id={`item-description-${index}`}
@@ -283,7 +287,7 @@ export function InvoiceForm() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor={`item-quantity-${index}`}>Quantity</Label>
                   <Input
                     id={`item-quantity-${index}`}
@@ -295,7 +299,7 @@ export function InvoiceForm() {
                     placeholder="1"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor={`item-price-${index}`}>Rate ($)</Label>
                   <Input
                     id={`item-price-${index}`}
@@ -328,7 +332,7 @@ export function InvoiceForm() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="taxRate">Tax Rate (%)</Label>
               <Input
                 id="taxRate"
@@ -341,7 +345,7 @@ export function InvoiceForm() {
                 placeholder="0.00"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="discountRate">Discount Rate (%)</Label>
               <Input
                 id="discountRate"
@@ -364,7 +368,7 @@ export function InvoiceForm() {
           <CardTitle className="text-lg text-foreground">Additional Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
@@ -375,7 +379,7 @@ export function InvoiceForm() {
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="terms">Terms & Conditions</Label>
             <Textarea
               id="terms"
