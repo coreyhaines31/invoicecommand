@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { Logo } from './logo';
 
 interface ProfessionInfoProps {
   profession: ProfessionData;
@@ -15,16 +16,22 @@ export function ProfessionInfo({ profession }: ProfessionInfoProps) {
   return (
     <div className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
       <div className="container mx-auto p-4">
-        {/* Breadcrumb */}
-        <div className="mb-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Invoice Generator
-          </Link>
-        </div>
+        {/* Navigation Bar */}
+        <nav className="mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Logo width={24} height={24} className="text-primary" />
+              <span className="text-lg font-semibold text-foreground">Invoice Command</span>
+            </div>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Invoice Generator
+            </Link>
+          </div>
+        </nav>
 
         {/* Profession Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

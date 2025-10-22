@@ -9,10 +9,17 @@ import { Logo } from './logo'
 export function InvoiceBuilder() {
   return (
     <div className="container mx-auto p-4 min-h-screen">
+      {/* Navigation Bar */}
+      <nav className="mb-6">
+        <div className="flex items-center gap-3">
+          <Logo width={24} height={24} className="text-primary" />
+          <span className="text-lg font-semibold text-foreground">Invoice Command</span>
+        </div>
+      </nav>
+
       {/* Header with SEO-optimized content */}
       <header className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Logo width={48} height={48} className="text-primary" />
+        <div className="mb-4">
           <h1 className="text-4xl font-bold text-foreground">
             Free Invoice Template Generator
           </h1>
