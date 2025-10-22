@@ -66,7 +66,7 @@ function setLastAnonymousInvoiceNumber(num: number): void {
 const ANONYMOUS_VOICE_LIMIT = 3 // Anonymous users get 3 voice commands per month
 const FREE_USER_VOICE_LIMIT = 10 // Free users get 10 voice commands per month
 
-export function getVoiceUsageThisMonth(userId?: string): { used: number; limit: number } {
+export async function getVoiceUsageThisMonth(userId?: string): Promise<{ used: number; limit: number }> {
   if (!userId) {
     // Anonymous users
     return {
@@ -75,15 +75,28 @@ export function getVoiceUsageThisMonth(userId?: string): { used: number; limit: 
     }
   }
 
-  // For authenticated users, we'll need to fetch from database
-  // For now, return the free user limit (we'll implement DB tracking separately)
+  // For authenticated users, fetch from database
+  try {
+    const response = await fetch('/api/voice-usage')
+    if (response.ok) {
+      const data = await response.json()
+      return {
+        used: data.used,
+        limit: data.limit
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch voice usage:', error)
+  }
+
+  // Fallback on error
   return {
-    used: 0, // Will be fetched from database
+    used: 0,
     limit: FREE_USER_VOICE_LIMIT
   }
 }
 
-export function incrementVoiceUsage(userId?: string): boolean {
+export async function incrementVoiceUsage(userId?: string): Promise<boolean> {
   if (!userId) {
     // Anonymous users - track in localStorage
     const currentUsage = getAnonymousVoiceUsage()
@@ -94,13 +107,27 @@ export function incrementVoiceUsage(userId?: string): boolean {
     return true
   }
 
-  // For authenticated users, we'll implement database tracking
-  // For now, always allow (will be implemented separately)
-  return true
+  // For authenticated users, increment via database
+  try {
+    const response = await fetch('/api/voice-usage', {
+      method: 'POST'
+    })
+
+    if (response.ok) {
+      return true
+    } else if (response.status === 429) {
+      // Usage limit exceeded
+      return false
+    }
+  } catch (error) {
+    console.error('Failed to increment voice usage:', error)
+  }
+
+  return false
 }
 
-export function canUseVoiceCommand(userId?: string): boolean {
-  const usage = getVoiceUsageThisMonth(userId)
+export async function canUseVoiceCommand(userId?: string): Promise<boolean> {
+  const usage = await getVoiceUsageThisMonth(userId)
   return usage.used < usage.limit
 }
 

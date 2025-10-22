@@ -11,6 +11,20 @@ CREATE TABLE public.users (
     last_login TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Voice usage tracking table
+CREATE TABLE public.voice_usage (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    month_year TEXT NOT NULL, -- Format: 'YYYY-MM'
+    command_count INTEGER DEFAULT 0,
+    last_used TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- Ensure one record per user per month
+    UNIQUE(user_id, month_year)
+);
+
 -- Invoices table
 CREATE TABLE public.invoices (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -87,6 +101,18 @@ CREATE POLICY "Users can update own invoices" ON public.invoices
 
 CREATE POLICY "Users can delete own invoices" ON public.invoices
     FOR DELETE USING (auth.uid() = user_id);
+
+-- Voice usage policies
+ALTER TABLE public.voice_usage ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own voice usage" ON public.voice_usage
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own voice usage" ON public.voice_usage
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own voice usage" ON public.voice_usage
+    FOR UPDATE USING (auth.uid() = user_id);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()

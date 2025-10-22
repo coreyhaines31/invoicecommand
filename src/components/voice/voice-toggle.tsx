@@ -53,8 +53,11 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
 
   // Load voice usage on component mount and when user changes
   useEffect(() => {
-    const usage = getVoiceUsageThisMonth(user?.id)
-    setVoiceUsage(usage)
+    const loadUsage = async () => {
+      const usage = await getVoiceUsageThisMonth(user?.id)
+      setVoiceUsage(usage)
+    }
+    loadUsage()
   }, [user])
 
   const handleStartRecording = () => {
@@ -72,7 +75,8 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     if (!transcript.trim() || !onVoiceCommand) return
 
     // Check if user has reached their voice command limit
-    if (!canUseVoiceCommand(user?.id)) {
+    const canUse = await canUseVoiceCommand(user?.id)
+    if (!canUse) {
       setProcessingError(`You've reached your limit of ${voiceUsage.limit} voice commands this month. ${user ? 'Upgrade for unlimited usage!' : 'Create a free account for more commands!'}`)
       return
     }
@@ -84,9 +88,9 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
       await onVoiceCommand(transcript.trim())
 
       // Increment voice usage and update local state
-      const success = incrementVoiceUsage(user?.id)
+      const success = await incrementVoiceUsage(user?.id)
       if (success) {
-        const updatedUsage = getVoiceUsageThisMonth(user?.id)
+        const updatedUsage = await getVoiceUsageThisMonth(user?.id)
         setVoiceUsage(updatedUsage)
       }
 
@@ -156,7 +160,7 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
           {/* Recording Button */}
           <Button
             onClick={isListening ? handleStopRecording : handleStartRecording}
-            disabled={disabled || isProcessing || (!isListening && !canUseVoiceCommand(user?.id))}
+            disabled={disabled || isProcessing || (!isListening && voiceUsage.used >= voiceUsage.limit)}
             variant={isListening ? "destructive" : "default"}
             size="lg"
             className="min-w-[140px]"
