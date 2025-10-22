@@ -1,6 +1,6 @@
 'use client'
 
-import { ProfessionData } from '@/data/professions';
+import { ProfessionData } from '@/data/professions-expanded';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,7 +68,7 @@ export function ProfessionInfo({ profession }: ProfessionInfoProps) {
 
           <div>
             {/* Common Services */}
-            <h3 className="text-xl font-semibold mb-4">Common {profession.name} Services</h3>
+            <h3 className="text-xl font-semibold mb-4">Common {profession.profession} Services</h3>
             <div className="grid grid-cols-2 gap-2 mb-6">
               {profession.commonServices.map((service, index) => (
                 <Badge key={index} variant="secondary" className="justify-start">
@@ -81,7 +81,7 @@ export function ProfessionInfo({ profession }: ProfessionInfoProps) {
             <Card className="p-4 bg-primary/5 border-primary/20">
               <h3 className="font-semibold text-primary mb-2">Quick Start Guide</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                This template is pre-optimized for {profession.name.toLowerCase()} services.
+                This template is pre-optimized for {profession.profession.toLowerCase()} services.
                 Simply fill in your details below and start creating professional invoices.
               </p>
               <Button
@@ -101,19 +101,19 @@ export function ProfessionInfo({ profession }: ProfessionInfoProps) {
         {/* SEO Content */}
         <div className="border-t pt-6">
           <h2 className="text-2xl font-bold mb-4">
-            Professional {profession.name} Invoice Template - Free Download
+            {profession.title} - Free Download
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-muted-foreground">
             <div>
               <p className="mb-3">
-                Our free {profession.name.toLowerCase()} invoice template is specifically designed
-                for professionals in the {profession.name.toLowerCase()} industry. Whether you're
+                Our free {profession.profession.toLowerCase()} invoice template is specifically designed
+                for professionals in the {profession.profession.toLowerCase()} industry. Whether you're
                 a freelancer or running an agency, this template includes all the essential
                 elements needed for professional billing.
               </p>
               <p>
                 The template supports both hourly and project-based billing, making it perfect
-                for the diverse pricing models used in {profession.name.toLowerCase()} services.
+                for the diverse pricing models used in {profession.profession.toLowerCase()} services.
               </p>
             </div>
             <div>
@@ -123,7 +123,7 @@ export function ProfessionInfo({ profession }: ProfessionInfoProps) {
                 clear, detailed invoices that reflect your professional standards.
               </p>
               <p>
-                Start creating professional {profession.name.toLowerCase()} invoices today -
+                Start creating professional {profession.profession.toLowerCase()} invoices today -
                 completely free with no registration required.
               </p>
             </div>

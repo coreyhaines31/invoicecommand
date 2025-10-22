@@ -1,7 +1,8 @@
 export interface ProfessionData {
   id: string;
   name: string;
-  title: string;
+  profession: string; // Clean profession name for titles (e.g., "Freelance Writer")
+  title: string; // SEO title: "[Profession] Invoice Template (Free)"
   description: string;
   keywords: string[];
   commonServices: string[];
@@ -17,14 +18,15 @@ export const professions: ProfessionData[] = [
   {
     id: 'freelance-writer',
     name: 'Freelance Writer',
-    title: 'Free Freelance Writer Invoice Template',
+    profession: 'Freelance Writer',
+    title: 'Freelance Writer Invoice Template (Free)',
     description: 'Professional invoice template designed specifically for freelance writers, copywriters, and content creators.',
     keywords: [
       'freelance writer invoice template',
-      'copywriter invoice',
-      'content writer invoice',
-      'writing services invoice',
-      'freelance writing invoice'
+      'invoice template for freelance writer',
+      'copywriter invoice template',
+      'content writer invoice template',
+      'writing services invoice template'
     ],
     commonServices: [
       'Blog post writing',
@@ -41,19 +43,20 @@ export const professions: ProfessionData[] = [
       project: '$100-2000'
     },
     industryInfo: 'Freelance writers typically charge between $25-75 per hour or $0.10-1.00 per word depending on expertise and project complexity.',
-    seoDescription: 'Create professional freelance writer invoices instantly. Free template with industry-standard formatting for copywriters, content creators, and writing services.'
+    seoDescription: 'Free freelance writer invoice template. Professional billing format for copywriters, content creators, and writing services with customizable fields.'
   },
   {
     id: 'web-developer',
     name: 'Web Developer',
-    title: 'Free Web Developer Invoice Template',
+    profession: 'Web Developer',
+    title: 'Web Developer Invoice Template (Free)',
     description: 'Professional invoice template for web developers, programmers, and software engineers.',
     keywords: [
       'web developer invoice template',
-      'programmer invoice',
-      'software developer invoice',
-      'coding services invoice',
-      'web development invoice'
+      'invoice template for web developer',
+      'programmer invoice template',
+      'software developer invoice template',
+      'web development invoice template'
     ],
     commonServices: [
       'Website development',
@@ -70,19 +73,20 @@ export const professions: ProfessionData[] = [
       project: '$1000-50000'
     },
     industryInfo: 'Web developers charge $50-150+ per hour depending on experience level and technology stack. Projects range from $1K-50K+.',
-    seoDescription: 'Professional web developer invoice template. Free download for programmers, software engineers, and coding professionals with industry-standard billing formats.'
+    seoDescription: 'Free web developer invoice template. Professional billing format for programmers, software engineers, and coding professionals.'
   },
   {
     id: 'graphic-designer',
     name: 'Graphic Designer',
-    title: 'Free Graphic Designer Invoice Template',
+    profession: 'Graphic Designer',
+    title: 'Graphic Designer Invoice Template (Free)',
     description: 'Creative invoice template perfect for graphic designers, visual artists, and design agencies.',
     keywords: [
       'graphic designer invoice template',
-      'design services invoice',
+      'invoice template for graphic designer',
+      'design services invoice template',
       'creative invoice template',
-      'visual designer invoice',
-      'branding invoice template'
+      'visual designer invoice template'
     ],
     commonServices: [
       'Logo design',
@@ -99,19 +103,20 @@ export const professions: ProfessionData[] = [
       project: '$500-10000'
     },
     industryInfo: 'Graphic designers typically charge $35-100 per hour or price projects based on scope, with logos ranging $300-3000.',
-    seoDescription: 'Free graphic designer invoice template. Professional billing format for design services, branding projects, and creative work with customizable fields.'
+    seoDescription: 'Free graphic designer invoice template. Professional billing format for design services, branding projects, and creative work.'
   },
   {
     id: 'consultant',
     name: 'Business Consultant',
-    title: 'Free Business Consultant Invoice Template',
+    profession: 'Consultant',
+    title: 'Consultant Invoice Template (Free)',
     description: 'Professional consulting invoice template for business advisors, strategy consultants, and management consultants.',
     keywords: [
+      'consultant invoice template',
+      'invoice template for consultant',
       'business consultant invoice template',
-      'consulting services invoice',
-      'management consultant invoice',
-      'strategy consultant invoice',
-      'advisory services invoice'
+      'consulting services invoice template',
+      'management consultant invoice template'
     ],
     commonServices: [
       'Business strategy consulting',
@@ -128,19 +133,20 @@ export const professions: ProfessionData[] = [
       project: '$2000-100000'
     },
     industryInfo: 'Business consultants charge $75-300+ per hour depending on expertise and industry focus. Projects can range from $2K-100K+.',
-    seoDescription: 'Professional business consultant invoice template. Free download for strategy consultants, advisors, and consulting services with hourly and project billing options.'
+    seoDescription: 'Free consultant invoice template. Professional billing format for business advisors, strategy consultants, and consulting services.'
   },
   {
     id: 'photographer',
     name: 'Photographer',
-    title: 'Free Photographer Invoice Template',
+    profession: 'Photographer',
+    title: 'Photographer Invoice Template (Free)',
     description: 'Professional photography invoice template for wedding photographers, portrait photographers, and commercial photography services.',
     keywords: [
       'photographer invoice template',
-      'photography services invoice',
-      'wedding photographer invoice',
-      'portrait photographer invoice',
-      'commercial photography invoice'
+      'invoice template for photographer',
+      'photography services invoice template',
+      'wedding photographer invoice template',
+      'portrait photographer invoice template'
     ],
     commonServices: [
       'Wedding photography',
@@ -157,7 +163,7 @@ export const professions: ProfessionData[] = [
       project: '$500-10000'
     },
     industryInfo: 'Photographers charge $100-500+ per hour or package pricing. Wedding photographers typically charge $1500-8000 per event.',
-    seoDescription: 'Free photographer invoice template for wedding, portrait, and commercial photography. Professional billing format with package and hourly rate options.'
+    seoDescription: 'Free photographer invoice template for wedding, portrait, and commercial photography. Professional billing format with package and hourly rates.'
   }
 ];
 
