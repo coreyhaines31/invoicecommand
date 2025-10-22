@@ -156,7 +156,7 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
             )}
           </div>
 
-          <InvoiceList invoices={invoices} />
+          <InvoiceList invoices={invoices} userId={user.id} />
         </Card>
       </div>
     </div>

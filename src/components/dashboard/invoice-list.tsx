@@ -29,6 +29,8 @@ import {
   FileText
 } from 'lucide-react'
 import Link from 'next/link'
+import { useInvoiceStore } from '@/stores/invoice-store'
+import { useRouter } from 'next/navigation'
 
 interface Invoice {
   id: string
@@ -42,10 +44,13 @@ interface Invoice {
 
 interface InvoiceListProps {
   invoices: Invoice[]
+  userId: string
 }
 
-export function InvoiceList({ invoices }: InvoiceListProps) {
+export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const { loadFromDatabase, deleteFromDatabase } = useInvoiceStore()
+  const router = useRouter()
 
   const filteredInvoices = invoices.filter(invoice =>
     invoice.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,6 +79,34 @@ export function InvoiceList({ invoices }: InvoiceListProps) {
       style: 'currency',
       currency: 'USD',
     }).format(amount)
+  }
+
+  const handleEditInvoice = async (invoice: Invoice) => {
+    // Load the invoice into the store and navigate to the main page
+    const success = await loadFromDatabase(invoice.id, userId)
+    if (success) {
+      router.push('/')
+    }
+  }
+
+  const handleDuplicateInvoice = async (invoice: Invoice) => {
+    // Load the invoice and reset the ID to create a copy
+    const success = await loadFromDatabase(invoice.id, userId)
+    if (success) {
+      // Reset the invoice ID and number to create a new invoice
+      useInvoiceStore.setState({ id: undefined, invoiceNumber: '' })
+      router.push('/')
+    }
+  }
+
+  const handleDeleteInvoice = async (invoice: Invoice) => {
+    if (confirm('Are you sure you want to delete this invoice?')) {
+      const success = await deleteFromDatabase(invoice.id, userId)
+      if (success) {
+        // Refresh the page to update the list
+        router.refresh()
+      }
+    }
   }
 
   if (invoices.length === 0) {
@@ -149,11 +182,11 @@ export function InvoiceList({ invoices }: InvoiceListProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditInvoice(invoice)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicateInvoice(invoice)}>
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
@@ -162,7 +195,10 @@ export function InvoiceList({ invoices }: InvoiceListProps) {
                         Download PDF
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => handleDeleteInvoice(invoice)}
+                      >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>

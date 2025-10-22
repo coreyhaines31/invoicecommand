@@ -15,16 +15,47 @@ CREATE TABLE public.users (
 CREATE TABLE public.invoices (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    invoice_number TEXT NOT NULL,
+    invoice_date DATE,
+
+    -- Client Information
     client_name TEXT NOT NULL,
+    client_email TEXT,
+    client_address TEXT,
+    client_city TEXT,
+    client_state TEXT,
+    client_zip TEXT,
+
+    -- Sender Information
+    sender_name TEXT,
+    sender_email TEXT,
+    sender_address TEXT,
+    sender_city TEXT,
+    sender_state TEXT,
+    sender_zip TEXT,
+    sender_phone TEXT,
+
+    -- Invoice Items and Calculations
     items JSONB NOT NULL DEFAULT '[]',
     subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
     tax DECIMAL(10,2) NOT NULL DEFAULT 0,
     total DECIMAL(10,2) NOT NULL DEFAULT 0,
+    tax_rate DECIMAL(5,2) DEFAULT 0,
+    discount_rate DECIMAL(5,2) DEFAULT 0,
+    discount_amount DECIMAL(10,2) DEFAULT 0,
+
+    -- Additional Information
     due_date DATE,
     notes TEXT,
+    terms TEXT,
+    currency TEXT DEFAULT 'USD',
+
+    -- Payment and Status
     stripe_payment_link TEXT,
     recurring BOOLEAN DEFAULT FALSE,
     status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid')),
+
+    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

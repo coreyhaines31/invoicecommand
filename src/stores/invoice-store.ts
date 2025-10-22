@@ -3,6 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { InvoiceItem } from '@/types/database'
 import { generateInvoiceNumber } from '@/lib/utils'
+import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 
 export interface InvoiceData {
   // Sender Info
@@ -46,6 +47,8 @@ export interface InvoiceData {
   currency: string
   isDirty: boolean
   lastUpdated: number
+  id?: string // Database ID for saved invoices
+  status?: 'draft' | 'sent' | 'paid'
 }
 
 interface InvoiceStore extends InvoiceData {
@@ -71,6 +74,11 @@ interface InvoiceStore extends InvoiceData {
   loadFromStorage: () => void
   saveToStorage: () => void
   resetInvoice: () => void
+
+  // Database operations
+  saveToDatabase: (userId: string) => Promise<string | null>
+  loadFromDatabase: (invoiceId: string, userId: string) => Promise<boolean>
+  deleteFromDatabase: (invoiceId: string, userId: string) => Promise<boolean>
 }
 
 // Default invoice data
@@ -266,7 +274,161 @@ export const useInvoiceStore = create<InvoiceStore>()(
         ...defaultInvoice,
         invoiceDate: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      }))
+      })),
+
+      // Database operations
+      saveToDatabase: async (userId: string) => {
+        const supabase = createBrowserSupabaseClient()
+        const state = get()
+
+        try {
+          const invoiceData = {
+            user_id: userId,
+            invoice_number: state.invoiceNumber,
+            client_name: state.clientName,
+            items: state.items,
+            subtotal: state.subtotal,
+            tax: state.taxAmount,
+            total: state.total,
+            due_date: state.dueDate,
+            notes: state.notes,
+            status: state.status || 'draft',
+            invoice_date: state.invoiceDate,
+            sender_name: state.senderName,
+            sender_email: state.senderEmail,
+            sender_address: state.senderAddress,
+            sender_city: state.senderCity,
+            sender_state: state.senderState,
+            sender_zip: state.senderZip,
+            sender_phone: state.senderPhone,
+            client_email: state.clientEmail,
+            client_address: state.clientAddress,
+            client_city: state.clientCity,
+            client_state: state.clientState,
+            client_zip: state.clientZip,
+            currency: state.currency,
+            terms: state.terms,
+            tax_rate: state.taxRate,
+            discount_rate: state.discountRate,
+            discount_amount: state.discountAmount
+          }
+
+          let result
+
+          if (state.id) {
+            // Update existing invoice
+            result = await supabase
+              .from('invoices')
+              .update(invoiceData)
+              .eq('id', state.id)
+              .eq('user_id', userId)
+              .select()
+              .single()
+          } else {
+            // Create new invoice
+            result = await supabase
+              .from('invoices')
+              .insert(invoiceData)
+              .select()
+              .single()
+          }
+
+          if (result.error) {
+            console.error('Error saving invoice:', result.error)
+            return null
+          }
+
+          // Update the store with the database ID
+          set((state) => {
+            state.id = result.data.id
+            state.isDirty = false
+          })
+
+          return result.data.id
+        } catch (error) {
+          console.error('Failed to save invoice to database:', error)
+          return null
+        }
+      },
+
+      loadFromDatabase: async (invoiceId: string, userId: string) => {
+        const supabase = createBrowserSupabaseClient()
+
+        try {
+          const { data, error } = await supabase
+            .from('invoices')
+            .select('*')
+            .eq('id', invoiceId)
+            .eq('user_id', userId)
+            .single()
+
+          if (error || !data) {
+            console.error('Error loading invoice:', error)
+            return false
+          }
+
+          // Load the invoice data into the store
+          set(() => ({
+            id: data.id,
+            invoiceNumber: data.invoice_number || '',
+            clientName: data.client_name || '',
+            items: data.items || [{ description: '', quantity: 1, price: 0 }],
+            subtotal: Number(data.subtotal) || 0,
+            taxAmount: Number(data.tax) || 0,
+            total: Number(data.total) || 0,
+            dueDate: data.due_date || '',
+            notes: data.notes || '',
+            status: data.status || 'draft',
+            invoiceDate: data.invoice_date || new Date().toISOString().split('T')[0],
+            senderName: data.sender_name || '',
+            senderEmail: data.sender_email || '',
+            senderAddress: data.sender_address || '',
+            senderCity: data.sender_city || '',
+            senderState: data.sender_state || '',
+            senderZip: data.sender_zip || '',
+            senderPhone: data.sender_phone || '',
+            clientEmail: data.client_email || '',
+            clientAddress: data.client_address || '',
+            clientCity: data.client_city || '',
+            clientState: data.client_state || '',
+            clientZip: data.client_zip || '',
+            currency: data.currency || 'USD',
+            terms: data.terms || 'Payment is due within 30 days of invoice date.',
+            taxRate: Number(data.tax_rate) || 0,
+            discountRate: Number(data.discount_rate) || 0,
+            discountAmount: Number(data.discount_amount) || 0,
+            isDirty: false,
+            lastUpdated: Date.now()
+          }))
+
+          return true
+        } catch (error) {
+          console.error('Failed to load invoice from database:', error)
+          return false
+        }
+      },
+
+      deleteFromDatabase: async (invoiceId: string, userId: string) => {
+        const supabase = createBrowserSupabaseClient()
+
+        try {
+          const { error } = await supabase
+            .from('invoices')
+            .delete()
+            .eq('id', invoiceId)
+            .eq('user_id', userId)
+
+          if (error) {
+            console.error('Error deleting invoice:', error)
+            return false
+          }
+
+          return true
+        } catch (error) {
+          console.error('Failed to delete invoice from database:', error)
+          return false
+        }
+      }
     }))
   )
 )

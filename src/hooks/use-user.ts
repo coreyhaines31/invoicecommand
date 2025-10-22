@@ -1,23 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-interface User {
-  id: string
-  email: string
-  full_name?: string
-}
+import { createBrowserSupabaseClient } from '@/lib/supabase-client'
+import type { User } from '@supabase/supabase-js'
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = createBrowserSupabaseClient()
 
   useEffect(() => {
-    // Since auth is disabled, we'll always return null for now
-    // This can be easily updated when auth is re-enabled
-    setUser(null)
-    setLoading(false)
-  }, [])
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user || null)
+      setLoading(false)
+    }
+
+    getInitialSession()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user || null)
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   return {
     user,
