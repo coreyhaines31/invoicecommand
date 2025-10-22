@@ -161,3 +161,69 @@ Error: ENOENT: no such file or directory, open '.next/server/pages-manifest.json
    ```
 
 **Prevention**: Always use the `viewport` export instead of viewport/themeColor in metadata when using Next.js 15+.
+
+## Deployment to Vercel
+
+### Production Deployment Workflow
+
+1. **Git Workflow**:
+   ```bash
+   # Standard feature → development → main workflow
+   git checkout development
+   git merge feature/your-feature-name
+   git push origin development
+
+   git checkout main
+   git merge development
+   git push origin main
+   ```
+
+2. **Vercel Deployment Commands**:
+   ```bash
+   # Check deployment status
+   npx vercel ls
+
+   # Check environment variables
+   npx vercel env ls
+
+   # Deploy to production
+   npx vercel --prod
+
+   # Check domains
+   npx vercel domains ls
+   ```
+
+3. **Production URLs**:
+   - **Domain**: https://invoicecommand.com
+   - **Latest Deployment**: Check with `npx vercel ls`
+
+### Environment Variables Setup
+
+**Required Vercel Environment Variables**:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+**Add Environment Variables via CLI**:
+```bash
+# Add each variable (will prompt for value)
+npx vercel env add NEXT_PUBLIC_SUPABASE_URL production
+npx vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
+
+# Or pipe values directly
+echo "https://mglvipgetrvmanyzfyfp.supabase.co" | npx vercel env add NEXT_PUBLIC_SUPABASE_URL production
+```
+
+### Common Deployment Issues
+
+**Build Error: "supabaseUrl is required"**
+- **Cause**: Missing Supabase environment variables in Vercel
+- **Check**: Run `npx vercel env ls` - should show all 3 variables
+- **Fix**: Add missing environment variables using commands above
+- **Verify**: Local build works with `npm run build` but Vercel fails
+
+**Git Push Not Triggering Deployment**
+- Vercel auto-deploys from `main` branch pushes
+- Manual deploy: `npx vercel --prod`
+- Check Vercel dashboard for webhook/integration issues

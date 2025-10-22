@@ -229,7 +229,7 @@ export function InvoiceBuilder() {
           Your data is stored locally in your browser. No signup required.
         </div>
         <div className="text-sm text-muted-foreground text-center">
-          © 2024 Swipe Files LLC. All rights reserved.
+          © {new Date().getFullYear()} Swipe Files LLC. All rights reserved.
         </div>
       </footer>
     </div>
