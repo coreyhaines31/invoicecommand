@@ -62,8 +62,6 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
     creator: '@invoicecommand',
   },
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#10b981',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
@@ -72,6 +70,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://invoicecommand.com',
   },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#10b981',
 };
 
 export default function RootLayout({
