@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
+import { EnhancedErrorBoundary } from "@/components/error-boundary-enhanced";
+import { PrivacyControls } from "@/components/privacy/privacy-controls";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://invoicecommand.com'),
   title: "Free Invoice Template Generator | Invoice Command - Professional Invoice Builder",
   description: "Create professional invoices instantly with our free invoice template generator. AI-powered voice commands, real-time preview, and PDF export. Perfect for freelancers, consultants, and small businesses.",
   keywords: [
@@ -215,7 +218,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <PostHogProvider />
-        {children}
+        <EnhancedErrorBoundary>
+          {children}
+          <PrivacyControls />
+        </EnhancedErrorBoundary>
       </body>
     </html>
   );

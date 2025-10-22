@@ -1,4 +1,4 @@
-import { posthog } from '@/lib/posthog'
+import { posthog, captureError, startSessionRecording, stopSessionRecording } from '@/lib/posthog'
 
 export interface InvoiceAnalyticsData {
   items_count?: number
@@ -13,6 +13,13 @@ export interface VoiceAnalyticsData {
   command_type?: string
   success?: boolean
   error?: string
+}
+
+export interface ErrorAnalyticsData {
+  error_type?: 'api_error' | 'validation_error' | 'network_error' | 'user_error' | 'system_error'
+  error_context?: string
+  user_action?: string
+  additional_data?: Record<string, any>
 }
 
 export function useAnalytics() {
@@ -79,7 +86,76 @@ export function useAnalytics() {
     posthog.identify(userId, properties)
   }
 
+  // Enhanced error tracking methods
+  const trackError = (error: Error, data?: ErrorAnalyticsData) => {
+    captureError(error, {
+      error_type: data?.error_type || 'system_error',
+      error_context: data?.error_context,
+      user_action: data?.user_action,
+      ...data?.additional_data,
+    })
+  }
+
+  const trackApiError = (endpoint: string, status: number, message: string) => {
+    trackError(new Error(`API Error: ${message}`), {
+      error_type: 'api_error',
+      error_context: endpoint,
+      additional_data: {
+        status_code: status,
+        endpoint,
+      }
+    })
+  }
+
+  const trackValidationError = (field: string, value: any, message: string) => {
+    trackError(new Error(`Validation Error: ${message}`), {
+      error_type: 'validation_error',
+      error_context: field,
+      additional_data: {
+        field,
+        value: typeof value === 'string' ? value.substring(0, 100) : value, // Limit sensitive data
+      }
+    })
+  }
+
+  // Session recording controls
+  const startRecording = () => {
+    startSessionRecording()
+    posthog.capture('session_recording_started', {
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  const stopRecording = () => {
+    stopSessionRecording()
+    posthog.capture('session_recording_stopped', {
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  // Performance tracking
+  const trackPerformance = (metric: string, value: number, context?: Record<string, any>) => {
+    posthog.capture('performance_metric', {
+      metric_name: metric,
+      metric_value: value,
+      timestamp: new Date().toISOString(),
+      ...context,
+    })
+  }
+
+  // User interaction tracking
+  const trackUserInteraction = (element: string, action: string, context?: Record<string, any>) => {
+    posthog.capture('user_interaction', {
+      element,
+      action,
+      timestamp: new Date().toISOString(),
+      page_url: window.location.href,
+      ...context,
+    })
+  }
+
   return {
+    // Original methods
     trackInvoiceCreated,
     trackInvoiceUpdated,
     trackPdfDownload,
@@ -88,5 +164,18 @@ export function useAnalytics() {
     trackUserSignup,
     trackUserLogin,
     identifyUser,
+
+    // Enhanced error tracking
+    trackError,
+    trackApiError,
+    trackValidationError,
+
+    // Session recording controls
+    startRecording,
+    stopRecording,
+
+    // Additional tracking methods
+    trackPerformance,
+    trackUserInteraction,
   }
 }

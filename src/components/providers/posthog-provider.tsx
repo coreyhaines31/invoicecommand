@@ -1,17 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { initPostHog, posthog } from '@/lib/posthog'
 
-export function PostHogProvider() {
+function PostHogPageTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    // Initialize PostHog
-    initPostHog()
-  }, [])
 
   useEffect(() => {
     // Track pageviews
@@ -27,4 +22,17 @@ export function PostHogProvider() {
   }, [pathname, searchParams])
 
   return null
+}
+
+export function PostHogProvider() {
+  useEffect(() => {
+    // Initialize PostHog
+    initPostHog()
+  }, [])
+
+  return (
+    <Suspense fallback={null}>
+      <PostHogPageTracker />
+    </Suspense>
+  )
 }
