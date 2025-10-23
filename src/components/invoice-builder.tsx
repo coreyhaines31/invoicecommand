@@ -3,12 +3,10 @@
 import { InvoicePreview } from './invoice-preview'
 import { InvoiceForm } from './invoice-form'
 import { InvoiceStyleDropdown } from './invoice-style-dropdown'
+import { Navigation } from './navigation'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
-import { Logo } from './logo'
-import Link from 'next/link'
-import { ArrowRight, User, Mic, FileDown, Zap, Shield } from 'lucide-react'
+import { Mic, FileDown, Zap, Shield } from 'lucide-react'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 
 export function InvoiceBuilder() {
@@ -17,26 +15,7 @@ export function InvoiceBuilder() {
   return (
     <div className="container mx-auto p-4 min-h-screen">
       {/* Navigation Bar */}
-      <nav className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Logo width={24} height={24} className="text-primary" />
-            <span className="text-lg font-semibold text-foreground">Invoice Command</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/invoice-templates" className="hidden sm:inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium">
-              Browse 405+ Industry-Specific Templates
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Button asChild>
-              <Link href="/auth/signup" className="inline-flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Create Free Account
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Header with SEO-optimized content */}
       <header className="mb-8">

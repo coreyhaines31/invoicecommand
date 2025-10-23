@@ -1,16 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Logo } from '@/components/logo'
+import { Navigation } from '@/components/navigation'
 import { InvoiceList } from './invoice-list'
 import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { Plus, FileText, DollarSign, Users, Settings, LogOut } from 'lucide-react'
-import { createBrowserSupabaseClient } from '@/lib/supabase-client'
-import { useRouter } from 'next/navigation'
+import { Plus, FileText, DollarSign, Users } from 'lucide-react'
 
 interface DashboardContentProps {
   user: User
@@ -18,16 +15,6 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ user, invoices }: DashboardContentProps) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const router = useRouter()
-  const supabase = createBrowserSupabaseClient()
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
 
   const stats = {
     totalInvoices: invoices.length,
@@ -37,33 +24,9 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border">
-        <div className="container mx-auto p-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <Logo width={24} height={24} className="text-primary" />
-              <span className="text-lg font-semibold text-foreground">Invoice Command</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                Welcome, {user.user_metadata?.full_name || user.email}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <div className="container mx-auto p-4">
+        {/* Navigation */}
+        <Navigation />
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
