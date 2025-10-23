@@ -2,6 +2,7 @@
 
 import { InvoicePreview } from './invoice-preview'
 import { InvoiceForm } from './invoice-form'
+import { InvoiceStyleDropdown } from './invoice-style-dropdown'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -79,8 +80,11 @@ export function InvoiceBuilder() {
                 <h2 className="text-xl font-semibold text-foreground">
                   Invoice Preview
                 </h2>
-                <div className="text-sm text-muted-foreground">
-                  Live Preview
+                <div className="flex items-center gap-4">
+                  <InvoiceStyleDropdown />
+                  <div className="text-sm text-muted-foreground">
+                    Live Preview
+                  </div>
                 </div>
               </div>
               <Separator className="mb-6" />
