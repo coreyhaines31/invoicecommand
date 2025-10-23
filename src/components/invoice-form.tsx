@@ -14,6 +14,7 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { VoiceToggle } from '@/components/voice/voice-toggle'
 import { LogoUpload } from '@/components/logo-upload'
 import { InvoiceStyleSelector } from '@/components/invoice-style-selector'
+import { PricingMethodSelector } from '@/components/pricing-method-selector'
 import { useVoiceCommands } from '@/hooks/use-voice-commands'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 import { useState } from 'react'
@@ -173,6 +174,9 @@ export function InvoiceForm() {
 
       {/* Invoice Style Selection */}
       <InvoiceStyleSelector />
+
+      {/* Pricing Method Templates */}
+      <PricingMethodSelector />
 
       {/* Client Information */}
       <Card>
