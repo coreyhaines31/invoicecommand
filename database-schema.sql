@@ -70,6 +70,9 @@ CREATE TABLE public.invoices (
     recurring BOOLEAN DEFAULT FALSE,
     status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid')),
 
+    -- Style and appearance
+    style TEXT DEFAULT 'modern' CHECK (style IN ('modern', 'classic', 'minimal')),
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

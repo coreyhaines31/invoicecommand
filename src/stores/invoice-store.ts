@@ -50,6 +50,7 @@ export interface InvoiceData {
   lastUpdated: number
   id?: string // Database ID for saved invoices
   status?: 'draft' | 'sent' | 'paid'
+  style: 'modern' | 'classic' | 'minimal' // Invoice style template
 }
 
 interface InvoiceStore extends InvoiceData {
@@ -57,6 +58,7 @@ interface InvoiceStore extends InvoiceData {
   updateSender: (field: keyof Pick<InvoiceData, 'senderName' | 'senderEmail' | 'senderAddress' | 'senderCity' | 'senderState' | 'senderZip' | 'senderPhone' | 'senderLogo'>, value: string) => void
   updateClient: (field: keyof Pick<InvoiceData, 'clientName' | 'clientEmail' | 'clientAddress' | 'clientCity' | 'clientState' | 'clientZip'>, value: string) => void
   updateInvoiceDetails: (field: keyof Pick<InvoiceData, 'invoiceNumber' | 'invoiceDate' | 'dueDate' | 'notes' | 'terms'>, value: string) => void
+  updateStyle: (style: 'modern' | 'classic' | 'minimal') => void
   updateTax: (rate: number) => void
   updateDiscount: (rate: number) => void
 
@@ -127,7 +129,8 @@ const defaultInvoice: InvoiceData = {
   // Meta
   currency: 'USD',
   isDirty: false,
-  lastUpdated: Date.now()
+  lastUpdated: Date.now(),
+  style: 'modern'
 }
 
 export const useInvoiceStore = create<InvoiceStore>()(
@@ -149,6 +152,12 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       updateInvoiceDetails: (field, value) => set((state) => {
         state[field] = value
+        state.isDirty = true
+        state.lastUpdated = Date.now()
+      }),
+
+      updateStyle: (style) => set((state) => {
+        state.style = style
         state.isDirty = true
         state.lastUpdated = Date.now()
       }),

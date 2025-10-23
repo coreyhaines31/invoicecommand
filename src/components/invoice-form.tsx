@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { VoiceToggle } from '@/components/voice/voice-toggle'
 import { LogoUpload } from '@/components/logo-upload'
+import { InvoiceStyleSelector } from '@/components/invoice-style-selector'
 import { useVoiceCommands } from '@/hooks/use-voice-commands'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
 import { useState } from 'react'
@@ -169,6 +170,9 @@ export function InvoiceForm() {
           />
         </CardContent>
       </Card>
+
+      {/* Invoice Style Selection */}
+      <InvoiceStyleSelector />
 
       {/* Client Information */}
       <Card>

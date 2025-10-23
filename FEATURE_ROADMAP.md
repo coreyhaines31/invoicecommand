@@ -344,6 +344,10 @@ Users who subscribe to unlock advanced business features and team collaboration.
 3. **Validation**: Feature flags, A/B testing, beta programs
 4. **Rollout**: Staged deployment, usage monitoring, iteration
 
+future:
+- paywalls and triggers for any limit on anon or free users to upgrade
+- $100/mo or $1k/yr option to eliminate Stripe transaction fee
+
 ---
 
 *Last updated: October 2025*
