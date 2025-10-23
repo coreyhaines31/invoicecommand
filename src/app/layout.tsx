@@ -4,6 +4,7 @@ import "./globals.css";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { EnhancedErrorBoundary } from "@/components/error-boundary-enhanced";
 import { PrivacyControls } from "@/components/privacy/privacy-controls";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -227,6 +228,7 @@ export default function RootLayout({
         <EnhancedErrorBoundary>
           {children}
           <PrivacyControls />
+          <Toaster />
         </EnhancedErrorBoundary>
       </body>
     </html>

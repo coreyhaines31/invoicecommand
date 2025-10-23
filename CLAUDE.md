@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **UI Components**: shadcn/ui (New York style) with custom tweakcn theme
 - **Authentication**: Supabase Auth
 - **Payments**: Stripe Connect (Express)
+- **Email**: Resend for invoice delivery
 - **AI**: OpenAI GPT-4o-mini for voice parsing
 - **Voice**: Web Speech API
 
@@ -65,6 +66,12 @@ OPENAI_API_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Email integration (Resend)
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=invoices@m.invoicecommand.com
+RESEND_REPLY_TO=support@m.invoicecommand.com
+RESEND_APP_FROM_EMAIL=hello@m.invoicecommand.com
 ```
 
 ## Database Setup

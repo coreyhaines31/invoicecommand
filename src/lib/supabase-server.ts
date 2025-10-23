@@ -29,6 +29,16 @@ export async function createServerSupabaseClient() {
   })
 }
 
+// Route handler client for API routes
+export function createRouteHandlerSupabaseClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
 // Server-side client with service role key
 export const supabaseAdmin = createClient(
   supabaseUrl,

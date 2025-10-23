@@ -26,16 +26,19 @@ import {
   Edit,
   Download,
   Trash2,
-  FileText
+  FileText,
+  Send
 } from 'lucide-react'
 import Link from 'next/link'
 import { useInvoiceStore } from '@/stores/invoice-store'
 import { useRouter } from 'next/navigation'
+import { SendEmailDialog } from '@/components/send-email-dialog'
 
 interface Invoice {
   id: string
   invoice_number: string
   client_name: string
+  client_email?: string
   total: number
   status: string
   due_date: string
@@ -49,6 +52,8 @@ interface InvoiceListProps {
 
 export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const { loadFromDatabase, deleteFromDatabase } = useInvoiceStore()
   const router = useRouter()
 
@@ -107,6 +112,16 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
         router.refresh()
       }
     }
+  }
+
+  const handleSendEmail = (invoice: Invoice) => {
+    setSelectedInvoice(invoice)
+    setEmailDialogOpen(true)
+  }
+
+  const handleEmailSent = () => {
+    // Refresh the page to update invoice status
+    router.refresh()
   }
 
   if (invoices.length === 0) {
@@ -194,6 +209,10 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                         <Download className="w-4 h-4 mr-2" />
                         Download PDF
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSendEmail(invoice)}>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send via Email
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-red-600"
@@ -218,6 +237,13 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
           </p>
         </div>
       )}
+
+      <SendEmailDialog
+        invoice={selectedInvoice}
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        onEmailSent={handleEmailSent}
+      />
     </div>
   )
 }
