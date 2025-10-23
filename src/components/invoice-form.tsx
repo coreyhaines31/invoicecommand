@@ -2,7 +2,6 @@
 
 import { useInvoiceStore } from '@/stores/invoice-store'
 import { usePDFDownload } from '@/hooks/use-pdf-download'
-import { useUser } from '@/hooks/use-user'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,26 +11,21 @@ import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { VoiceToggle } from '@/components/voice/voice-toggle'
-import { LogoUpload } from '@/components/logo-upload'
-import { PricingMethodSelector } from '@/components/pricing-method-selector'
 import { useVoiceCommands } from '@/hooks/use-voice-commands'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
-import { useState } from 'react'
-import { Plus, Trash2, Download, Loader2, AlertCircle, Save } from 'lucide-react'
+import { Plus, Trash2, Download, Loader2, AlertCircle } from 'lucide-react'
 
 export function InvoiceForm() {
   const invoice = useInvoiceStore()
   const { isGenerating, error, downloadPDF, clearError } = usePDFDownload()
   const { processVoiceCommand } = useVoiceCommands()
-  const { user, isAuthenticated } = useUser()
-  const [isSaving, setIsSaving] = useState(false)
 
   // Initialize invoice number based on user authentication status
   useInvoiceInitialization()
 
   const {
     // Data
-    senderName, senderEmail, senderAddress, senderCity, senderState, senderZip, senderPhone, senderLogo,
+    senderName, senderEmail, senderAddress, senderCity, senderState, senderZip, senderPhone,
     clientName, clientEmail, clientAddress, clientCity, clientState, clientZip,
     invoiceNumber, invoiceDate, dueDate,
     items, taxRate, discountRate, notes, terms,
@@ -40,7 +34,7 @@ export function InvoiceForm() {
     updateSender, updateClient, updateInvoiceDetails,
     updateTax, updateDiscount,
     addItem, updateItem, removeItem,
-    resetInvoice, saveToDatabase
+    resetInvoice
   } = invoice
 
   const handlePDFDownload = async () => {
@@ -49,25 +43,6 @@ export function InvoiceForm() {
 
   const handleVoiceCommand = async (transcript: string) => {
     await processVoiceCommand(transcript)
-  }
-
-  const handleSave = async () => {
-    if (!user) return
-
-    setIsSaving(true)
-    try {
-      const invoiceId = await saveToDatabase(user.id)
-      if (invoiceId) {
-        // Show success feedback
-        console.log('Invoice saved successfully:', invoiceId)
-      } else {
-        console.error('Failed to save invoice')
-      }
-    } catch (error) {
-      console.error('Error saving invoice:', error)
-    } finally {
-      setIsSaving(false)
-    }
   }
 
   return (
@@ -155,24 +130,8 @@ export function InvoiceForm() {
               placeholder="(555) 123-4567"
             />
           </div>
-
-          {/* Logo Upload */}
-          <LogoUpload
-            currentLogo={senderLogo}
-            onLogoChange={(logoUrl) => {
-              if (logoUrl) {
-                updateSender('senderLogo', logoUrl)
-              } else {
-                updateSender('senderLogo', '')
-              }
-            }}
-            disabled={isGenerating || isSaving}
-          />
         </CardContent>
       </Card>
-
-      {/* Pricing Method Templates */}
-      <PricingMethodSelector />
 
       {/* Client Information */}
       <Card>
@@ -458,35 +417,13 @@ export function InvoiceForm() {
             onClick={resetInvoice}
             variant="outline"
             className="flex-1"
-            disabled={isGenerating || isSaving}
+            disabled={isGenerating}
           >
             Reset Invoice
           </Button>
-
-          {isAuthenticated && (
-            <Button
-              onClick={handleSave}
-              variant="outline"
-              className="flex-1"
-              disabled={isGenerating || isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Invoice
-                </>
-              )}
-            </Button>
-          )}
-
           <Button
             onClick={handlePDFDownload}
-            disabled={isGenerating || isSaving}
+            disabled={isGenerating}
             className="flex-1 bg-primary hover:bg-primary/90"
           >
             {isGenerating ? (

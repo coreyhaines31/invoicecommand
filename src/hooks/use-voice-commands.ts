@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useInvoiceStore } from '@/stores/invoice-store'
-import { useAnalytics } from '@/hooks/use-analytics'
 
 interface VoiceCommandResult {
   success: boolean
@@ -22,7 +21,6 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<VoiceCommandResult | null>(null)
-  const { trackVoiceCommand } = useAnalytics()
 
   const invoice = useInvoiceStore()
   const {
@@ -89,12 +87,6 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
       // Apply the update based on the action type
       await applyInvoiceUpdate(update)
 
-      // Track successful voice command
-      trackVoiceCommand({
-        command_type: update.action || 'unknown',
-        success: true,
-      })
-
       setLastResult({
         success: true,
         message: update.explanation || 'Voice command processed successfully',
@@ -103,14 +95,6 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process voice command'
-
-      // Track failed voice command
-      trackVoiceCommand({
-        command_type: 'unknown',
-        success: false,
-        error: errorMessage,
-      })
-
       setError(errorMessage)
       setLastResult({
         success: false,
