@@ -44,6 +44,11 @@ export interface InvoiceData {
   notes: string
   terms: string
 
+  // Payment
+  paymentEnabled?: boolean
+  stripePaymentIntentId?: string
+  stripePaymentStatus?: 'unpaid' | 'paid' | 'failed' | 'processing' | 'canceled'
+
   // Meta
   currency: string
   isDirty: boolean
@@ -61,6 +66,7 @@ interface InvoiceStore extends InvoiceData {
   updateStyle: (style: 'modern' | 'classic' | 'minimal') => void
   updateTax: (rate: number) => void
   updateDiscount: (rate: number) => void
+  updatePaymentSettings: (settings: Partial<Pick<InvoiceData, 'paymentEnabled' | 'stripePaymentIntentId' | 'stripePaymentStatus'>>) => void
 
   // Line Items
   addItem: () => void
@@ -126,6 +132,11 @@ const defaultInvoice: InvoiceData = {
   notes: '',
   terms: 'Payment is due within 30 days of invoice date.',
 
+  // Payment
+  paymentEnabled: false,
+  stripePaymentIntentId: undefined,
+  stripePaymentStatus: 'unpaid',
+
   // Meta
   currency: 'USD',
   isDirty: false,
@@ -181,6 +192,12 @@ export const useInvoiceStore = create<InvoiceStore>()(
         // Trigger recalculation after state update
         setTimeout(() => get().calculateTotals(), 0)
       },
+
+      updatePaymentSettings: (settings) => set((state) => {
+        Object.assign(state, settings)
+        state.isDirty = true
+        state.lastUpdated = Date.now()
+      }),
 
       addItem: () => set((state) => {
         state.items.push({ description: '', quantity: 1, price: 0 })
@@ -322,7 +339,10 @@ export const useInvoiceStore = create<InvoiceStore>()(
             terms: state.terms,
             tax_rate: state.taxRate,
             discount_rate: state.discountRate,
-            discount_amount: state.discountAmount
+            discount_amount: state.discountAmount,
+            payment_enabled: state.paymentEnabled || false,
+            stripe_payment_intent_id: state.stripePaymentIntentId,
+            stripe_payment_status: state.stripePaymentStatus || 'unpaid'
           }
 
           let result
@@ -410,6 +430,9 @@ export const useInvoiceStore = create<InvoiceStore>()(
             taxRate: Number(data.tax_rate) || 0,
             discountRate: Number(data.discount_rate) || 0,
             discountAmount: Number(data.discount_amount) || 0,
+            paymentEnabled: data.payment_enabled || false,
+            stripePaymentIntentId: data.stripe_payment_intent_id,
+            stripePaymentStatus: data.stripe_payment_status || 'unpaid',
             isDirty: false,
             lastUpdated: Date.now()
           }))

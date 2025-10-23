@@ -13,7 +13,9 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { VoiceToggle } from '@/components/voice/voice-toggle'
 import { useVoiceCommands } from '@/hooks/use-voice-commands'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
-import { Plus, Trash2, Download, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, Download, Loader2, AlertCircle, Share2, Copy } from 'lucide-react'
+import { PaymentSettings } from '@/components/payment/payment-settings'
+import { toast } from 'sonner'
 
 export function InvoiceForm() {
   const invoice = useInvoiceStore()
@@ -28,13 +30,14 @@ export function InvoiceForm() {
     senderName, senderEmail, senderAddress, senderCity, senderState, senderZip, senderPhone,
     clientName, clientEmail, clientAddress, clientCity, clientState, clientZip,
     invoiceNumber, invoiceDate, dueDate,
-    items, taxRate, discountRate, notes, terms,
+    items, taxRate, discountRate, notes, terms, total, currency,
+    paymentEnabled,
 
     // Actions
     updateSender, updateClient, updateInvoiceDetails,
     updateTax, updateDiscount,
     addItem, updateItem, removeItem,
-    resetInvoice
+    resetInvoice, updatePaymentSettings
   } = invoice
 
   const handlePDFDownload = async () => {
@@ -43,6 +46,29 @@ export function InvoiceForm() {
 
   const handleVoiceCommand = async (transcript: string) => {
     await processVoiceCommand(transcript)
+  }
+
+  const handleShareInvoice = async () => {
+    if (!invoice.id) {
+      toast.error('Please save the invoice first before sharing')
+      return
+    }
+
+    const shareUrl = `${window.location.origin}/invoice/${invoice.id}`
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast.success('Invoice link copied to clipboard!')
+    } catch (error) {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea')
+      textArea.value = shareUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      toast.success('Invoice link copied to clipboard!')
+    }
   }
 
   return (
@@ -392,6 +418,14 @@ export function InvoiceForm() {
         </CardContent>
       </Card>
 
+      {/* Payment Settings */}
+      <PaymentSettings
+        paymentEnabled={paymentEnabled || false}
+        onPaymentToggle={(enabled) => updatePaymentSettings({ paymentEnabled: enabled })}
+        invoiceTotal={total}
+        currency={currency}
+      />
+
       {/* Error Display */}
       {error && (
         <Alert variant="destructive">
@@ -412,32 +446,47 @@ export function InvoiceForm() {
 
       {/* Actions */}
       <ErrorBoundary>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button
-            onClick={resetInvoice}
-            variant="outline"
-            className="flex-1"
-            disabled={isGenerating}
-          >
-            Reset Invoice
-          </Button>
-          <Button
-            onClick={handlePDFDownload}
-            disabled={isGenerating}
-            className="flex-1 bg-primary hover:bg-primary/90"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating PDF...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </>
-            )}
-          </Button>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button
+              onClick={resetInvoice}
+              variant="outline"
+              className="flex-1"
+              disabled={isGenerating}
+            >
+              Reset Invoice
+            </Button>
+            <Button
+              onClick={handlePDFDownload}
+              disabled={isGenerating}
+              className="flex-1 bg-primary hover:bg-primary/90"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Share Button (only show if invoice is saved) */}
+          {invoice.id && (
+            <Button
+              onClick={handleShareInvoice}
+              variant="outline"
+              className="w-full"
+              disabled={isGenerating}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Share Invoice Link
+            </Button>
+          )}
         </div>
 
         {/* PDF Generation Info */}

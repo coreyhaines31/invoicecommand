@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate PDF buffer
-    const pdfBuffer = await renderToBuffer(<InvoicePDF data={invoiceData} />)
+    const pdfBuffer = await renderToBuffer(<InvoicePDF invoice={invoiceData} />)
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {

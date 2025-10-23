@@ -63,9 +63,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_key
 
 # Add when setting up integrations
 OPENAI_API_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_PUBLISHABLE_KEY=
-STRIPE_WEBHOOK_SECRET=
+
+# Stripe integration (Connect + Billing)
+STRIPE_SECRET_KEY=your_stripe_secret_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+NEXT_PUBLIC_APP_URL=http://localhost:3001
 
 # Email integration (Resend)
 RESEND_API_KEY=your_resend_api_key
