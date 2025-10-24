@@ -104,6 +104,15 @@ RESEND_APP_FROM_EMAIL=hello@m.invoicecommand.com
 
 This configuration allows users to sign up and immediately access the dashboard without email verification, significantly reducing conversion friction.
 
+## Stripe Integration Setup
+
+**Current Status**: Live Stripe keys configured for production testing
+- **Payment Processing**: Stripe Connect with Express accounts
+- **Fee Structure**: Variable rates (0.5% free/premium, 0% pro users)
+- **Webhook**: Configured at https://dashboard.stripe.com/webhooks
+
+**TODO**: Investigate setting up Stripe test/sandbox environment for local development testing to avoid using live keys during development. This would allow safer testing of payment flows without real transactions.
+
 ## Key Features to Implement
 
 ### Phase 1 (MVP)

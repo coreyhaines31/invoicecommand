@@ -74,6 +74,12 @@ This document tracks internal development and business tasks that need to be com
   - [x] Configure seamless user onboarding flow
   - [x] Document production authentication settings
 
+- [ ] **Google OAuth Integration**
+  - [ ] Add Google OAuth provider to Supabase Auth
+  - [ ] Configure Google OAuth credentials
+  - [ ] Add Google sign-in button to auth UI
+  - [ ] Test Google sign-in flow
+
 - [ ] **Email Service Setup** (Optional - for transactional emails)
   - [ ] Set up Resend account and API key (if needed for invoice sending)
   - [ ] Add password reset email functionality
