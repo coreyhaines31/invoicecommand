@@ -30,4 +30,5 @@ jobs:
           path-to-signatures: signatures/v1/cla.json
           # Signatures live on their own branch so the bot never commits to main or development.
           branch: cla-signatures
-          allowlist: coreyhaines31,dependabot[bot],github-actions[bot]
+          # claude: GitHub maps AI co-author trailers (noreply@anthropic.com) to this account; an AI holds no copyright to license.
+          allowlist: coreyhaines31,claude,dependabot[bot],github-actions[bot]
