@@ -46,11 +46,6 @@ function regenerateData() {
   // Run the generation script
   require('./generate-professions.js');
 
-  console.log('🔄 Regenerating sitemap...');
-
-  // Run sitemap generation
-  require('./generate-sitemap.js');
-
   console.log('✅ All data files regenerated!');
 }
 
