@@ -1,0 +1,159 @@
+---
+title: Sales Order vs Purchase Order — Same Transaction, Different Sides
+description: A purchase order comes from the buyer. A sales order comes from the seller. They describe the same deal from opposite perspectives. Here's how they connect.
+publishedAt: 2026-04-08
+category: Sales Orders
+keywords:
+  - sales order vs purchase order
+  - so vs po difference
+  - purchase order vs sales order
+  - po and so workflow
+excerpt: Same transaction, two documents. The PO is the buyer's commitment; the SO is the seller's confirmation. Here's how they fit together.
+---
+
+A **purchase order** comes from the buyer. A **sales order** comes from the seller. They cover the same transaction from opposite sides of the deal.
+
+If you sit on both sides — you're a buyer for some vendors and a seller for some customers — you'll be on both ends of this document chain regularly. Knowing how the two documents connect is what keeps your procurement and fulfillment processes clean.
+
+## The one-line difference
+
+- **Purchase order (PO)**: buyer says "I want to buy this." Sent *to* the seller.
+- **Sales order (SO)**: seller says "OK, I'll fulfill this." Created *by* the seller, after receiving the PO.
+
+The PO triggers the SO. Together, they document both sides of the same transaction.
+
+## Side-by-side comparison
+
+| Attribute | Purchase Order | Sales Order |
+|---|---|---|
+| **Created by** | Buyer | Seller |
+| **Sent to** | Seller (external) | Internal (sometimes buyer too) |
+| **Purpose** | Commit to buy | Trigger fulfillment |
+| **Triggers** | Vendor's SO and fulfillment | Internal pick / pack / ship |
+| **Lives in** | Buyer's accounting / procurement system | Seller's order management system |
+| **Binding** | Once vendor accepts | Internally on creation |
+| **Comes first** | Yes (PO before SO) | No (SO follows PO) |
+
+The cleanest mental model: **PO and SO are the same conversation, recorded by both parties.**
+
+## How they connect
+
+A typical transaction:
+
+1. **Buyer issues a PO** — "Acme wants to buy 50 sheets of drywall, deliver next Wednesday, Net 30 terms. PO-2026-0142."
+2. **Seller receives the PO** — Beta Building Supply gets the PO from Acme.
+3. **Seller creates an SO internally** — "OK, fulfilling order. SO-2026-0142 (often using the same number as the customer's PO for traceability). Allocate 50 sheets, schedule Wednesday delivery."
+4. **Seller fulfills** — drywall picked, loaded, shipped.
+5. **Seller invoices** — invoice references both the SO and the customer's PO number.
+6. **Buyer matches and pays** — buyer's AP team matches invoice to original PO and goods received.
+
+The PO and SO bracket the seller's fulfillment process. The PO is the input; the SO is what the seller does with it.
+
+## Why both documents exist
+
+The PO and SO might look like duplicates of the same information, but they serve different parties' needs.
+
+**The buyer needs the PO** because:
+- It documents what the buyer committed to buy
+- It gives the buyer's AP team a reference to match against incoming invoices
+- It creates an audit trail for procurement compliance
+- It's the buyer's contractual commitment to the vendor
+
+**The seller needs the SO** because:
+- It's the internal source of truth for what to fulfill
+- It triggers inventory allocation and fulfillment workflows
+- It separates the order from the payment claim (the invoice)
+- It tracks committed-but-not-yet-shipped orders
+
+If the seller could just work directly off the buyer's PO, that would suffice — but the seller usually needs to add internal context (warehouse location, picking instructions, internal account codes) that doesn't belong on a customer-facing document.
+
+## Numbering: should SO and PO share a number?
+
+Two approaches.
+
+**Same number.** The seller adopts the customer's PO number as the SO number (PO-2026-0142 from the buyer becomes SO-2026-0142 internally). Pros: easy traceability, fewer numbers to remember. Cons: if the customer changes the PO mid-flight, the seller's SO number is now confusing.
+
+**Separate numbers.** The seller assigns its own SO number, references the buyer's PO number on the SO. Pros: independent numbering systems, no collision when same number arrives from different customers. Cons: requires cross-referencing.
+
+For small operations, mirroring the PO number is simpler. For larger operations with high volume across many customers, separate numbering scales better.
+
+## When you might skip one (or both)
+
+**Skip the SO when:**
+- You're a solo operator with no fulfillment handoff
+- Fulfillment is instant (digital delivery, immediate service)
+- You only do small one-off jobs
+
+In these cases, the buyer's PO is enough — you just fulfill against it and invoice.
+
+**Skip the PO when:**
+- You're a tiny customer doing low-stakes purchases
+- The vendor doesn't require POs and the relationship is informal
+- You're paying COD (no AP cycle to protect)
+
+In these cases, the seller's SO and invoice are sufficient — there's no buyer-side document because there's no buyer-side process that needs one.
+
+**Skip both** when the transaction is small and the relationship is established (your $80/month software subscription doesn't need a PO or SO; you just get an invoice each month).
+
+For anything substantial — over a few hundred dollars, with vendors you don't fully trust, or where compliance matters — both documents earn their keep.
+
+## Example: what each side sees
+
+**Buyer side (Acme Construction):**
+
+The procurement manager creates PO-2026-0142 for 50 sheets of drywall. They send it to Beta Building Supply. The PO sits in Acme's procurement system as "issued, awaiting fulfillment." When the goods arrive and the invoice comes in, AP matches the invoice → PO → goods received and pays.
+
+**Seller side (Beta Building Supply):**
+
+The order desk receives PO-2026-0142 from Acme. They create SO-2026-0142 internally. The SO drives the picking ticket, the delivery schedule, and the eventual invoice. Their order management system shows the SO as "open" until shipped, then "closed" after invoicing.
+
+Same transaction. Two parallel sets of records. The two documents are the bridge.
+
+## Common confusion points
+
+### Is the sales order just a copy of the purchase order?
+
+Roughly, but not exactly. The SO contains the same items, quantities, and prices as the PO. But the SO usually adds internal information (warehouse to pick from, account coding, special handling notes) that's relevant only to the seller's operations.
+
+### Who's "right" if the SO and PO disagree?
+
+The PO is the buyer's commitment. If the seller's SO says something different — different price, different quantity, different terms — that's a discrepancy that needs resolution before fulfillment.
+
+The seller can't unilaterally change the deal by issuing a different SO. If the seller wants to change the terms (e.g., the price went up since the quote), they need to communicate that and get the buyer to issue a revised PO.
+
+### What about the invoice — where does that fit?
+
+The invoice comes after fulfillment. It references both the SO (internally) and the PO (on the customer-facing document). The invoice is the final document in the chain — it's what triggers payment.
+
+For more on the three-document flow, see [purchase order vs invoice vs sales order](/blog/purchase-order-vs-invoice-vs-sales-order).
+
+### What if I'm both the buyer and seller in different transactions?
+
+Welcome to small business. You'll issue POs to your vendors and receive POs from your customers. You'll receive SOs from your vendors (sometimes — many won't share them) and create SOs for your own fulfillment.
+
+The system that tracks the two sides separately is your accounting setup:
+- Procurement / AP module: tracks POs you issue and invoices you receive
+- Order management / AR module: tracks SOs you create and invoices you send
+
+Most small business accounting tools handle both sides natively. Just be careful not to confuse a PO you sent (you owe money) with an SO you created (someone owes you money).
+
+## Templates and tools
+
+If you need to issue either document:
+
+- [Purchase order generator](/purchase-order-generator) — buyer side, for issuing POs
+- [Purchase order template hub](/purchase-order-template) — Word, Excel, PDF formats
+- [Sales order generator](/sales-order-generator) — seller side, for creating SOs
+- [Sales order template hub](/sales-order-template) — Word and Excel SO templates
+- [Invoice templates](/invoice-templates) — for the final document in the chain
+
+## The bottom line
+
+PO and SO are the same transaction recorded by both parties:
+
+- **PO** — buyer's commitment, sent to the seller
+- **SO** — seller's confirmation, created internally after the PO arrives
+
+The PO triggers the SO. The SO triggers fulfillment. Fulfillment triggers the invoice. The invoice triggers payment. Each document hands off to the next.
+
+For most small B2B transactions, a clean PO → SO → invoice chain prevents the disputes that come from informal "just send what we agreed on" arrangements. The documents take a few minutes to produce; the disputes they prevent take hours to resolve.

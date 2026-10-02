@@ -1,0 +1,158 @@
+---
+title: Sales Order vs Invoice — What's the Difference?
+description: Both documents come from the seller, but they do different jobs at different stages of the transaction. Here's exactly when each gets used, with examples.
+publishedAt: 2026-04-09
+category: Sales Orders
+keywords:
+  - sales order vs invoice
+  - so vs invoice difference
+  - what is the difference between sales order and invoice
+  - sales order before invoice
+excerpt: Both come from the seller. The sales order kicks off fulfillment; the invoice asks for payment. Conflate them and you ship without billing or bill without shipping.
+---
+
+A sales order and an invoice both come from the seller. They both list line items and totals. They both reference the customer. So what's the difference?
+
+The sales order **starts** fulfillment. The invoice **ends** the transaction with a payment request.
+
+If you skip the SO, the fulfillment team has no internal source of truth. If you skip the invoice, you don't get paid. Different jobs, different stages.
+
+Here's the breakdown.
+
+## The one-line definitions
+
+- **Sales order (SO)**: a seller's internal document confirming an order will be filled. Created *before* delivery.
+- **Invoice**: a seller's request for payment. Sent *after* delivery (or per agreed terms for prepaid work).
+
+The SO is the **start** of the seller's fulfillment process. The invoice is the **end**, when the work is done and money is owed.
+
+## Side-by-side comparison
+
+| Attribute | Sales Order | Invoice |
+|---|---|---|
+| **Created by** | Seller | Seller |
+| **Triggered by** | Buyer's PO or order | Completed delivery |
+| **Sent to** | Internal (sometimes buyer as acknowledgment) | Buyer |
+| **Timing** | Before delivery | After delivery |
+| **Purpose** | Trigger fulfillment | Request payment |
+| **Counted as revenue** | No | Yes (when accrual basis) |
+| **Binding** | Internal commitment | Legal claim for payment |
+| **Includes** | Items, qty, ship date, terms | Items, qty, total, payment due date |
+
+The cleanest way to remember it: **SO triggers shipment, invoice triggers payment.**
+
+## The lifecycle: SO → delivery → invoice
+
+For a typical B2B order, the document flow looks like this:
+
+1. **Buyer sends a [purchase order](/blog/what-is-a-purchase-order)** — "We want to buy 50 sheets of drywall."
+2. **Seller creates a sales order internally** — "OK, we're fulfilling order SO-2026-0142. Pick the inventory, schedule the truck, allocate it to this customer."
+3. **Seller delivers the goods** — drywall arrives at the buyer's job site.
+4. **Seller sends an invoice** — "You owe $725, due in 30 days, reference SO-2026-0142."
+5. **Buyer pays.**
+
+The SO lives in steps 2–3. The invoice lives in steps 4–5. They're separated in time by however long fulfillment takes.
+
+For some businesses (instant-shipment retailers, service businesses), steps 2–3 happen in seconds. For others (custom manufacturers, scheduled installations), steps 2–3 might take weeks.
+
+## Why both documents exist
+
+A reasonable question: if the seller already knows what was ordered (from the buyer's PO or order form), why create an SO at all? Why not just ship the goods and send the invoice?
+
+Two reasons.
+
+**Internal handoff.** In any business with a fulfillment team separate from sales, the SO is the handoff document. Sales takes the order; fulfillment ships it; AR invoices it. Each handoff needs an artifact. The SO is the artifact for sales → fulfillment.
+
+**Tracking and inventory allocation.** When an SO gets created, the goods (or the labor) are mentally — and often literally — earmarked for that customer. Inventory gets reserved. Production capacity gets scheduled. Without the SO, you have no system of record for "what's promised but not yet shipped."
+
+For solo operations or businesses with instant fulfillment (a freelance designer who delivers a logo and invoices immediately), the SO is unnecessary overhead. The invoice alone covers the transaction.
+
+## When you need both vs just an invoice
+
+**You need both (SO + invoice) when:**
+
+- There's a meaningful gap between order and delivery (custom work, scheduled installations, manufactured goods)
+- Fulfillment involves people other than the salesperson
+- You need to track committed-but-not-yet-shipped orders
+- Inventory needs to be allocated to specific orders
+
+**You only need an invoice when:**
+
+- You deliver and bill in one step (consultants, freelancers, service businesses)
+- You're a solo operator and there's no internal handoff
+- Fulfillment is instant or very fast
+
+If you're not sure, start with invoice-only. Add SOs when you notice you can't keep track of what's been ordered but not yet shipped.
+
+## Example: e-commerce vs custom manufacturing
+
+**E-commerce shop selling t-shirts (instant fulfillment):**
+
+- Buyer places an order on the website
+- Order ships within 24 hours
+- Invoice (or order confirmation that doubles as an invoice) sent immediately
+
+The SO step is skipped because there's no real fulfillment delay or handoff. The invoice does double duty as the order acknowledgment.
+
+**Custom furniture builder (8-week lead time):**
+
+- Buyer places an order with a 50% deposit
+- Seller creates an SO documenting the order, deposit received, expected ship date
+- SO drives the production schedule for 8 weeks
+- On delivery, seller sends a final invoice for the remaining 50%
+
+Here the SO is essential — it's how the workshop knows what to build, when to build it, and what's been allocated where. Skipping the SO would mean managing eight in-progress custom orders entirely from memory and email.
+
+## Common confusion points
+
+### Is a sales order the same as an order confirmation?
+
+Sometimes — depends on how the seller uses them.
+
+A pure SO is internal. It tells the fulfillment team what to do.
+
+An **order confirmation** is the same information sent back to the customer as acknowledgment. In some businesses, the SO and the order confirmation are the same document used in two contexts (internally for fulfillment, externally for customer reassurance). In others, they're distinct documents.
+
+### Is the sales order the same as the customer's PO?
+
+No. The PO is the buyer's commitment to buy. The SO is the seller's commitment to fulfill. The PO triggers the SO; they're sequential, not the same.
+
+In small businesses, sometimes the buyer doesn't issue a formal PO — they just place an order. In that case, the seller's SO is the first formal document in the chain.
+
+### Can I just call my SO an invoice?
+
+No, and don't try. The SO documents intent to fulfill. The invoice documents the right to be paid. Calling an SO an invoice creates accounting and tax problems:
+
+- Invoices count as revenue when issued (under accrual accounting)
+- SOs do not
+- If you issue an "invoice" before delivery, you may be reporting revenue you haven't earned
+
+Keep them distinct.
+
+### What happens if there's no PO from the customer?
+
+Many small B2B transactions skip the PO. The buyer asks for something verbally or by email; the seller fulfills.
+
+In those cases, the SO becomes the first formal document in the seller's records. It captures the agreed-upon scope (even if loosely), drives fulfillment, and provides the basis for the eventual invoice.
+
+For larger orders, the absence of a customer PO is a risk signal — without it, the seller has no documentary commitment from the buyer. See [purchase order vs invoice vs sales order](/blog/purchase-order-vs-invoice-vs-sales-order) for a fuller treatment.
+
+## Templates and tools
+
+If you need to issue these documents:
+
+- [Sales order template hub](/sales-order-template) — Word and Excel SO templates
+- [Sales order generator](/sales-order-generator) — quick SO creation
+- [Invoice templates](/invoice-templates) — 405+ industry-specific invoice templates
+- [Estimate templates](/estimate-templates) — for the quote that comes before the SO
+
+## The bottom line
+
+Two documents from the same seller, two different jobs:
+
+- **Sales order**: kicks off fulfillment. Internal source of truth.
+- **Invoice**: requests payment. External claim.
+
+The SO matters when there's a gap between order and delivery. The invoice matters every time you want to get paid.
+
+For solo operators with instant fulfillment, the invoice alone is enough. For everyone else with a real fulfillment cycle, the two documents work together — SO at the start, invoice at the end.

@@ -1,0 +1,211 @@
+---
+title: The Purchase Order Process — Roles, Workflow, and How Tooling Fits In
+description: A practical walkthrough of the procurement workflow from request to payment. Who does what, where things break, and how a PO tool eliminates the busywork at each step.
+publishedAt: 2026-04-11
+category: Purchase Orders
+keywords:
+  - purchase order process
+  - procurement workflow
+  - po approval workflow
+  - po process steps
+  - procurement roles
+excerpt: Five roles, six steps, and the points where the process usually breaks. Here's how to run a clean PO workflow without an enterprise procurement platform.
+---
+
+If you've read the [PO lifecycle from request to payment](/blog/purchase-order-process-explained), you know the eight stages. This post zooms in on the workflow side: **who does what at each step, where things break, and how lightweight tooling fits without paying for a procurement suite**.
+
+This is for the operations person who's trying to clean up an ad-hoc purchasing process — not the enterprise buyer comparing Coupa to Ariba.
+
+## The five roles
+
+Most PO workflows touch five distinct roles. In small businesses, one person plays several of them. In larger ones, each is a separate seat.
+
+**Requester** — the person who wants to buy something. Files the purchase request, justifies the need, identifies the vendor.
+
+**Approver** — the person with budget authority. Approves or rejects the request based on budget, business case, and policy compliance.
+
+**Buyer** — the person who issues the PO to the vendor. Often the same as the requester in small operations; a dedicated procurement role in larger ones.
+
+**Vendor** — the seller. Receives the PO, accepts it, fulfills the order, sends the invoice.
+
+**AP (accounts payable)** — the team that processes the invoice, matches it against the PO and receipt, and pays the vendor.
+
+Knowing which role you're playing — and which role you're handing off to next — is half the battle. Most PO mistakes happen at handoffs.
+
+## The six-step workflow
+
+### Step 1: Identify the need
+
+**Who:** Requester
+**Output:** Purchase request (sometimes called requisition)
+
+Someone in the organization realizes they need something. The need might be obvious (the printer is broken) or planned (Q3 software renewals). Either way, the first step is documenting *what* and *why*.
+
+In small businesses, this is often a Slack message: "Hey, we need to renew the Notion subscription, can I get approval?" In larger ones, it's a formal purchase requisition with item numbers, quantities, vendor recommendations, and a business case.
+
+**Common breakdown:** Requests get raised verbally or in chat with no paper trail. Approver loses track. Two weeks later, requester complains nothing happened. Solution: even a one-line written request is better than a verbal one.
+
+**Tooling fit:** A shared Google Form or Notion database for requests is enough for most teams. ERP-grade requisition systems are overkill below ~50 employees.
+
+### Step 2: Approve the request
+
+**Who:** Approver
+**Output:** Approved request, ready to convert to a PO
+
+The approver checks budget, business need, and policy compliance. For small purchases, this might be a quick "yes" in chat. For larger ones, it might require multiple sign-offs.
+
+**Approval thresholds** are the lever here. Common patterns:
+
+- Under $500: requester self-approves
+- $500–$5,000: department head approves
+- $5,000–$25,000: department head + finance
+- $25,000+: executive approval required
+
+These thresholds don't have to be rigid — they just need to exist so people know who to ask.
+
+**Common breakdown:** Approver is on vacation. No backup. Requests pile up. Vendor relationship damaged because nothing happens for two weeks.
+
+**Tooling fit:** Slack workflows, an approval column in a shared sheet, or a lightweight tool like Asana with custom fields all work. The key feature is **a backup approver baked in** — never single-thread approvals on one person.
+
+### Step 3: Issue the PO
+
+**Who:** Buyer
+**Output:** Purchase order sent to vendor
+
+Once approved, someone has to convert the request into an actual PO and send it to the vendor. This is the moment the request becomes a binding commitment.
+
+The PO should include:
+- PO number (sequential, unique)
+- Vendor and buyer contact info
+- Itemized list with quantities and prices
+- Total amount
+- Payment terms (Net 30, Net 60, etc.)
+- Delivery date and address
+- Reference to any quote or contract
+
+**Common breakdown:** Buyer reuses a Word template, forgets to update half the fields. PO goes out with last buyer's name in the contact field. Vendor calls the wrong person; delivery scheduled to the wrong address.
+
+**Tooling fit:** This is exactly the step where a free [PO generator](/purchase-order-generator) earns its keep. You enter the new info, the rest is templated, and the PDF is ready in 90 seconds. Templates in [Excel or Word](/purchase-order-template) work fine for low volume.
+
+### Step 4: Vendor acceptance and fulfillment
+
+**Who:** Vendor
+**Output:** Goods or services delivered, invoice sent
+
+The vendor confirms the PO (sometimes with a [sales order](/blog/purchase-order-vs-invoice-vs-sales-order) sent back as acknowledgment), schedules fulfillment, ships the goods or delivers the services, and sends an invoice.
+
+This step is mostly out of your hands, but two things are worth tracking:
+
+- **Did the vendor confirm receipt of the PO?** Silence isn't acceptance. A confirmation email or signed PO acknowledgment is the standard.
+- **Did the vendor's acknowledgment match what you sent?** Vendors sometimes "confirm" with subtle changes (different lead times, surcharges, modified terms). Read the acknowledgment carefully.
+
+**Common breakdown:** Vendor invoices for slightly different terms than the PO (different price, added shipping, expedited fee). Buyer doesn't notice. AP pays the higher amount because the invoice "matches the goods received."
+
+**Tooling fit:** A simple "PO sent / acknowledged / fulfilled" status column in your tracking sheet covers this. The point is having visibility — not building a CRM.
+
+### Step 5: Receipt and matching
+
+**Who:** Receiver (often the requester) → AP
+**Output:** Receipt confirmation matched to PO
+
+When the goods arrive (or services are delivered), someone has to confirm what was received matches what was ordered. This is the **receiving** step.
+
+Then AP performs the **three-way match**:
+
+1. Does the **invoice** match the **PO**?
+2. Does the **invoice** match the **receipt**?
+3. Does the **receipt** match the **PO**?
+
+If all three line up, AP processes payment. If any of them disagree, the discrepancy gets investigated.
+
+**Common breakdown:** Receiving step gets skipped entirely. Invoice arrives. AP pays it without confirming the goods actually arrived. Vendor's "shipped" status meant "left our warehouse," not "arrived at yours."
+
+**Tooling fit:** Even a simple "received / not received" checkbox in your PO tracking sheet, plus a habit of waiting for that checkbox before AP pays, prevents most receiving fraud and short-shipment issues.
+
+### Step 6: Payment and close
+
+**Who:** AP
+**Output:** Vendor paid, PO closed
+
+After successful matching, AP schedules payment per the agreed terms. Once payment clears, the PO is marked closed.
+
+**Common breakdown:** POs sit "open" indefinitely because nobody bothers to mark them closed after payment. A year later, the open PO list is meaningless because half of them are actually done. Solution: include a "close PO" step in the AP workflow as standard practice.
+
+**Tooling fit:** Most accounting systems (QuickBooks, Xero, Wave) handle the AP side. The PO tracking should sync with — or at least mirror — what's in accounting.
+
+## Where the process usually breaks
+
+In small-to-mid businesses, the process breaks in predictable places:
+
+**Approval bottlenecks.** One person is the only approver; they go on vacation; nothing moves. Fix: name a backup for every approval threshold.
+
+**Ad-hoc requests.** Requests come in via chat with no documentation; they get lost. Fix: a shared form (Google Forms, Notion, Tally) with required fields.
+
+**Skipped receiving.** Goods arrive; nobody confirms; AP pays the invoice without verifying. Fix: receiving checkbox in PO tracker, AP only pays after it's checked.
+
+**Stale open POs.** POs accumulate "open" status; nobody knows what's actually outstanding. Fix: monthly review of open POs; close completed ones.
+
+**Vendor invoice mismatches.** Vendor invoices for amounts that don't match the PO; AP pays anyway. Fix: enforce three-way matching as a non-negotiable AP step.
+
+## Tooling without an enterprise procurement suite
+
+Coupa and Ariba are great if you're a Fortune 500. For everyone else, a lightweight stack works:
+
+- **Requests**: Google Form or Notion database
+- **Approvals**: Slack workflow or shared sheet column
+- **PO creation**: Free [PO generator](/purchase-order-generator) or [PO templates](/purchase-order-template)
+- **PO tracking**: Shared spreadsheet (Google Sheets, Airtable) with status columns
+- **Receiving**: Same spreadsheet, receiving column
+- **AP**: QuickBooks, Xero, or your existing accounting system
+
+This stack costs ~$0 to ~$50/month depending on which tools you already have. It scales to hundreds of POs per month before you outgrow it.
+
+The single biggest upgrade for most teams isn't software — it's **writing down the workflow** and **assigning backup roles** at each step.
+
+## How a PO tool fits each step
+
+For Steps 1–2 (request and approval), generic tools (forms, sheets, chat) usually win because they integrate with how the rest of the team already communicates.
+
+For Step 3 (issue PO), a dedicated PO generator earns its keep. The output is a clean PDF with a PO number, formatted consistently, ready to send. This is where time savings compound.
+
+For Steps 4–6 (vendor side, receiving, AP), the PO itself is the artifact that ties everything together. As long as your PO has a clear number and itemized totals, AP can match against it regardless of what tool generated it.
+
+The takeaway: don't try to find one tool for the whole process. Pick the right tool for each step.
+
+## Roles and tools by company size
+
+**Solo / under 5 people**:
+- All roles played by 1–2 people
+- Tooling: PO generator + accounting software, that's it
+- Approvals: informal, in your head
+
+**5–20 people**:
+- Roles start to separate (founder approves; ops issues POs; bookkeeper handles AP)
+- Tooling: PO generator + shared sheet for tracking + accounting software
+- Approvals: written, not chat-based
+
+**20–100 people**:
+- Dedicated finance person; multiple approvers per threshold
+- Tooling: lightweight procurement add-on or robust spreadsheet workflow
+- Approvals: documented thresholds; backups assigned
+
+**100+ people**:
+- Procurement function exists as its own role/team
+- Tooling: dedicated procurement platform (Coupa, Ariba, Procurify, Tipalti)
+- Approvals: enforced by software, not policy alone
+
+## The bottom line
+
+The PO process isn't complicated. It's six steps, five roles, and a handful of handoffs. What makes it break isn't volume — it's lack of clarity about *who does what* and *what artifacts get produced* at each step.
+
+If you're cleaning up an ad-hoc PO process, start by writing down:
+
+1. Who can request a purchase
+2. Who approves at each spending threshold
+3. Who issues the PO once approved
+4. Who confirms goods received
+5. Who handles AP
+
+Then add the simplest possible tool for each step. Don't over-engineer. The [free PO generator](/purchase-order-generator) plus a shared sheet plus your existing accounting software covers 95% of small business needs.
+
+The other 5% — the cases that genuinely need an enterprise procurement platform — usually announce themselves clearly. Until then, lightweight wins.
