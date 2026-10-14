@@ -1,7 +1,9 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { professions, professionSlugs, ProfessionData } from '@/data/professions-expanded';
+import { professionSlugs } from '@/data/professions-expanded';
+import { getProfessionContent, getProfessionName, getRelatedProfessions } from '@/data/profession-content';
 import { EstimateBuilder } from '@/components/estimate-builder';
+import { ProfessionGuide } from '@/components/profession-guide';
 
 interface Props {
   params: { profession: string };
@@ -16,34 +18,25 @@ export async function generateStaticParams() {
 
 // Generate metadata for each profession page
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const profession = professions.find(p => p.id === params.profession);
+  const content = getProfessionContent(params.profession);
+  const name = getProfessionName(params.profession);
 
-  if (!profession) {
+  if (!content || !name) {
     return {
       title: 'Page Not Found',
     };
   }
 
-  // Convert to estimate-specific metadata
-  const estimateTitle = `${profession.profession} Estimate Template (Free)`;
-  const estimateDescription = profession.seoDescription.replace(/invoice/gi, 'estimate');
-  const estimateKeywords = profession.keywords.map(kw => kw.replace(/invoice/gi, 'estimate'));
-
-  // Add additional estimate-specific keywords
-  estimateKeywords.push(
-    `${profession.profession.toLowerCase()} quote template`,
-    `${profession.profession.toLowerCase()} quote`,
-    `${profession.profession.toLowerCase()} estimate maker`
-  );
+  const estimateTitle = estimateTitleFor(name);
+  const estimateDescription = `Free ${name.toLowerCase()} estimate and quote template: what to include, typical rates, and pricing tips. Send it for approval, then convert it to an invoice.`;
 
   return {
     title: `${estimateTitle} | Invoice Command`,
     description: estimateDescription,
-    keywords: estimateKeywords,
     openGraph: {
       title: estimateTitle,
       description: estimateDescription,
-      url: `https://invoicecommand.com/estimate-templates/${profession.id}`,
+      url: `https://invoicecommand.com/estimate-templates/${params.profession}`,
       type: 'website',
       images: [
         {
@@ -61,35 +54,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: ['/og-image.png'],
     },
     alternates: {
-      canonical: `https://invoicecommand.com/estimate-templates/${profession.id}`,
+      canonical: `https://invoicecommand.com/estimate-templates/${params.profession}`,
     },
   };
 }
 
 export default function EstimateProfessionPage({ params }: Props) {
-  const profession = professions.find(p => p.id === params.profession);
+  const content = getProfessionContent(params.profession);
+  const name = getProfessionName(params.profession);
 
-  if (!profession) {
+  if (!content || !name) {
     notFound();
   }
+
+  const slug = params.profession;
+  const estimateTitle = estimateTitleFor(name);
 
   // Generate JSON-LD structured data for this profession estimate template
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": `${profession.profession} Estimate Template`,
-    "description": profession.seoDescription.replace(/invoice/gi, 'estimate'),
-    "url": `https://invoicecommand.com/estimate-templates/${profession.id}`,
+    "name": estimateTitle,
+    "description": content.estimate.intro,
+    "url": `https://invoicecommand.com/estimate-templates/${slug}`,
     "mainEntity": {
       "@type": "SoftwareApplication",
-      "name": `${profession.profession} Estimate Template`,
+      "name": estimateTitle,
       "applicationCategory": "BusinessApplication",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD"
       },
-      "description": `Create professional estimates and quotes for ${profession.profession.toLowerCase()} services. Free estimate template with instant PDF export and convert to invoice functionality.`
+      "description": content.estimate.intro
     },
     "breadcrumb": {
       "@type": "BreadcrumbList",
@@ -109,8 +106,8 @@ export default function EstimateProfessionPage({ params }: Props) {
         {
           "@type": "ListItem",
           "position": 3,
-          "name": `${profession.profession} Estimate Template`,
-          "item": `https://invoicecommand.com/estimate-templates/${profession.id}`
+          "name": estimateTitle,
+          "item": `https://invoicecommand.com/estimate-templates/${slug}`
         }
       ]
     },
@@ -119,7 +116,7 @@ export default function EstimateProfessionPage({ params }: Props) {
       "name": "Create Estimate",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": `https://invoicecommand.com/estimate-templates/${profession.id}`,
+        "urlTemplate": `https://invoicecommand.com/estimate-templates/${slug}`,
         "actionPlatform": [
           "http://schema.org/DesktopWebPlatform",
           "http://schema.org/MobileWebPlatform"
@@ -128,15 +125,41 @@ export default function EstimateProfessionPage({ params }: Props) {
     }
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": content.estimate.faqs.map((faq) => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": { "@type": "Answer", "text": faq.answer },
+    })),
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c') }}
       />
       <div className="min-h-screen bg-background">
-        <EstimateBuilder profession={profession} />
+        <EstimateBuilder title={estimateTitle} description={content.estimate.intro}>
+          <ProfessionGuide
+            kind="estimate"
+            slug={slug}
+            name={name}
+            content={content}
+            related={getRelatedProfessions(slug)}
+          />
+        </EstimateBuilder>
       </div>
     </>
   );
+}
+
+function estimateTitleFor(name: string) {
+  return `${name} Estimate Template (Free)`;
 }

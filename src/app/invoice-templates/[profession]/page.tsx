@@ -1,7 +1,9 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { professions, professionSlugs, ProfessionData } from '@/data/professions-expanded';
+import { professionSlugs } from '@/data/professions-expanded';
+import { getProfessionContent, getProfessionName, getRelatedProfessions } from '@/data/profession-content';
 import { InvoiceBuilder } from '@/components/invoice-builder';
+import { ProfessionGuide } from '@/components/profession-guide';
 
 interface Props {
   params: { profession: string };
@@ -16,68 +18,75 @@ export async function generateStaticParams() {
 
 // Generate metadata for each profession page
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const profession = professions.find(p => p.id === params.profession);
+  const content = getProfessionContent(params.profession);
+  const name = getProfessionName(params.profession);
 
-  if (!profession) {
+  if (!content || !name) {
     return {
       title: 'Page Not Found',
     };
   }
 
+  const title = invoiceTitle(name);
+  const description = `Free ${name.toLowerCase()} invoice template with typical rates, a sample invoice, and what to include. Fill it in online and download a PDF.`;
+
   return {
-    title: `${profession.title} | Invoice Command`,
-    description: profession.seoDescription,
-    keywords: profession.keywords,
+    title: `${title} | Invoice Command`,
+    description,
     openGraph: {
-      title: profession.title,
-      description: profession.seoDescription,
-      url: `https://invoicecommand.com/invoice-templates/${profession.id}`,
+      title,
+      description,
+      url: `https://invoicecommand.com/invoice-templates/${params.profession}`,
       type: 'website',
       images: [
         {
           url: '/og-image.png',
           width: 1200,
           height: 630,
-          alt: profession.title,
+          alt: title,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: profession.title,
-      description: profession.seoDescription,
+      title,
+      description,
       images: ['/og-image.png'],
     },
     alternates: {
-      canonical: `https://invoicecommand.com/invoice-templates/${profession.id}`,
+      canonical: `https://invoicecommand.com/invoice-templates/${params.profession}`,
     },
   };
 }
 
 export default function ProfessionPage({ params }: Props) {
-  const profession = professions.find(p => p.id === params.profession);
+  const content = getProfessionContent(params.profession);
+  const name = getProfessionName(params.profession);
 
-  if (!profession) {
+  if (!content || !name) {
     notFound();
   }
+
+  const slug = params.profession;
+  const title = invoiceTitle(name);
 
   // Generate JSON-LD structured data for this profession
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": profession.title,
-    "description": profession.seoDescription,
-    "url": `https://invoicecommand.com/invoice-templates/${profession.id}`,
+    "name": title,
+    "description": content.intro,
+    "url": `https://invoicecommand.com/invoice-templates/${slug}`,
     "mainEntity": {
       "@type": "SoftwareApplication",
-      "name": profession.title,
+      "name": title,
       "applicationCategory": "BusinessApplication",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD"
       },
-      "description": profession.description
+      "description": content.intro
     },
     "breadcrumb": {
       "@type": "BreadcrumbList",
@@ -97,22 +106,48 @@ export default function ProfessionPage({ params }: Props) {
         {
           "@type": "ListItem",
           "position": 3,
-          "name": profession.title,
-          "item": `https://invoicecommand.com/invoice-templates/${profession.id}`
+          "name": title,
+          "item": `https://invoicecommand.com/invoice-templates/${slug}`
         }
       ]
     }
+  };
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": content.faqs.map((faq) => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": { "@type": "Answer", "text": faq.answer },
+    })),
   };
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c') }}
       />
       <div className="min-h-screen bg-background">
-        <InvoiceBuilder profession={profession} />
+        <InvoiceBuilder title={title} description={content.intro}>
+          <ProfessionGuide
+            kind="invoice"
+            slug={slug}
+            name={name}
+            content={content}
+            related={getRelatedProfessions(slug)}
+          />
+        </InvoiceBuilder>
       </div>
     </>
   );
+}
+
+function invoiceTitle(name: string) {
+  return `${name} Invoice Template (Free)`;
 }
