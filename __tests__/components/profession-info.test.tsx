@@ -3,24 +3,26 @@
  * Tests profession template header and information display
  */
 
+import type React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ProfessionInfo } from '@/components/profession-info'
 import { ProfessionData } from '@/data/professions-expanded'
 
 // Mock Next.js Link
 jest.mock('next/link', () => {
-  return ({ children, href, className }: any) => {
+  function MockLink({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
     return (
       <a href={href} className={className}>
         {children}
       </a>
     )
   }
+  return MockLink
 })
 
 // Mock Logo component
 jest.mock('@/components/logo', () => ({
-  Logo: ({ width, height, className }: any) => (
+  Logo: ({ width, height, className }: { width?: number; height?: number; className?: string }) => (
     <div data-testid="logo" data-width={width} data-height={height} className={className}>
       Logo
     </div>
@@ -198,8 +200,9 @@ describe('ProfessionInfo', () => {
     it('should scroll to form when button is clicked', () => {
       // Mock scrollIntoView
       const mockScrollIntoView = jest.fn()
-      const mockElement = { scrollIntoView: mockScrollIntoView }
-      jest.spyOn(document, 'getElementById').mockReturnValue(mockElement as any)
+      const mockElement = document.createElement('div')
+      mockElement.scrollIntoView = mockScrollIntoView
+      jest.spyOn(document, 'getElementById').mockReturnValue(mockElement)
 
       render(<ProfessionInfo profession={mockProfession} />)
 

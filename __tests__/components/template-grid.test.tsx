@@ -3,19 +3,21 @@
  * Tests template filtering, search, and category selection
  */
 
+import type React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TemplateGrid } from '@/components/template-grid'
 import { ProfessionData } from '@/data/professions-expanded'
 
 // Mock Next.js Link
 jest.mock('next/link', () => {
-  return ({ children, href, className }: any) => {
+  function MockLink({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
     return (
       <a href={href} className={className}>
         {children}
       </a>
     )
   }
+  return MockLink
 })
 
 // Sample test data

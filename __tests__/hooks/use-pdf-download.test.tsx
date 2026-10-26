@@ -6,12 +6,16 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { usePDFDownload } from '@/hooks/use-pdf-download'
 import type { InvoiceData } from '@/stores/invoice-store'
+import * as pdfGenerator from '@/lib/pdf-generator'
 
 // Mock dependencies
 jest.mock('@/lib/pdf-generator', () => ({
   validateInvoiceForPDF: jest.fn(),
   downloadInvoicePDF: jest.fn(),
 }))
+
+const validateInvoiceForPDF = jest.mocked(pdfGenerator.validateInvoiceForPDF)
+const downloadInvoicePDF = jest.mocked(pdfGenerator.downloadInvoicePDF)
 
 const mockTrackPdfDownload = jest.fn()
 
@@ -74,7 +78,6 @@ describe('usePDFDownload', () => {
 
   describe('downloadPDF', () => {
     it('should successfully generate PDF with valid invoice', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,
@@ -95,7 +98,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should set isGenerating to true during download', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,
@@ -129,7 +131,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should handle validation errors', async () => {
-      const { validateInvoiceForPDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: false,
@@ -151,7 +152,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should handle PDF generation errors', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,
@@ -175,7 +175,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should handle non-Error exceptions', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,
@@ -198,7 +197,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should clear previous errors before new download', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       // First call fails
       validateInvoiceForPDF.mockReturnValueOnce({
@@ -229,7 +227,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should track successful PDF download with analytics', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,
@@ -253,7 +250,6 @@ describe('usePDFDownload', () => {
     })
 
     it('should track analytics with tax and discount', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,
@@ -288,7 +284,6 @@ describe('usePDFDownload', () => {
 
   describe('clearError', () => {
     it('should clear error message', async () => {
-      const { validateInvoiceForPDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: false,
@@ -327,7 +322,6 @@ describe('usePDFDownload', () => {
 
   describe('Multiple Downloads', () => {
     it('should handle multiple sequential downloads', async () => {
-      const { validateInvoiceForPDF, downloadInvoicePDF } = require('@/lib/pdf-generator')
 
       validateInvoiceForPDF.mockReturnValue({
         isValid: true,

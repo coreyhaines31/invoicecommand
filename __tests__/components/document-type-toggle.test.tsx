@@ -8,11 +8,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DocumentTypeToggle } from '@/components/document-type-toggle'
 import { useInvoiceStore } from '@/stores/invoice-store'
 
-// Mock the invoice store
-jest.mock('@/stores/invoice-store')
-
 const mockUpdateDocumentType = jest.fn()
-const mockUseInvoiceStore = useInvoiceStore as jest.MockedFunction<typeof useInvoiceStore>
+
+// Drive the real Zustand store, stubbing only the action under test.
+function setStoreState(documentType: 'invoice' | 'estimate') {
+  useInvoiceStore.setState({ documentType, updateDocumentType: mockUpdateDocumentType })
+}
 
 describe('DocumentTypeToggle', () => {
   beforeEach(() => {
@@ -20,13 +21,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should render invoice and estimate options', () => {
-    mockUseInvoiceStore.mockReturnValue('invoice' as any)
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'invoice', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'invoice', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('invoice')
 
     render(<DocumentTypeToggle />)
 
@@ -35,12 +30,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should highlight invoice when invoice is selected', () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'invoice', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'invoice', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('invoice')
 
     render(<DocumentTypeToggle />)
 
@@ -49,12 +39,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should highlight estimate when estimate is selected', () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'estimate', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'estimate', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('estimate')
 
     render(<DocumentTypeToggle />)
 
@@ -63,12 +48,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should call updateDocumentType when switching to estimate', async () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'invoice', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'invoice', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('invoice')
 
     render(<DocumentTypeToggle />)
 
@@ -81,12 +61,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should call updateDocumentType when switching to invoice', async () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'estimate', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'estimate', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('estimate')
 
     render(<DocumentTypeToggle />)
 
@@ -99,12 +74,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should show appropriate description for invoice mode', () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'invoice', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'invoice', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('invoice')
 
     render(<DocumentTypeToggle />)
 
@@ -112,12 +82,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should show appropriate description for estimate mode', () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'estimate', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'estimate', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('estimate')
 
     render(<DocumentTypeToggle />)
 
@@ -125,12 +90,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should not call updateDocumentType when clicking already selected type', async () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'invoice', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'invoice', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('invoice')
 
     render(<DocumentTypeToggle />)
 
@@ -143,12 +103,7 @@ describe('DocumentTypeToggle', () => {
   })
 
   it('should render icons for both options', () => {
-    mockUseInvoiceStore.mockImplementation((selector: any) => {
-      if (typeof selector === 'function') {
-        return selector({ documentType: 'invoice', updateDocumentType: mockUpdateDocumentType })
-      }
-      return { documentType: 'invoice', updateDocumentType: mockUpdateDocumentType }
-    })
+    setStoreState('invoice')
 
     render(<DocumentTypeToggle />)
 

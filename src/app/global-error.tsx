@@ -22,7 +22,7 @@ export default function GlobalError({
           <div className="w-full max-w-md space-y-6 text-center">
             <h1 className="text-4xl font-bold">Something went wrong</h1>
             <p className="text-muted-foreground">
-              We've been notified and are working to fix the issue.
+              We&apos;ve been notified and are working to fix the issue.
             </p>
             {error.digest && (
               <p className="text-sm text-muted-foreground">

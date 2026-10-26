@@ -22,7 +22,7 @@ interface Invoice {
   clientName: string
   clientEmail?: string | null
   total: number | string
-  status: string
+  status: string | null
   dueDate?: string | null
 }
 

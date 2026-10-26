@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       invoiceNumber: invoice.invoiceNumber || '',
       invoiceDate: invoice.invoiceDate || '',
       dueDate: invoice.dueDate || '',
-      items: (invoice.items as any[]) || [],
+      items: invoice.items || [],
       subtotal: Number(invoice.subtotal) || 0,
       taxRate: Number(invoice.taxRate) || 0,
       taxAmount: Number(invoice.tax) || 0,

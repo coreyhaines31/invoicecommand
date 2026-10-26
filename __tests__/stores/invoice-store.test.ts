@@ -5,6 +5,7 @@
 
 import { useInvoiceStore } from '@/stores/invoice-store'
 import { act, renderHook } from '@testing-library/react'
+import { generateInvoiceNumber } from '@/lib/utils'
 
 // Mock dependencies
 jest.mock('@/lib/utils', () => ({
@@ -560,7 +561,6 @@ describe('InvoiceStore', () => {
 
     it('should regenerate document number when type changes', async () => {
       const { result } = renderHook(() => useInvoiceStore())
-      const generateInvoiceNumber = require('@/lib/utils').generateInvoiceNumber
 
       await act(async () => {
         await result.current.updateDocumentType('estimate')

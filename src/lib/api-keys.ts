@@ -117,7 +117,7 @@ export async function validateApiKey(key: string): Promise<ApiKeyValidationResul
   const hourAgo = new Date(now.getTime() - 60 * 60 * 1000)
 
   let currentCount = row.requestCount ?? 0
-  let shouldResetCount = resetAt < hourAgo
+  const shouldResetCount = resetAt < hourAgo
 
   if (shouldResetCount) {
     currentCount = 0
