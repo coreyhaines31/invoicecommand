@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Navigation } from '@/components/navigation'
-import { InvoiceList } from './invoice-list'
+import { InvoiceList, type InvoiceListItem } from './invoice-list'
 import type { User } from 'better-auth'
 import Link from 'next/link'
 import { Plus, FileText, DollarSign, Users, Settings } from 'lucide-react'
 
 interface DashboardContentProps {
   user: User
-  invoices: any[]
+  invoices: InvoiceListItem[]
 }
 
 export function DashboardContent({ user, invoices }: DashboardContentProps) {

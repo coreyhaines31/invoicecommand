@@ -42,10 +42,12 @@ interface Invoice {
   clientName: string
   clientEmail?: string | null
   total: number | string
-  status: string
+  status: string | null
   dueDate?: string | null
-  createdAt: string | Date
+  createdAt: string | Date | null
 }
+
+export type InvoiceListItem = Invoice
 
 interface InvoiceListProps {
   invoices: Invoice[]
@@ -65,7 +67,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case 'paid':
         return 'bg-green-100 text-green-800'
@@ -78,8 +80,8 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     }
   }
 
-  const formatDate = (dateString: string | Date) => {
-    return new Date(dateString).toLocaleDateString()
+  const formatDate = (dateString: string | Date | null) => {
+    return dateString ? new Date(dateString).toLocaleDateString() : '—'
   }
 
   const formatCurrency = (amount: number | string) => {
