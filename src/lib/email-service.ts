@@ -1,11 +1,12 @@
 import { resend, FROM_EMAIL, REPLY_TO_EMAIL, APP_FROM_EMAIL } from './resend'
 import type { InvoiceData } from '@/stores/invoice-store'
 
-export interface EmailOptions {
+// Resend rejects an email with neither an HTML nor a text body.
+type EmailBody = { html: string; text?: string } | { html?: string; text: string }
+
+export type EmailOptions = EmailBody & {
   to: string
   subject: string
-  html?: string
-  text?: string
   attachments?: Array<{
     filename: string
     content: Buffer | string
@@ -14,15 +15,15 @@ export interface EmailOptions {
 }
 
 export async function sendEmail(options: EmailOptions) {
+  const { to, subject, attachments, ...body } = options
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
+      to,
+      subject,
+      ...body,
       replyTo: REPLY_TO_EMAIL,
-      attachments: options.attachments
+      attachments
     })
 
     if (result.error) {
