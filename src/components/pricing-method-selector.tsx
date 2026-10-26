@@ -91,7 +91,7 @@ const pricingMethods = [
 ]
 
 interface PricingMethodSelectorProps {
-  onApplyTemplate?: (template: any) => void
+  onApplyTemplate?: (method: (typeof pricingMethods)[number]) => void
 }
 
 export function PricingMethodSelector({ onApplyTemplate }: PricingMethodSelectorProps) {
