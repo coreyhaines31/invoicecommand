@@ -123,7 +123,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
               </div>
               <Separator className="mb-6" />
 
-              <div className="max-h-[calc(100vh-220px)] lg:max-h-[calc(100vh-250px)] overflow-auto">
+              <div className="max-h-[calc(100vh-220px)] lg:max-h-[calc(100vh-250px)] overflow-auto" data-exclude>
                 <InvoicePreview />
               </div>
             </div>
