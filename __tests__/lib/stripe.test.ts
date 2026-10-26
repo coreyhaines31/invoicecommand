@@ -42,7 +42,7 @@ describe('Stripe Integration', () => {
 
   describe('Environment Detection', () => {
     it('should detect test mode in development environment', () => {
-      process.env.NODE_ENV = 'development'
+      jest.replaceProperty(process.env, 'NODE_ENV', 'development')
       process.env.STRIPE_SECRET_KEY = 'sk_live_123'
 
       jest.isolateModules(() => {
@@ -52,7 +52,7 @@ describe('Stripe Integration', () => {
     })
 
     it('should detect test mode with test secret key', () => {
-      process.env.NODE_ENV = 'production'
+      jest.replaceProperty(process.env, 'NODE_ENV', 'production')
       process.env.STRIPE_SECRET_KEY = 'sk_test_123'
 
       jest.isolateModules(() => {
@@ -62,7 +62,7 @@ describe('Stripe Integration', () => {
     })
 
     it('should detect test mode with test publishable key', () => {
-      process.env.NODE_ENV = 'production'
+      jest.replaceProperty(process.env, 'NODE_ENV', 'production')
       process.env.STRIPE_SECRET_KEY = 'sk_live_123'
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = 'pk_test_123'
 
@@ -73,7 +73,7 @@ describe('Stripe Integration', () => {
     })
 
     it('should not be in test mode with production keys', () => {
-      process.env.NODE_ENV = 'production'
+      jest.replaceProperty(process.env, 'NODE_ENV', 'production')
       process.env.STRIPE_SECRET_KEY = 'sk_live_123'
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = 'pk_live_123'
 
@@ -218,7 +218,7 @@ describe('Stripe Integration', () => {
     })
 
     it('should not log in production mode', () => {
-      process.env.NODE_ENV = 'production'
+      jest.replaceProperty(process.env, 'NODE_ENV', 'production')
       process.env.STRIPE_SECRET_KEY = 'sk_live_123'
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = 'pk_live_456'
 

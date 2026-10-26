@@ -181,14 +181,14 @@ describe('EnhancedErrorBoundary', () => {
   })
 
   describe('Error Details in Development', () => {
-    const originalEnv = process.env.NODE_ENV
+    let nodeEnv: jest.ReplaceProperty<string>
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'development'
+      nodeEnv = jest.replaceProperty(process.env, 'NODE_ENV', 'development')
     })
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv
+      nodeEnv.restore()
     })
 
     it('should show error details in development mode', () => {
@@ -214,14 +214,14 @@ describe('EnhancedErrorBoundary', () => {
   })
 
   describe('Error Details in Production', () => {
-    const originalEnv = process.env.NODE_ENV
+    let nodeEnv: jest.ReplaceProperty<string>
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'production'
+      nodeEnv = jest.replaceProperty(process.env, 'NODE_ENV', 'production')
     })
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv
+      nodeEnv.restore()
     })
 
     it('should not show error details in production', () => {
