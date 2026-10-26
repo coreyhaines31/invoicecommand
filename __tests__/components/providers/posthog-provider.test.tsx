@@ -5,6 +5,7 @@
 
 import { render, waitFor } from '@testing-library/react'
 import { PostHogProvider } from '@/components/providers/posthog-provider'
+import { initPostHog, posthog } from '@/lib/posthog'
 
 // Mock Next.js navigation
 const mockPathname = jest.fn()
@@ -27,16 +28,11 @@ jest.mock('@/lib/posthog', () => ({
 
 describe('PostHogProvider', () => {
   const originalWindow = global.window
-  let mockInitPostHog: jest.Mock
-  let mockPostHogCapture: jest.Mock
+  const mockInitPostHog = jest.mocked(initPostHog)
+  const mockPostHogCapture = jest.mocked(posthog.capture)
 
   beforeEach(() => {
     jest.clearAllMocks()
-
-    // Get mocked functions
-    const { initPostHog, posthog } = require('@/lib/posthog')
-    mockInitPostHog = initPostHog as jest.Mock
-    mockPostHogCapture = posthog.capture as jest.Mock
 
     mockPathname.mockReturnValue('/dashboard')
     mockSearchParams.mockReturnValue('')
