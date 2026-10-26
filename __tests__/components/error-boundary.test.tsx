@@ -3,6 +3,7 @@
  * Tests error catching and recovery mechanisms
  */
 
+import type React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ErrorBoundary, useErrorBoundary } from '@/components/error-boundary'
 import { renderHook, act } from '@testing-library/react'
@@ -101,7 +102,7 @@ describe('ErrorBoundary', () => {
     })
 
     it('should display custom error message', () => {
-      function CustomError() {
+      function CustomError(): React.ReactNode {
         throw new Error('Custom error text')
       }
 
@@ -270,7 +271,7 @@ describe('ErrorBoundary', () => {
 
   describe('Edge Cases', () => {
     it('should handle error without message', () => {
-      function ThrowErrorWithoutMessage() {
+      function ThrowErrorWithoutMessage(): React.ReactNode {
         const error = new Error()
         error.message = ''
         throw error
@@ -300,7 +301,7 @@ describe('ErrorBoundary', () => {
     })
 
     it('should catch errors from any child in tree', () => {
-      function DeepChild() {
+      function DeepChild(): React.ReactNode {
         throw new Error('Deep error')
       }
 

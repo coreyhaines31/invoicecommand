@@ -103,7 +103,7 @@ describe('usePDFDownload', () => {
       })
 
       let resolveDownload: () => void
-      downloadInvoicePDF.mockImplementation(() => new Promise(resolve => {
+      downloadInvoicePDF.mockImplementation(() => new Promise<void>(resolve => {
         resolveDownload = resolve
       }))
 
