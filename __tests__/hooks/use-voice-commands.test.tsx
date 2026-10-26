@@ -302,7 +302,7 @@ describe('useVoiceCommands', () => {
 
   describe('Processing State', () => {
     it('should set processing state during API call', async () => {
-      let resolvePromise: any
+      let resolvePromise: (response: unknown) => void = () => {}
       const promise = new Promise((resolve) => {
         resolvePromise = resolve
       })

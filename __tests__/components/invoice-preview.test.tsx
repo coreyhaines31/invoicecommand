@@ -7,7 +7,8 @@ import { render, screen } from '@testing-library/react'
 import { InvoicePreview } from '@/components/invoice-preview'
 
 // Mock the store
-let mockStyle: 'modern' | 'classic' | 'minimal' = 'modern'
+// Loosely typed: some tests simulate bad persisted values.
+let mockStyle: string | null | undefined = 'modern'
 jest.mock('@/stores/invoice-store', () => ({
   useInvoiceStore: () => ({
     style: mockStyle,
@@ -70,7 +71,7 @@ describe('InvoicePreview', () => {
 
   describe('Default Fallback', () => {
     it('should fall back to modern preview for invalid style', () => {
-      mockStyle = 'invalid-style' as any
+      mockStyle = 'invalid-style'
       render(<InvoicePreview />)
 
       expect(screen.getByTestId('modern-preview')).toBeInTheDocument()
@@ -78,14 +79,14 @@ describe('InvoicePreview', () => {
     })
 
     it('should fall back to modern preview for undefined style', () => {
-      mockStyle = undefined as any
+      mockStyle = undefined
       render(<InvoicePreview />)
 
       expect(screen.getByTestId('modern-preview')).toBeInTheDocument()
     })
 
     it('should fall back to modern preview for null style', () => {
-      mockStyle = null as any
+      mockStyle = null
       render(<InvoicePreview />)
 
       expect(screen.getByTestId('modern-preview')).toBeInTheDocument()
