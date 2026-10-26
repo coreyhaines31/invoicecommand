@@ -112,7 +112,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
 // Hook version for functional components
 export function useErrorHandler() {
-  return (error: Error, context?: Record<string, any>) => {
+  return (error: Error, context?: Record<string, unknown>) => {
     captureError(error, {
       error_handler_hook: true,
       ...context,

@@ -158,7 +158,7 @@ function setupErrorCapture() {
 }
 
 // Manual error capture function
-export function captureError(error: Error, context?: Record<string, any>) {
+export function captureError(error: Error, context?: Record<string, unknown>) {
   posthog.capture('$exception', {
     error_message: error.message,
     error_name: error.name,
