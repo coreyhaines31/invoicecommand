@@ -676,4 +676,38 @@ describe('InvoiceStore', () => {
       expect(result.current.invoiceNumber).toBe('EST-1001')
     })
   })
+
+  describe('convertEstimateToInvoice', () => {
+    const originalFetch = global.fetch
+
+    afterEach(() => {
+      global.fetch = originalFetch
+    })
+
+    it('keeps the saved estimate id when conversion fails after saving the estimate', async () => {
+      const { authClient } = jest.requireMock('@/lib/auth-client')
+      authClient.getSession.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
+      const { generateInvoiceNumber } = jest.requireMock('@/lib/utils')
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'estimate-1' }),
+      }) as unknown as typeof fetch
+
+      const { result } = renderHook(() => useInvoiceStore())
+      await act(async () => {
+        await result.current.updateDocumentType('estimate')
+      })
+      generateInvoiceNumber.mockResolvedValueOnce(null)
+
+      let convertedId: string | null = 'unset'
+      await act(async () => {
+        convertedId = await result.current.convertEstimateToInvoice()
+      })
+
+      expect(convertedId).toBeNull()
+      expect(result.current.documentType).toBe('estimate')
+      expect(result.current.id).toBe('estimate-1')
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+  })
 })
