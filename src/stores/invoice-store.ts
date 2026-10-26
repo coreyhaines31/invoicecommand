@@ -315,8 +315,9 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
           let estimateId = state.id
           if (!estimateId) {
-            estimateId = await get().saveToDatabase(user.id)
-            if (!estimateId) throw new Error('Failed to save estimate to database before conversion')
+            const savedId = await get().saveToDatabase(user.id)
+            if (!savedId) throw new Error('Failed to save estimate to database before conversion')
+            estimateId = savedId
           }
 
           const newInvoiceNumber = await generateInvoiceNumber(user.id, 'invoice')

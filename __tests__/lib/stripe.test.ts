@@ -118,7 +118,7 @@ describe('Stripe Integration', () => {
         expect(Stripe).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({
-            apiVersion: '2024-10-28.acacia',
+            apiVersion: '2025-09-30.clover',
           })
         )
       })
