@@ -6,7 +6,7 @@ import { InvoiceBuilder } from '@/components/invoice-builder';
 import { ProfessionGuide } from '@/components/profession-guide';
 
 interface Props {
-  params: { profession: string };
+  params: Promise<{ profession: string }>;
 }
 
 // Generate static params for all professions
@@ -18,8 +18,9 @@ export async function generateStaticParams() {
 
 // Generate metadata for each profession page
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const content = getProfessionContent(params.profession);
-  const name = getProfessionName(params.profession);
+  const { profession } = await params;
+  const content = getProfessionContent(profession);
+  const name = getProfessionName(profession);
 
   if (!content || !name) {
     return {
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      url: `https://invoicecommand.com/invoice-templates/${params.profession}`,
+      url: `https://invoicecommand.com/invoice-templates/${profession}`,
       type: 'website',
       images: [
         {
@@ -54,20 +55,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: ['/og-image.png'],
     },
     alternates: {
-      canonical: `https://invoicecommand.com/invoice-templates/${params.profession}`,
+      canonical: `https://invoicecommand.com/invoice-templates/${profession}`,
     },
   };
 }
 
-export default function ProfessionPage({ params }: Props) {
-  const content = getProfessionContent(params.profession);
-  const name = getProfessionName(params.profession);
+export default async function ProfessionPage({ params }: Props) {
+  const { profession } = await params;
+  const content = getProfessionContent(profession);
+  const name = getProfessionName(profession);
 
   if (!content || !name) {
     notFound();
   }
 
-  const slug = params.profession;
+  const slug = profession;
   const title = invoiceTitle(name);
 
   // Generate JSON-LD structured data for this profession
