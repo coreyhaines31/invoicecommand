@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: any) {
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   if (!paymentIntent.metadata?.invoice_id) return
   await db
     .update(invoices)
@@ -57,7 +58,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: any) {
     .where(eq(invoices.stripePaymentIntentId, paymentIntent.id))
 }
 
-async function handlePaymentIntentFailed(paymentIntent: any) {
+async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   if (!paymentIntent.metadata?.invoice_id) return
   await db
     .update(invoices)
@@ -65,7 +66,7 @@ async function handlePaymentIntentFailed(paymentIntent: any) {
     .where(eq(invoices.stripePaymentIntentId, paymentIntent.id))
 }
 
-async function handleAccountUpdated(account: any) {
+async function handleAccountUpdated(account: Stripe.Account) {
   await db
     .update(userProfiles)
     .set({
