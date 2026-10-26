@@ -100,6 +100,27 @@ describe('useVoiceCommands', () => {
       expect(result.current.error).toBe(null)
     })
 
+    it('should store a numeric model value for a text field as a string', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          update: {
+            action: 'update_field',
+            field: 'clientZip',
+            value: 92101,
+          },
+        }),
+      })
+
+      const { result } = renderHook(() => useVoiceCommands())
+
+      await act(async () => {
+        await result.current.processVoiceCommand('Client zip is 92101')
+      })
+
+      expect(mockUpdateClient).toHaveBeenCalledWith('clientZip', '92101')
+    })
+
     it('should update client field', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
