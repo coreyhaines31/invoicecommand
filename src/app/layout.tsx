@@ -8,6 +8,7 @@ import { PrivacyControls } from "@/components/privacy/privacy-controls";
 import { UpgradeTriggersProvider } from "@/hooks/use-upgrade-triggers";
 import { Toaster } from "sonner";
 import { VersionBadge } from "@/components/version-badge";
+import { UserProof } from "@/components/userproof";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -241,6 +242,7 @@ export default function RootLayout({
             <VersionBadge />
           </UpgradeTriggersProvider>
         </EnhancedErrorBoundary>
+        <UserProof />
       </body>
     </html>
   );
