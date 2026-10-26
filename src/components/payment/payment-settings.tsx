@@ -105,7 +105,7 @@ export function PaymentSettings({
           <div className="space-y-1">
             <Label htmlFor="payment-enabled" className="text-base font-medium">Enable Online Payments</Label>
             <p className="text-sm text-muted-foreground">
-              Add a "Pay Now" button to your invoice
+              Add a &quot;Pay Now&quot; button to your invoice
             </p>
           </div>
           <Switch
@@ -169,7 +169,7 @@ export function PaymentSettings({
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Account Review:</strong> Your Stripe account is being reviewed. You'll be able to collect payments once approved.
+              <strong>Account Review:</strong> Your Stripe account is being reviewed. You&apos;ll be able to collect payments once approved.
             </AlertDescription>
           </Alert>
         ) : (
@@ -180,7 +180,7 @@ export function PaymentSettings({
               {paymentEnabled ? (
                 <span> Clients can now pay this invoice online.</span>
               ) : (
-                <span> Toggle the switch above to add a "Pay Now" button.</span>
+                <span> Toggle the switch above to add a &quot;Pay Now&quot; button.</span>
               )}
             </AlertDescription>
           </Alert>

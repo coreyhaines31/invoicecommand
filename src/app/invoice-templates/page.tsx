@@ -144,8 +144,8 @@ export default function InvoiceTemplatesPage() {
                     reflect your professional standards.
                   </p>
                   <p>
-                    Whether you're a freelancer, contractor, consultant, or service provider,
-                    you'll find the perfect invoice template for your specific needs. All templates
+                    Whether you&apos;re a freelancer, contractor, consultant, or service provider,
+                    you&apos;ll find the perfect invoice template for your specific needs. All templates
                     include automatic calculations, professional formatting, and instant PDF export.
                   </p>
                 </div>

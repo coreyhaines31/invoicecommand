@@ -73,7 +73,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                 Something went wrong
               </h2>
               <p className="text-muted-foreground mb-6">
-                We've encountered an unexpected error. Our team has been notified and we're working on a fix.
+                We&apos;ve encountered an unexpected error. Our team has been notified and we&apos;re working on a fix.
               </p>
               <div className="space-y-3">
                 <button

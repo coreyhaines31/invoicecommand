@@ -90,7 +90,7 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
             <div>
               <h3 className="font-semibold mb-2">Free Account</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                You're currently on the free plan with limited features
+                You&apos;re currently on the free plan with limited features
               </p>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">Logo Upload Available</Badge>

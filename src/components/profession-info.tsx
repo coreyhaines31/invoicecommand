@@ -107,7 +107,7 @@ export function ProfessionInfo({ profession }: ProfessionInfoProps) {
             <div>
               <p className="mb-3">
                 Our free {profession.profession.toLowerCase()} invoice template is specifically designed
-                for professionals in the {profession.profession.toLowerCase()} industry. Whether you're
+                for professionals in the {profession.profession.toLowerCase()} industry. Whether you&apos;re
                 a freelancer or running an agency, this template includes all the essential
                 elements needed for professional billing.
               </p>
