@@ -160,14 +160,14 @@ describe('cn utility', () => {
 
   describe('Real-world Usage Patterns', () => {
     it('should handle button variant pattern', () => {
-      const variant = 'primary'
-      const size = 'lg'
-      const result = cn(
-        'btn-base',
-        variant === 'primary' && 'btn-primary',
-        variant === 'secondary' && 'btn-secondary',
-        size === 'lg' && 'btn-lg'
-      )
+      const buttonClasses = (variant: 'primary' | 'secondary', size: 'sm' | 'lg') =>
+        cn(
+          'btn-base',
+          variant === 'primary' && 'btn-primary',
+          variant === 'secondary' && 'btn-secondary',
+          size === 'lg' && 'btn-lg'
+        )
+      const result = buttonClasses('primary', 'lg')
       expect(result).toContain('btn-base')
       expect(result).toContain('btn-primary')
       expect(result).toContain('btn-lg')
