@@ -370,7 +370,7 @@ describe('Stripe Integration', () => {
     })
 
     it('should return free tier by default', async () => {
-      jest.isolateModules(async () => {
+      await jest.isolateModulesAsync(async () => {
         const { getUserTier } = await import('@/lib/stripe')
 
         const tier = await getUserTier('user-123')
@@ -379,7 +379,7 @@ describe('Stripe Integration', () => {
     })
 
     it('should accept userId parameter', async () => {
-      jest.isolateModules(async () => {
+      await jest.isolateModulesAsync(async () => {
         const { getUserTier } = await import('@/lib/stripe')
 
         await expect(getUserTier('user-456')).resolves.toBe('free')
