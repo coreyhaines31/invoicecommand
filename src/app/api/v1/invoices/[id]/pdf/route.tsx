@@ -51,7 +51,7 @@ export async function GET(
       headers['X-RateLimit-Reset'] = Math.floor(reset.getTime() / 1000).toString()
     }
 
-    return new NextResponse(pdfBuffer, { headers })
+    return new NextResponse(new Uint8Array(pdfBuffer), { headers })
   } catch (error) {
     return jsonErrorResponse(error, 'Failed to generate PDF')
   }
