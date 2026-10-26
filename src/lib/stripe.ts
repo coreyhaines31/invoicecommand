@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { loadStripe } from '@stripe/stripe-js'
+import { loadStripe, type Stripe as StripeClient } from '@stripe/stripe-js'
 
 // Environment detection
 export const isTestMode = process.env.NODE_ENV === 'development' ||
@@ -8,11 +8,11 @@ export const isTestMode = process.env.NODE_ENV === 'development' ||
 
 // Server-side Stripe instance — only constructed when key is present (safe at build time)
 export const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-10-28.acacia', typescript: true })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-09-30.clover', typescript: true })
   : (null as unknown as Stripe)
 
 // Client-side Stripe promise
-let stripePromise: Promise<Stripe | null>
+let stripePromise: Promise<StripeClient | null>
 
 export const getStripe = () => {
   if (!stripePromise) {
