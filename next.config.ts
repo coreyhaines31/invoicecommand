@@ -110,9 +110,6 @@ export default withSentryConfig(nextConfig, {
   // side errors will fail.
   tunnelRoute: "/monitoring",
 
-  // Hides source maps from generated client bundles
-  hideSourceMaps: true,
-
   // Webpack-specific options
   webpack: {
     // Automatically annotate React components to show their full name in breadcrumbs and session replay
