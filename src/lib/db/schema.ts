@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core'
+import type { InvoiceItem } from '../../types/database'
 
 // Better Auth required tables
 export const user = pgTable('user', {
@@ -102,7 +103,7 @@ export const invoices = pgTable('invoices', {
   senderPhone: text('sender_phone'),
   senderLogo: text('sender_logo'),
   // Financials
-  items: jsonb('items').notNull().default([]),
+  items: jsonb('items').$type<InvoiceItem[]>().notNull().default([]),
   subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull().default('0'),
   tax: decimal('tax', { precision: 10, scale: 2 }).notNull().default('0'),
   total: decimal('total', { precision: 10, scale: 2 }).notNull().default('0'),

@@ -3,10 +3,37 @@
 import { useState } from 'react'
 import { useInvoiceStore } from '@/stores/invoice-store'
 
+// Shape returned by /api/parse-voice. It comes from a model, so fields are
+// only loosely guaranteed and are checked before use.
+interface VoiceInvoiceUpdate {
+  action?: string
+  field?: string
+  value?: string | number | boolean
+  itemIndex?: number
+  item?: {
+    description?: string
+    quantity?: number
+    price?: number
+  }
+  explanation?: string
+}
+
 interface VoiceCommandResult {
   success: boolean
   message: string
-  update?: any
+  update?: VoiceInvoiceUpdate
+}
+
+const SENDER_FIELDS = ['senderName', 'senderEmail', 'senderAddress', 'senderCity', 'senderState', 'senderZip', 'senderPhone'] as const
+const CLIENT_FIELDS = ['clientName', 'clientEmail', 'clientAddress', 'clientCity', 'clientState', 'clientZip'] as const
+const DETAIL_FIELDS = ['invoiceNumber', 'invoiceDate', 'dueDate', 'notes', 'terms'] as const
+
+function isOneOf<T extends string>(fields: readonly T[], field: string | undefined): field is T {
+  return fields.some((f) => f === field)
+}
+
+function toText(value: VoiceInvoiceUpdate['value']): string {
+  return value === undefined ? '' : String(value)
 }
 
 interface UseVoiceCommandsReturn {
@@ -82,7 +109,7 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
         throw new Error(data.error || 'Failed to process voice command')
       }
 
-      const { update } = data
+      const update: VoiceInvoiceUpdate = data.update
 
       // Apply the update based on the action type
       await applyInvoiceUpdate(update)
@@ -105,7 +132,7 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
     }
   }
 
-  const applyInvoiceUpdate = async (update: any) => {
+  const applyInvoiceUpdate = async (update: VoiceInvoiceUpdate) => {
     switch (update.action) {
       case 'update_field':
         await applyFieldUpdate(update.field, update.value)
@@ -147,25 +174,19 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
     }
   }
 
-  const applyFieldUpdate = async (field: string, value: any) => {
-    // Sender fields
-    const senderFields = ['senderName', 'senderEmail', 'senderAddress', 'senderCity', 'senderState', 'senderZip', 'senderPhone']
-    if (senderFields.includes(field)) {
-      updateSender(field as any, value)
+  const applyFieldUpdate = async (field: string | undefined, value: VoiceInvoiceUpdate['value']) => {
+    if (isOneOf(SENDER_FIELDS, field)) {
+      updateSender(field, toText(value))
       return
     }
 
-    // Client fields
-    const clientFields = ['clientName', 'clientEmail', 'clientAddress', 'clientCity', 'clientState', 'clientZip']
-    if (clientFields.includes(field)) {
-      updateClient(field as any, value)
+    if (isOneOf(CLIENT_FIELDS, field)) {
+      updateClient(field, toText(value))
       return
     }
 
-    // Invoice detail fields
-    const detailFields = ['invoiceNumber', 'invoiceDate', 'dueDate', 'notes', 'terms']
-    if (detailFields.includes(field)) {
-      updateInvoiceDetails(field as any, value)
+    if (isOneOf(DETAIL_FIELDS, field)) {
+      updateInvoiceDetails(field, toText(value))
       return
     }
 

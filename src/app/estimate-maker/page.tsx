@@ -230,7 +230,7 @@ export default function EstimateMakerPage() {
                 Popular Estimate Templates
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Jump straight to your profession's estimate template for faster setup.
+                Jump straight to your profession&apos;s estimate template for faster setup.
               </p>
             </div>
 
@@ -291,7 +291,7 @@ export default function EstimateMakerPage() {
               </Card>
 
               <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-2">What's the difference between an estimate and an invoice?</h3>
+                <h3 className="font-semibold text-lg mb-2">What&apos;s the difference between an estimate and an invoice?</h3>
                 <p className="text-muted-foreground">
                   An estimate (or quote) is sent before work begins to outline expected costs and get client approval.
                   An invoice is sent after work is completed (or when payment is due) to request payment.
@@ -311,8 +311,8 @@ export default function EstimateMakerPage() {
                 <h3 className="font-semibold text-lg mb-2">How does the AI voice input work?</h3>
                 <p className="text-muted-foreground">
                   Simply click the microphone button and speak naturally. Our AI understands phrases like
-                  "Add $500 for design work" or "Set the client name to John Smith" and automatically updates your estimate.
-                  It's perfect for creating estimates hands-free or on mobile devices.
+                  &quot;Add $500 for design work&quot; or &quot;Set the client name to John Smith&quot; and automatically updates your estimate.
+                  It&apos;s perfect for creating estimates hands-free or on mobile devices.
                 </p>
               </Card>
 

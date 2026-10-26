@@ -9,7 +9,8 @@ import { act } from 'react'
 
 // Mock invoice store
 const mockUpdateStyle = jest.fn()
-let mockStyle: 'modern' | 'classic' | 'minimal' = 'modern'
+// Loosely typed: some tests simulate bad persisted values.
+let mockStyle: string | null | undefined = 'modern'
 
 jest.mock('@/stores/invoice-store', () => ({
   useInvoiceStore: () => ({
@@ -311,7 +312,7 @@ describe('InvoiceStyleSelector', () => {
 
   describe('Edge Cases', () => {
     it('should handle missing style in store gracefully', () => {
-      mockStyle = undefined as any
+      mockStyle = undefined
       expect(() => render(<InvoiceStyleSelector />)).not.toThrow()
     })
 

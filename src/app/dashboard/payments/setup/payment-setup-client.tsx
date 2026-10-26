@@ -355,7 +355,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
               <CardHeader>
                 <CardTitle className="text-green-600">✅ Payment Setup Complete!</CardTitle>
                 <CardDescription>
-                  Your Stripe account is ready to collect payments. You can now add "Pay Now" buttons to your invoices.
+                  Your Stripe account is ready to collect payments. You can now add &quot;Pay Now&quot; buttons to your invoices.
                 </CardDescription>
               </CardHeader>
               <CardContent>

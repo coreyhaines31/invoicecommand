@@ -49,6 +49,9 @@ export type InvoiceCreate = {
   style?: 'modern' | 'classic' | 'minimal'
 }
 
+// The v1 PATCH endpoint also accepts status, which isn't set on create.
+export type InvoiceUpdate = Partial<InvoiceCreate> & { status?: Invoice['status'] }
+
 export class ApiClient {
   private apiKey: string
   private baseUrl: string
@@ -115,7 +118,7 @@ export class ApiClient {
     return result.data
   }
 
-  async updateInvoice(id: string, updates: Partial<InvoiceCreate>): Promise<Invoice> {
+  async updateInvoice(id: string, updates: InvoiceUpdate): Promise<Invoice> {
     const result = await this.request<{ data: Invoice }>('PUT', `/invoices/${id}`, updates)
     return result.data
   }

@@ -2,15 +2,6 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // NOTE: These flags suppress pre-existing build errors. See SECURITY_AUDIT_2026-05-11.md
-  // "Remove `ignoreDuringBuilds` / `ignoreBuildErrors`" — should be removed once the
-  // legacy type/lint errors in the template pages are fixed.
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   // Expose the build commit SHA to the client bundle so the bottom-right
   // version badge can render it. Lets support quickly identify whether a
   // user is on a stale cached bundle vs. the current deploy.
