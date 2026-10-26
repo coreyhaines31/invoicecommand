@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { loadStripe } from '@stripe/stripe-js'
+import { loadStripe, type Stripe as StripeClient } from '@stripe/stripe-js'
 
 // Environment detection
 export const isTestMode = process.env.NODE_ENV === 'development' ||
@@ -12,7 +12,7 @@ export const stripe = process.env.STRIPE_SECRET_KEY
   : (null as unknown as Stripe)
 
 // Client-side Stripe promise
-let stripePromise: Promise<Stripe | null>
+let stripePromise: Promise<StripeClient | null>
 
 export const getStripe = () => {
   if (!stripePromise) {
