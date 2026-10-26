@@ -145,7 +145,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
                 </div>
                 <h3 className="font-semibold text-lg">Fill in Details</h3>
                 <p className="text-sm text-muted-foreground">
-                  Enter your business information, client details, and the services or items you're quoting.
+                  Enter your business information, client details, and the services or items you&apos;re quoting.
                   Add descriptions, quantities, and rates for each line item.
                 </p>
               </div>
@@ -304,7 +304,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
               Need an Invoice Instead?
             </h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              If you're ready to collect payment for completed work, check out our invoice templates.
+              If you&apos;re ready to collect payment for completed work, check out our invoice templates.
               Same professional design, optimized for payment collection.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
