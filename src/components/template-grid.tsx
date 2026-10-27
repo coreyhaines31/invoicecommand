@@ -15,7 +15,7 @@ interface TemplateGridProps {
 }
 
 // Define categories for filtering
-const CATEGORIES = {
+const CATEGORIES: Record<string, string[]> = {
   'All': [],
   'Creative & Design': [
     '3d-printing-service', 'animation', 'art-director', 'audio-engineer', 'brand-designer',
@@ -94,7 +94,7 @@ export function TemplateGrid({ templates, basePath = '/invoice-templates' }: Tem
 
       // Category filter
       const matchesCategory = selectedCategory === 'All' ||
-        CATEGORIES[selectedCategory as keyof typeof CATEGORIES].includes(template.id);
+        CATEGORIES[selectedCategory].includes(template.id);
 
       return matchesSearch && matchesCategory;
     });

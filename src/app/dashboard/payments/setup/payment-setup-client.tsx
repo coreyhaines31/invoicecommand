@@ -29,9 +29,9 @@ import { toast } from 'sonner'
 import type { User } from 'better-auth'
 
 interface UserProfile {
-  stripe_account_id?: string
-  stripe_onboarding_completed?: boolean
-  subscription_tier?: 'free' | 'premium' | 'pro'
+  stripeAccountId: string | null
+  stripeOnboardingCompleted: boolean | null
+  subscriptionTier: 'free' | 'premium' | 'pro' | null
 }
 
 interface PaymentSetupClientProps {
@@ -133,7 +133,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
   }
 
   const getSubscriptionBadge = () => {
-    const tier = userProfile?.subscription_tier || 'free'
+    const tier = userProfile?.subscriptionTier || 'free'
     switch (tier) {
       case 'pro':
         return <Badge variant="default" className="bg-purple-100 text-purple-800"><Crown className="w-3 h-3 mr-1" />Pro</Badge>
@@ -145,7 +145,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
   }
 
   const getApplicationFeeRate = () => {
-    const tier = userProfile?.subscription_tier || 'free'
+    const tier = userProfile?.subscriptionTier || 'free'
     switch (tier) {
       case 'pro':
         return '0%'
@@ -178,7 +178,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
             <DollarSign className="h-4 w-4" />
             <AlertDescription>
               <strong>Transaction Fee:</strong> We charge a {getApplicationFeeRate()} application fee on payments you collect.
-              {userProfile?.subscription_tier !== 'pro' && (
+              {userProfile?.subscriptionTier !== 'pro' && (
                 <span className="text-blue-600"> Upgrade to Pro to eliminate all transaction fees!</span>
               )}
             </AlertDescription>
@@ -355,7 +355,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
               <CardHeader>
                 <CardTitle className="text-green-600">✅ Payment Setup Complete!</CardTitle>
                 <CardDescription>
-                  Your Stripe account is ready to collect payments. You can now add "Pay Now" buttons to your invoices.
+                  Your Stripe account is ready to collect payments. You can now add &quot;Pay Now&quot; buttons to your invoices.
                 </CardDescription>
               </CardHeader>
               <CardContent>

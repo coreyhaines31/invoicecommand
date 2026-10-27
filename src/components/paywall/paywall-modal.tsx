@@ -25,13 +25,16 @@ import {
 } from 'lucide-react'
 import { UserTier, getNextTier } from '@/hooks/use-user-tier'
 
+// Paywalls only ever upgrade to a signed-in tier.
+type UpgradeTier = Exclude<UserTier, 'anonymous'>
+
 export interface PaywallTrigger {
   feature: string
   title: string
   description: string
   icon: React.ReactNode
   fromTier: UserTier
-  toTier: UserTier
+  toTier: UpgradeTier
   benefits: string[]
   ctaText: string
   ctaAction: () => void
@@ -55,7 +58,7 @@ const tierPricing = {
   pro: '$100/month'
 }
 
-const tierFeatures = {
+const tierFeatures: Record<UpgradeTier, string[]> = {
   free: [
     '10 voice commands/month',
     'Save unlimited invoices',

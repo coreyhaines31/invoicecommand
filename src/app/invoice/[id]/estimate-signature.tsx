@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
+import type ReactSignatureCanvas from 'react-signature-canvas'
+import type { SignatureCanvasProps } from 'react-signature-canvas'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,17 +11,13 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, XCircle, Pen } from 'lucide-react'
 
-const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false })
+const SignatureCanvas = dynamic<SignatureCanvasProps & React.RefAttributes<ReactSignatureCanvas>>(
+  () => import('react-signature-canvas'),
+  { ssr: false }
+)
 
 const CONSENT_TEXT =
   'I accept this estimate and agree that this electronic signature is the legal equivalent of my handwritten signature under the U.S. ESIGN Act and applicable state law (UETA).'
-
-type SignatureCanvasRef = {
-  isEmpty(): boolean
-  clear(): void
-  toDataURL(type?: string): string
-  getCanvas?(): HTMLCanvasElement
-}
 
 interface EstimateSignatureProps {
   estimateId: string
@@ -28,7 +26,7 @@ interface EstimateSignatureProps {
 }
 
 export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
-  const sigRef = useRef<SignatureCanvasRef | null>(null)
+  const sigRef = useRef<ReactSignatureCanvas | null>(null)
   const [signerName, setSignerName] = useState('')
   const [signerEmail, setSignerEmail] = useState(defaultSignerEmail)
   const [accepted, setAccepted] = useState(false)
@@ -137,7 +135,7 @@ export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigne
             <Label>Signature</Label>
             <div className="mt-1 rounded-md border border-input bg-background overflow-hidden">
               <SignatureCanvas
-                ref={(ref: SignatureCanvasRef | null) => {
+                ref={(ref) => {
                   sigRef.current = ref
                 }}
                 penColor="black"

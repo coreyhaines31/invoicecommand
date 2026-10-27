@@ -4,7 +4,7 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { useUserTier, canAccessFeature, getNextTier } from '@/hooks/use-user-tier'
+import { useUserTier, canAccessFeature, getNextTier, type UserTier } from '@/hooks/use-user-tier'
 type User = {
   id: string
   email: string
@@ -281,8 +281,8 @@ describe('getNextTier', () => {
 
   describe('Upgrade Path', () => {
     it('should provide correct upgrade path from anonymous to pro', () => {
-      let currentTier = 'anonymous' as any
-      const path = []
+      let currentTier: UserTier | null = 'anonymous'
+      const path: UserTier[] = []
 
       while (currentTier) {
         path.push(currentTier)
@@ -293,8 +293,8 @@ describe('getNextTier', () => {
     })
 
     it('should provide correct upgrade path from free to pro', () => {
-      let currentTier = 'free' as any
-      const path = []
+      let currentTier: UserTier | null = 'free'
+      const path: UserTier[] = []
 
       while (currentTier) {
         path.push(currentTier)

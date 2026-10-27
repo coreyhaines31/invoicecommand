@@ -19,7 +19,7 @@ export interface ErrorAnalyticsData {
   error_type?: 'api_error' | 'validation_error' | 'network_error' | 'user_error' | 'system_error'
   error_context?: string
   user_action?: string
-  additional_data?: Record<string, any>
+  additional_data?: Record<string, unknown>
 }
 
 export function useAnalytics() {
@@ -63,7 +63,7 @@ export function useAnalytics() {
     })
   }
 
-  const trackFeatureUsed = (feature: string, details?: Record<string, any>) => {
+  const trackFeatureUsed = (feature: string, details?: Record<string, unknown>) => {
     posthog.capture('feature_used', {
       feature_name: feature,
       ...details,
@@ -82,7 +82,7 @@ export function useAnalytics() {
     })
   }
 
-  const identifyUser = (userId: string, properties?: Record<string, any>) => {
+  const identifyUser = (userId: string, properties?: Record<string, unknown>) => {
     posthog.identify(userId, properties)
   }
 
@@ -107,7 +107,7 @@ export function useAnalytics() {
     })
   }
 
-  const trackValidationError = (field: string, value: any, message: string) => {
+  const trackValidationError = (field: string, value: unknown, message: string) => {
     trackError(new Error(`Validation Error: ${message}`), {
       error_type: 'validation_error',
       error_context: field,
@@ -134,7 +134,7 @@ export function useAnalytics() {
   }
 
   // Performance tracking
-  const trackPerformance = (metric: string, value: number, context?: Record<string, any>) => {
+  const trackPerformance = (metric: string, value: number, context?: Record<string, unknown>) => {
     posthog.capture('performance_metric', {
       metric_name: metric,
       metric_value: value,
@@ -144,7 +144,7 @@ export function useAnalytics() {
   }
 
   // User interaction tracking
-  const trackUserInteraction = (element: string, action: string, context?: Record<string, any>) => {
+  const trackUserInteraction = (element: string, action: string, context?: Record<string, unknown>) => {
     posthog.capture('user_interaction', {
       element,
       action,

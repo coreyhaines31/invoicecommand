@@ -3,6 +3,7 @@
  * Tests navigation bar with authenticated and unauthenticated states
  */
 
+import type React from 'react'
 import { render, screen } from '@testing-library/react'
 import { Navigation } from '@/components/navigation'
 import { useRouter } from 'next/navigation'
@@ -20,7 +21,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock Logo component
 jest.mock('@/components/logo', () => ({
-  Logo: ({ width, height, className }: any) => (
+  Logo: ({ width, height, className }: { width?: number; height?: number; className?: string }) => (
     <div data-testid="logo" data-width={width} data-height={height} className={className}>
       Logo
     </div>
@@ -45,13 +46,14 @@ jest.mock('@/components/support-widget', () => ({
 
 // Mock Next Link component
 jest.mock('next/link', () => {
-  return ({ children, href, className }: any) => {
+  function MockLink({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
     return (
       <a href={href} className={className}>
         {children}
       </a>
     )
   }
+  return MockLink
 })
 
 describe('Navigation', () => {

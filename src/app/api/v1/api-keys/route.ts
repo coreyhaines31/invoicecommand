@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
         scopes: key.scopes,
         rateLimit: key.rateLimit,
         expiresAt: key.expiresAt,
-        lastUsedAt: (key as any).lastUsedAt,
-        createdAt: (key as any).createdAt,
+        lastUsedAt: key.lastUsedAt,
+        createdAt: key.createdAt,
       })),
     })
   } catch (error) {

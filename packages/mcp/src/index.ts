@@ -345,7 +345,7 @@ Email ID: ${result.emailId}`,
       case 'mark_invoice_paid': {
         const invoice = await client.updateInvoice(args.id as string, {
           status: 'paid',
-        } as any)
+        })
 
         return {
           content: [

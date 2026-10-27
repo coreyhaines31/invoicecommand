@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       invoiceNumber: invoice.invoiceNumber || '',
       invoiceDate: invoice.invoiceDate || '',
       dueDate: invoice.dueDate || '',
-      items: (invoice.items as any[]) || [],
+      items: invoice.items || [],
       subtotal: Number(invoice.subtotal) || 0,
       taxRate: Number(invoice.taxRate) || 0,
       taxAmount: Number(invoice.tax) || 0,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       .replace(/[^\w\-\.]/g, '_')
       .slice(0, 100)
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="invoice-${safeFilename}.pdf"`,

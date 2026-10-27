@@ -1,4 +1,5 @@
 import type { InvoiceData } from '@/stores/invoice-store'
+import type { InvoiceItem } from '@/types/database'
 
 /**
  * Format a monetary amount with currency symbol
@@ -33,7 +34,7 @@ export function dbInvoiceToInvoiceData(invoice: {
   invoiceNumber: string
   invoiceDate: string | null
   dueDate: string | null
-  items: unknown
+  items: InvoiceItem[]
   subtotal: string
   taxRate: string | null
   tax: string
@@ -70,7 +71,7 @@ export function dbInvoiceToInvoiceData(invoice: {
     invoiceNumber: invoice.invoiceNumber || '',
     invoiceDate: invoice.invoiceDate || '',
     dueDate: invoice.dueDate || '',
-    items: (invoice.items as any[]) || [],
+    items: invoice.items || [],
     subtotal: Number(invoice.subtotal) || 0,
     taxRate: Number(invoice.taxRate) || 0,
     taxAmount: Number(invoice.tax) || 0,

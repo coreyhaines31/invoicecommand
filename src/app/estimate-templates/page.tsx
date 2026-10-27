@@ -170,8 +170,8 @@ export default function EstimateTemplatesPage() {
                     reflect your professional standards.
                   </p>
                   <p>
-                    Whether you're a freelancer, contractor, consultant, or service provider,
-                    you'll find the perfect estimate template for your specific needs. All templates
+                    Whether you&apos;re a freelancer, contractor, consultant, or service provider,
+                    you&apos;ll find the perfect estimate template for your specific needs. All templates
                     include automatic calculations, professional formatting, and instant PDF export.
                   </p>
                 </div>
@@ -362,8 +362,8 @@ export default function EstimateTemplatesPage() {
                   <p className="text-sm text-muted-foreground mt-2">Absolutely! Once your client approves your estimate, you can convert it to an invoice with a single click. All the details from your estimate are automatically transferred to the invoice format.</p>
                 </details>
                 <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">What's the difference between an estimate and a quote?</summary>
-                  <p className="text-sm text-muted-foreground mt-2">Estimates and quotes are very similar - both provide project costs before work begins. Some industries prefer "estimate" (construction, trades) while others use "quote" (creative services). Our templates work perfectly for both purposes.</p>
+                  <summary className="font-semibold cursor-pointer hover:text-primary">What&apos;s the difference between an estimate and a quote?</summary>
+                  <p className="text-sm text-muted-foreground mt-2">Estimates and quotes are very similar - both provide project costs before work begins. Some industries prefer &quot;estimate&quot; (construction, trades) while others use &quot;quote&quot; (creative services). Our templates work perfectly for both purposes.</p>
                 </details>
                 <details className="border-b border-border pb-4">
                   <summary className="font-semibold cursor-pointer hover:text-primary">Can I customize the estimate templates?</summary>

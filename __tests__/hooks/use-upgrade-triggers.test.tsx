@@ -3,6 +3,7 @@
  * Tests upgrade trigger logic, feature access control, and paywall display
  */
 
+import type { PaywallModal } from '@/components/paywall/paywall-modal'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderHook, act } from '@testing-library/react'
 import { useUpgradeTriggers, UpgradeTriggersProvider } from '@/hooks/use-upgrade-triggers'
@@ -38,8 +39,9 @@ jest.mock('@/hooks/use-user-tier', () => ({
 }))
 
 // Mock PaywallModal component
+type PaywallModalProps = React.ComponentProps<typeof PaywallModal>
 jest.mock('@/components/paywall/paywall-modal', () => ({
-  PaywallModal: ({ isOpen, onClose, trigger }: any) => {
+  PaywallModal: ({ isOpen, onClose, trigger }: PaywallModalProps) => {
     if (!isOpen) return null
     return (
       <div data-testid="paywall-modal">

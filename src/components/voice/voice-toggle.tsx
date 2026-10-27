@@ -242,7 +242,7 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
 
             <div className="p-3 bg-muted/50 rounded-lg border-l-4 border-primary">
               <p className="text-foreground font-mono text-sm leading-relaxed">
-                "{transcript}"
+                &quot;{transcript}&quot;
               </p>
             </div>
           </div>
