@@ -6,6 +6,7 @@ import { eq, desc, and } from 'drizzle-orm'
 import { InvoiceValidationError, parseInvoicePayload } from '@/lib/invoice-payload'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { jsonErrorResponse } from '@/lib/error-response'
+import { totalsColumns } from '@/lib/invoice-totals'
 
 // GET /api/v1/invoices - List all invoices
 export async function GET(request: NextRequest) {
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
       clientName: payload.clientName,
       invoiceNumber: payload.invoiceNumber,
       items: payload.items,
+      ...totalsColumns({ items: payload.items, taxRate: payload.taxRate, discountRate: payload.discountRate }),
     }
 
     const [row] = await db.insert(invoices).values(createValues).returning()

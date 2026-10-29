@@ -28,3 +28,32 @@ export function calculateInvoiceTotals({ items, taxRate, discountRate }: TotalsI
     total: Math.round(total * 100) / 100,
   }
 }
+
+const TOTALS_FIELDS = ['items', 'taxRate', 'discountRate', 'subtotal', 'tax', 'total', 'discountAmount']
+
+/** True when an update touches anything the stored totals depend on. */
+export function affectsTotals(payload: object): boolean {
+  return TOTALS_FIELDS.some((field) => field in payload)
+}
+
+/**
+ * Totals for the invoices table, derived from items and rates. Caller-supplied
+ * subtotal/tax/total/discountAmount are never trusted.
+ */
+export function totalsColumns(input: {
+  items: TotalsInput['items']
+  taxRate?: string | number | null
+  discountRate?: string | number | null
+}) {
+  const totals = calculateInvoiceTotals({
+    items: input.items,
+    taxRate: Number(input.taxRate) || 0,
+    discountRate: Number(input.discountRate) || 0,
+  })
+  return {
+    subtotal: totals.subtotal.toFixed(2),
+    discountAmount: totals.discountAmount.toFixed(2),
+    tax: totals.taxAmount.toFixed(2),
+    total: totals.total.toFixed(2),
+  }
+}

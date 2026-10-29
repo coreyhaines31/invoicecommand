@@ -7,6 +7,7 @@ import { InvoiceValidationError, parseInvoicePayload } from '@/lib/invoice-paylo
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { jsonErrorResponse } from '@/lib/error-response'
 import { isUuid } from '@/lib/api-utils'
+import { affectsTotals, totalsColumns } from '@/lib/invoice-totals'
 
 // GET /api/v1/invoices/:id - Get a single invoice
 export async function GET(
@@ -71,10 +72,30 @@ export async function PUT(
       throw error
     }
 
+    // Keep stored totals consistent with items and rates, filling in whatever
+    // the update leaves out from the current row.
+    let totals = {}
+    if (affectsTotals(payload)) {
+      const [current] = await db
+        .select({ items: invoices.items, taxRate: invoices.taxRate, discountRate: invoices.discountRate })
+        .from(invoices)
+        .where(and(eq(invoices.id, id), eq(invoices.userId, authResult.userId)))
+
+      if (!current) {
+        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+      }
+
+      totals = totalsColumns({
+        items: payload.items ?? current.items,
+        taxRate: payload.taxRate !== undefined ? payload.taxRate : current.taxRate,
+        discountRate: payload.discountRate !== undefined ? payload.discountRate : current.discountRate,
+      })
+    }
+
     // Signed estimates are immutable
     const [row] = await db
       .update(invoices)
-      .set({ ...payload, updatedAt: new Date() })
+      .set({ ...payload, ...totals, updatedAt: new Date() })
       .where(and(
         eq(invoices.id, id),
         eq(invoices.userId, authResult.userId),
