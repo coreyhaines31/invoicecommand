@@ -35,4 +35,4 @@ Tick **Write Invoices** (`invoices:write`) only if you want `create_invoice`, `s
 | `send_invoice` | Emails the invoice to the client with a PDF the server renders. Asks you to confirm first. |
 | `mark_invoice_paid` | Sets the status to paid. |
 
-`send_invoice` never sends on the first request. If your client supports elicitation, you get a confirm prompt. Otherwise the tool returns a preview with the recipient and total, and it sends only when called again with `confirm: true` after you approve.
+`send_invoice` never sends on the first request. If your client supports elicitation, you get a confirm prompt showing the recipient, total, and message. Otherwise the tool returns that preview with a single-use token, and it sends only when called again with the token and the same message, within 10 minutes. Your client's tool-approval prompt is the check that you, not the model, approved the second call, so don't auto-approve `send_invoice`.

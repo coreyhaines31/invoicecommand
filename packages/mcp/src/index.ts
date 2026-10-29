@@ -3,6 +3,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { ApiClient, INVOICE_ID_PATTERN, type Invoice } from './lib/api-client.js'
 
@@ -127,18 +128,19 @@ server.registerTool(
   {
     title: 'Email invoice to client',
     description:
-      "Email an invoice to the client's address on file, with the PDF attached, and mark it sent. Emails a third party and cannot be undone. Asks the user to confirm before sending.",
+      "Email an invoice to the client's address on file, with the PDF attached, and mark it sent. Emails a third party and cannot be undone. Asks the user to confirm first; without a confirm prompt in the client, the first call returns a preview and token instead of sending.",
     inputSchema: {
       id: invoiceId,
       message: z.string().max(5000).optional().describe('Optional message to include in the email'),
-      confirm: z
-        .boolean()
+      confirmationToken: z
+        .string()
+        .max(100)
         .optional()
-        .describe('Set true only after the user has seen the recipient and total and approved sending. Used when the client cannot show a confirmation prompt.'),
+        .describe('Token from a previous send_invoice preview of this exact invoice and message, after the user approved it. Only used when the client cannot show a confirmation prompt.'),
     },
     annotations: { title: 'Email invoice to client', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
-  ({ id, message, confirm }) =>
+  ({ id, message, confirmationToken }) =>
     run(async () => {
       const invoice = await client.getInvoice(id)
 
@@ -150,14 +152,16 @@ server.registerTool(
       }
 
       const summary = `${invoice.documentType} ${invoice.invoiceNumber} for ${invoice.clientName}, total ${formatCurrency(invoice.total, invoice.currency)}, to ${invoice.clientEmail}`
+      const messageLine = message ? `\n\nMessage to the client:\n${message}` : '\n\nNo message.'
 
       // Prefer a prompt the user answers directly (elicitation). Without it,
-      // fall back to a two-step preview then confirm, so a send never happens
-      // on the first call.
+      // fall back to preview then confirm: the first call only returns a
+      // single-use token bound to this exact send, so nothing is ever sent
+      // on the first call or with content the preview didn't show.
       if (server.server.getClientCapabilities()?.elicitation) {
         const answer = await server.server.elicitInput({
           mode: 'form',
-          message: `Email ${summary}? This sends a real email to your client.`,
+          message: `Email ${summary}? This sends a real email to your client.${messageLine}`,
           requestedSchema: {
             type: 'object',
             properties: { confirm: { type: 'boolean', title: 'Send this invoice now' } },
@@ -167,12 +171,16 @@ server.registerTool(
         if (answer.action !== 'accept' || answer.content?.confirm !== true) {
           return text(`Not sent. The user did not confirm sending ${invoice.invoiceNumber}.`)
         }
-      } else if (confirm !== true) {
-        return text(`Not sent yet. Confirmation needed.
+      } else {
+        const fingerprint = JSON.stringify([id, invoice.clientEmail, invoice.total, invoice.currency, message ?? ''])
+        if (!confirmationToken || !consumeSendToken(confirmationToken, fingerprint)) {
+          const token = issueSendToken(fingerprint)
+          return text(`Not sent yet. Confirmation needed.
 
-Ready to email ${summary}.${message ? `\nMessage: ${message}` : ''}
+Ready to email ${summary}.${messageLine}
 
-Ask the user to approve this exact send, then call send_invoice again with confirm: true.`)
+To send, the user must approve this exact email. Then call send_invoice with the same id and message and confirmationToken: "${token}" (valid for 10 minutes, one use).`)
+        }
       }
 
       const result = await client.sendInvoice(id, message)
@@ -197,6 +205,26 @@ Client: ${invoice.clientName}
 Total: ${formatCurrency(invoice.total, invoice.currency)}`)
     })
 )
+
+// Single-use tokens for the preview-then-confirm fallback, bound to the
+// recipient, total, and message the preview showed.
+const SEND_TOKEN_TTL_MS = 10 * 60 * 1000
+const sendTokens = new Map<string, { fingerprint: string; expiresAt: number }>()
+
+function issueSendToken(fingerprint: string): string {
+  const token = randomUUID()
+  sendTokens.set(token, { fingerprint, expiresAt: Date.now() + SEND_TOKEN_TTL_MS })
+  return token
+}
+
+function consumeSendToken(token: string, fingerprint: string): boolean {
+  const entry = sendTokens.get(token)
+  sendTokens.delete(token)
+  for (const [key, value] of sendTokens) {
+    if (value.expiresAt < Date.now()) sendTokens.delete(key)
+  }
+  return !!entry && entry.fingerprint === fingerprint && entry.expiresAt >= Date.now()
+}
 
 function describeInvoice(invoice: Invoice): string {
   const items = (invoice.items || [])
