@@ -299,19 +299,18 @@ const openApiSpec = {
     '/invoices/{id}/send': {
       post: {
         summary: 'Send invoice',
-        description: 'Send an invoice to the client via email',
+        description: 'Send an invoice to the client via email. The server renders the PDF attachment from the stored invoice.',
         operationId: 'sendInvoice',
         tags: ['Invoices'],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
         requestBody: {
-          required: true,
+          required: false,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['pdfBuffer'],
                 properties: {
-                  pdfBuffer: { type: 'string', description: 'Base64 encoded PDF content' },
+                  pdfBuffer: { type: 'string', deprecated: true, description: 'Ignored. The attachment is always rendered server-side.' },
                   senderMessage: { type: 'string', maxLength: 5000, description: 'Optional message to include in the email' },
                 },
               },
