@@ -5,11 +5,11 @@ import { invoices } from '@/lib/db/schema'
 import { eq, and, isNull, inArray } from 'drizzle-orm'
 import { sendInvoiceEmail } from '@/lib/email-service'
 import { triggerWebhooks } from '@/lib/webhook-service'
-import { dbInvoiceToInvoiceData } from '@/lib/api-utils'
+import { dbInvoiceToInvoiceData, isUuid } from '@/lib/api-utils'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
+import { renderInvoicePdf } from '@/lib/invoice-pdf-server'
 
-const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
 const MAX_SENDER_MESSAGE_LENGTH = 5000
 
 // POST /api/v1/invoices/:id/send - Send an invoice via email
@@ -33,19 +33,26 @@ export async function POST(
   }
 
   const { id } = await params
-
-  let body: { pdfBuffer: string; senderMessage?: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
   }
 
-  const { pdfBuffer, senderMessage } = body
-
-  if (!pdfBuffer || typeof pdfBuffer !== 'string') {
-    return NextResponse.json({ error: 'pdfBuffer (base64 encoded) is required' }, { status: 400 })
+  // The body is optional. A legacy `pdfBuffer` field is accepted and ignored:
+  // the attachment is always rendered here from the stored invoice.
+  let body: { senderMessage?: unknown } = {}
+  const rawBody = await request.text()
+  if (rawBody.trim()) {
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Request body must be an object' }, { status: 400 })
+    }
   }
+
+  const { senderMessage } = body
 
   if (senderMessage != null && (typeof senderMessage !== 'string' || senderMessage.length > MAX_SENDER_MESSAGE_LENGTH)) {
     return NextResponse.json({ error: 'Invalid sender message' }, { status: 400 })
@@ -70,13 +77,8 @@ export async function POST(
 
   const invoiceData = dbInvoiceToInvoiceData(invoice)
 
-  const pdfBufferData = Buffer.from(pdfBuffer, 'base64')
-  if (pdfBufferData.length === 0 || pdfBufferData.length > MAX_PDF_SIZE_BYTES) {
-    return NextResponse.json({ error: 'PDF attachment is invalid or too large' }, { status: 400 })
-  }
-  if (pdfBufferData.subarray(0, 4).toString() !== '%PDF') {
-    return NextResponse.json({ error: 'Attachment must be a valid PDF' }, { status: 400 })
-  }
+  // Render before reserving so a render failure leaves the status untouched.
+  const pdfBufferData = await renderInvoicePdf(invoiceData)
 
   // Reserve the send before calling Resend. Three things this protects:
   //   1. signedAt guard: a signed estimate is immutable; refuse to mutate it.
@@ -118,7 +120,11 @@ export async function POST(
     )
   }
 
-  const result = await sendInvoiceEmail({ invoice: invoiceData, pdfBuffer: pdfBufferData, senderMessage })
+  const result = await sendInvoiceEmail({
+    invoice: invoiceData,
+    pdfBuffer: pdfBufferData,
+    senderMessage: senderMessage as string | undefined,
+  })
 
   // Trigger webhooks AFTER successful delivery so subscribers don't see a "sent"
   // event for an invoice the recipient never got.

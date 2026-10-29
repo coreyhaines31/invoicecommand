@@ -4,12 +4,12 @@ import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { sendInvoiceEmail } from '@/lib/email-service'
-import type { InvoiceData } from '@/stores/invoice-store'
+import { dbInvoiceToInvoiceData } from '@/lib/api-utils'
+import { renderInvoicePdf } from '@/lib/invoice-pdf-server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { buildShareUrl, generateShareToken } from '@/lib/share-link'
 import { jsonErrorResponse } from '@/lib/error-response'
 
-const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
 const MAX_SENDER_MESSAGE_LENGTH = 5000
 
 export async function POST(request: NextRequest) {
@@ -27,13 +27,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { invoiceId, pdfBuffer, senderMessage, clientEmail: clientEmailOverride } = body
+    // A legacy `pdfBuffer` field is ignored: the attachment is always rendered
+    // here from the stored invoice.
+    const { invoiceId, senderMessage, clientEmail: clientEmailOverride } = body
 
-    if (!invoiceId || !pdfBuffer) {
-      return NextResponse.json({ error: 'Invoice ID and PDF buffer are required' }, { status: 400 })
+    if (!invoiceId) {
+      return NextResponse.json({ error: 'Invoice ID is required' }, { status: 400 })
     }
 
-    if (typeof invoiceId !== 'string' || typeof pdfBuffer !== 'string') {
+    if (typeof invoiceId !== 'string') {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
     }
 
@@ -68,49 +70,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sender email is required to send invoice' }, { status: 400 })
     }
 
-    const invoiceData: InvoiceData = {
-      id: invoice.id,
-      senderName: invoice.senderName || '',
-      senderEmail: invoice.senderEmail || '',
-      senderAddress: invoice.senderAddress || '',
-      senderCity: invoice.senderCity || '',
-      senderState: invoice.senderState || '',
-      senderZip: invoice.senderZip || '',
-      senderPhone: invoice.senderPhone || '',
-      senderLogo: invoice.senderLogo || '',
-      clientName: invoice.clientName || '',
-      clientEmail: recipientEmail,
-      clientAddress: invoice.clientAddress || '',
-      clientCity: invoice.clientCity || '',
-      clientState: invoice.clientState || '',
-      clientZip: invoice.clientZip || '',
-      invoiceNumber: invoice.invoiceNumber || '',
-      invoiceDate: invoice.invoiceDate || '',
-      dueDate: invoice.dueDate || '',
-      items: invoice.items || [],
-      subtotal: Number(invoice.subtotal) || 0,
-      taxRate: Number(invoice.taxRate) || 0,
-      taxAmount: Number(invoice.tax) || 0,
-      discountRate: Number(invoice.discountRate) || 0,
-      discountAmount: Number(invoice.discountAmount) || 0,
-      total: Number(invoice.total) || 0,
-      notes: invoice.notes || '',
-      terms: invoice.terms || '',
-      currency: invoice.currency || 'USD',
-      isDirty: false,
-      lastUpdated: Date.now(),
-      status: (invoice.status as 'draft' | 'sent' | 'paid') || 'draft',
-      style: (invoice.style as 'modern' | 'classic' | 'minimal') || 'modern',
-      documentType: (invoice.documentType as 'invoice' | 'estimate') || 'invoice',
-    }
-
-    const pdfBufferData = Buffer.from(pdfBuffer, 'base64')
-    if (pdfBufferData.length === 0 || pdfBufferData.length > MAX_PDF_SIZE_BYTES) {
-      return NextResponse.json({ error: 'PDF attachment is invalid or too large' }, { status: 400 })
-    }
-    if (pdfBufferData.subarray(0, 4).toString() !== '%PDF') {
-      return NextResponse.json({ error: 'Attachment must be a valid PDF' }, { status: 400 })
-    }
+    // The PDF matches the stored invoice (what /api/generate-pdf renders); only
+    // the email goes to the override address.
+    const storedInvoiceData = dbInvoiceToInvoiceData(invoice)
+    const pdfBufferData = await renderInvoicePdf(storedInvoiceData)
+    const invoiceData = { ...storedInvoiceData, clientEmail: recipientEmail }
 
     // Ensure the recipient has a usable share link in the email. Reuse the
     // existing token if one was already minted; otherwise generate one and

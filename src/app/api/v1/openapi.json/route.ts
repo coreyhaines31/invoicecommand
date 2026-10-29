@@ -114,12 +114,12 @@ const openApiSpec = {
               },
             },
           },
-          subtotal: { type: 'number', minimum: 0 },
-          tax: { type: 'number', minimum: 0 },
-          total: { type: 'number', minimum: 0 },
-          taxRate: { type: 'number', minimum: 0, maximum: 100 },
-          discountRate: { type: 'number', minimum: 0, maximum: 100 },
-          discountAmount: { type: 'number', minimum: 0 },
+          subtotal: { type: 'number', minimum: 0, deprecated: true, description: 'Ignored. Computed from items.' },
+          tax: { type: 'number', minimum: 0, deprecated: true, description: 'Ignored. Computed from items, discountRate, and taxRate.' },
+          total: { type: 'number', minimum: 0, deprecated: true, description: 'Ignored. Computed from items, discountRate, and taxRate.' },
+          taxRate: { type: 'number', minimum: 0, maximum: 100, description: 'Tax percentage, applied after the discount' },
+          discountRate: { type: 'number', minimum: 0, maximum: 100, description: 'Discount percentage of the subtotal' },
+          discountAmount: { type: 'number', minimum: 0, deprecated: true, description: 'Ignored. Computed from discountRate.' },
           notes: { type: 'string', maxLength: 10000 },
           terms: { type: 'string', maxLength: 10000 },
           currency: { type: 'string', pattern: '^[A-Z]{3}$', default: 'USD' },
@@ -299,19 +299,18 @@ const openApiSpec = {
     '/invoices/{id}/send': {
       post: {
         summary: 'Send invoice',
-        description: 'Send an invoice to the client via email',
+        description: 'Send an invoice to the client via email. The server renders the PDF attachment from the stored invoice.',
         operationId: 'sendInvoice',
         tags: ['Invoices'],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
         requestBody: {
-          required: true,
+          required: false,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['pdfBuffer'],
                 properties: {
-                  pdfBuffer: { type: 'string', description: 'Base64 encoded PDF content' },
+                  pdfBuffer: { type: 'string', deprecated: true, description: 'Ignored. The attachment is always rendered server-side.' },
                   senderMessage: { type: 'string', maxLength: 5000, description: 'Optional message to include in the email' },
                 },
               },
@@ -371,7 +370,7 @@ const openApiSpec = {
                 required: ['name'],
                 properties: {
                   name: { type: 'string', maxLength: 100 },
-                  scopes: { type: 'array', items: { type: 'string', enum: ['invoices:read', 'invoices:write', 'webhooks:read', 'webhooks:write', '*'] } },
+                  scopes: { type: 'array', default: ['invoices:read'], items: { type: 'string', enum: ['invoices:read', 'invoices:write', 'webhooks:read', 'webhooks:write', '*'] } },
                   rateLimit: { type: 'integer', minimum: 1, maximum: 10000, default: 1000 },
                   expiresAt: { type: 'string', format: 'date-time' },
                 },

@@ -6,6 +6,8 @@ import { eq, and, isNull } from 'drizzle-orm'
 import { InvoiceValidationError, parseInvoicePayload } from '@/lib/invoice-payload'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { jsonErrorResponse } from '@/lib/error-response'
+import { isUuid } from '@/lib/api-utils'
+import { affectsTotals, totalsColumns } from '@/lib/invoice-totals'
 
 // GET /api/v1/invoices/:id - Get a single invoice
 export async function GET(
@@ -19,6 +21,9 @@ export async function GET(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
     const [row] = await db
       .select()
       .from(invoices)
@@ -46,6 +51,9 @@ export async function PUT(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
 
     let body: unknown
     try {
@@ -64,14 +72,43 @@ export async function PUT(
       throw error
     }
 
+    // Keep stored totals consistent with items and rates, filling in whatever
+    // the update leaves out from the current row.
+    let totals = {}
+    // Only write if the inputs we computed from are still current, so two
+    // concurrent updates can't leave totals that match neither.
+    const inputsUnchanged = []
+    if (affectsTotals(payload)) {
+      const [current] = await db
+        .select({ items: invoices.items, taxRate: invoices.taxRate, discountRate: invoices.discountRate })
+        .from(invoices)
+        .where(and(eq(invoices.id, id), eq(invoices.userId, authResult.userId)))
+
+      if (!current) {
+        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+      }
+
+      totals = totalsColumns({
+        items: payload.items ?? current.items,
+        taxRate: payload.taxRate !== undefined ? payload.taxRate : current.taxRate,
+        discountRate: payload.discountRate !== undefined ? payload.discountRate : current.discountRate,
+      })
+      inputsUnchanged.push(
+        eq(invoices.items, current.items),
+        current.taxRate == null ? isNull(invoices.taxRate) : eq(invoices.taxRate, current.taxRate),
+        current.discountRate == null ? isNull(invoices.discountRate) : eq(invoices.discountRate, current.discountRate)
+      )
+    }
+
     // Signed estimates are immutable
     const [row] = await db
       .update(invoices)
-      .set({ ...payload, updatedAt: new Date() })
+      .set({ ...payload, ...totals, updatedAt: new Date() })
       .where(and(
         eq(invoices.id, id),
         eq(invoices.userId, authResult.userId),
-        isNull(invoices.signedAt)
+        isNull(invoices.signedAt),
+        ...inputsUnchanged
       ))
       .returning()
 
@@ -116,6 +153,9 @@ export async function DELETE(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
     const [deleted] = await db
       .delete(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.userId, authResult.userId)))

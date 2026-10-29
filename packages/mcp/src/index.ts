@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js'
-import { ApiClient, type InvoiceCreate } from './lib/api-client.js'
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { randomUUID } from 'node:crypto'
+import { z } from 'zod'
+import { ApiClient, INVOICE_ID_PATTERN, type Invoice } from './lib/api-client.js'
 
+const VERSION = '1.1.0'
 const API_KEY = process.env.INVOICE_COMMAND_API_KEY
 const BASE_URL = process.env.INVOICE_COMMAND_BASE_URL || 'https://invoicecommand.com'
 
@@ -17,377 +17,259 @@ if (!API_KEY) {
 }
 
 const client = new ApiClient(API_KEY, BASE_URL)
+const server = new McpServer({ name: 'invoicecommand', version: VERSION })
 
-const server = new Server(
-  {
-    name: 'invoicecommand',
-    version: '1.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-)
+const invoiceId = z.string().regex(INVOICE_ID_PATTERN, 'Invoice ID must be a UUID').describe('Invoice ID (UUID)')
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+const documentType = z.enum(['invoice', 'estimate'])
+const status = z.enum(['draft', 'sent', 'paid'])
 
-// List available tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: 'create_invoice',
-        description:
-          'Create a new invoice or estimate. Returns the created invoice with its ID. You can then send it to the client using send_invoice.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            invoiceNumber: {
-              type: 'string',
-              description: 'Invoice number (e.g., INV-001)',
-            },
-            clientName: {
-              type: 'string',
-              description: 'Client or company name',
-            },
-            clientEmail: {
-              type: 'string',
-              description: 'Client email address for sending the invoice',
-            },
-            senderName: {
-              type: 'string',
-              description: 'Your company or business name',
-            },
-            senderEmail: {
-              type: 'string',
-              description: 'Your email address (used as reply-to)',
-            },
-            items: {
-              type: 'array',
-              description: 'Line items on the invoice',
-              items: {
-                type: 'object',
-                properties: {
-                  description: { type: 'string', description: 'Item description' },
-                  quantity: { type: 'number', description: 'Quantity' },
-                  price: { type: 'number', description: 'Price per unit' },
-                },
-                required: ['description', 'quantity', 'price'],
-              },
-            },
-            invoiceDate: {
-              type: 'string',
-              description: 'Invoice date in YYYY-MM-DD format',
-            },
-            dueDate: {
-              type: 'string',
-              description: 'Due date in YYYY-MM-DD format',
-            },
-            notes: {
-              type: 'string',
-              description: 'Notes to include on the invoice',
-            },
-            terms: {
-              type: 'string',
-              description: 'Payment terms',
-            },
-            currency: {
-              type: 'string',
-              description: '3-letter currency code (default: USD)',
-            },
-            documentType: {
-              type: 'string',
-              enum: ['invoice', 'estimate'],
-              description: 'Type of document (default: invoice)',
-            },
-          },
-          required: ['invoiceNumber', 'clientName', 'items'],
-        },
-      },
-      {
-        name: 'list_invoices',
-        description: 'List all invoices, optionally filtered by type or status.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            documentType: {
-              type: 'string',
-              enum: ['invoice', 'estimate'],
-              description: 'Filter by document type',
-            },
-            status: {
-              type: 'string',
-              enum: ['draft', 'sent', 'paid'],
-              description: 'Filter by status',
-            },
-            limit: {
-              type: 'number',
-              description: 'Maximum number of invoices to return (default: 20)',
-            },
-          },
-        },
-      },
-      {
-        name: 'get_invoice',
-        description: 'Get details of a specific invoice by ID.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'Invoice ID',
-            },
-          },
-          required: ['id'],
-        },
-      },
-      {
-        name: 'send_invoice',
-        description:
-          'Send an invoice to the client via email. The invoice must have client email and sender email set.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'Invoice ID',
-            },
-            message: {
-              type: 'string',
-              description: 'Optional message to include in the email',
-            },
-          },
-          required: ['id'],
-        },
-      },
-      {
-        name: 'mark_invoice_paid',
-        description: 'Mark an invoice as paid.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'Invoice ID',
-            },
-          },
-          required: ['id'],
-        },
-      },
-    ],
-  }
-})
-
-// Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args = {} } = request.params
-
-  try {
-    switch (name) {
-      case 'create_invoice': {
-        const invoiceData: InvoiceCreate = {
-          invoiceNumber: args.invoiceNumber as string,
-          clientName: args.clientName as string,
-          clientEmail: args.clientEmail as string | undefined,
-          senderName: args.senderName as string | undefined,
-          senderEmail: args.senderEmail as string | undefined,
-          items: args.items as Array<{ description: string; quantity: number; price: number }>,
-          invoiceDate: args.invoiceDate as string | undefined,
-          dueDate: args.dueDate as string | undefined,
-          notes: args.notes as string | undefined,
-          terms: args.terms as string | undefined,
-          currency: args.currency as string | undefined,
-          documentType: args.documentType as 'invoice' | 'estimate' | undefined,
-        }
-
-        // Calculate totals if not provided
-        if (invoiceData.items) {
-          const subtotal = invoiceData.items.reduce(
-            (sum, item) => sum + item.quantity * item.price,
-            0
-          )
-          invoiceData.subtotal = subtotal
-          invoiceData.total = subtotal
-        }
-
-        const invoice = await client.createInvoice(invoiceData)
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Created invoice ${invoice.invoiceNumber} (ID: ${invoice.id})
-
-Client: ${invoice.clientName}
-Total: ${formatCurrency(invoice.total, invoice.currency)}
-Status: ${invoice.status}
-
-${invoice.clientEmail ? `The invoice can be sent to ${invoice.clientEmail} using send_invoice.` : 'Note: No client email set. Add one to send the invoice.'}`,
-            },
-          ],
-        }
-      }
-
-      case 'list_invoices': {
-        const invoices = await client.listInvoices({
-          documentType: args.documentType as 'invoice' | 'estimate' | undefined,
-          status: args.status as 'draft' | 'sent' | 'paid' | undefined,
-          limit: (args.limit as number) || 20,
-        })
-
-        if (invoices.length === 0) {
-          return {
-            content: [{ type: 'text', text: 'No invoices found.' }],
-          }
-        }
-
-        const list = invoices
-          .map(
-            (inv) =>
-              `• ${inv.invoiceNumber} - ${inv.clientName} - ${formatCurrency(inv.total, inv.currency)} [${inv.status}] (ID: ${inv.id})`
-          )
-          .join('\n')
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Found ${invoices.length} invoice(s):\n\n${list}`,
-            },
-          ],
-        }
-      }
-
-      case 'get_invoice': {
-        const invoice = await client.getInvoice(args.id as string)
-
-        const items = (invoice.items || [])
-          .map((item) => `  - ${item.description}: ${item.quantity} × ${formatCurrency(item.price.toString(), invoice.currency)}`)
-          .join('\n')
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Invoice ${invoice.invoiceNumber}
-ID: ${invoice.id}
-Type: ${invoice.documentType}
-Status: ${invoice.status}
-
-Client: ${invoice.clientName}
-${invoice.clientEmail ? `Email: ${invoice.clientEmail}` : ''}
-
-From: ${invoice.senderName || '(not set)'}
-${invoice.senderEmail ? `Email: ${invoice.senderEmail}` : ''}
-
-Items:
-${items}
-
-Total: ${formatCurrency(invoice.total, invoice.currency)}
-${invoice.invoiceDate ? `Date: ${invoice.invoiceDate}` : ''}
-${invoice.dueDate ? `Due: ${invoice.dueDate}` : ''}
-
-${invoice.notes ? `Notes: ${invoice.notes}` : ''}`,
-            },
-          ],
-        }
-      }
-
-      case 'send_invoice': {
-        const invoice = await client.getInvoice(args.id as string)
-
-        if (!invoice.clientEmail) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Cannot send invoice ${invoice.invoiceNumber}: No client email address set.`,
-              },
-            ],
-            isError: true,
-          }
-        }
-
-        if (!invoice.senderEmail) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Cannot send invoice ${invoice.invoiceNumber}: No sender email address set.`,
-              },
-            ],
-            isError: true,
-          }
-        }
-
-        // Download PDF
-        const pdfBuffer = await client.downloadPdf(args.id as string)
-        const base64Pdf = Buffer.from(pdfBuffer).toString('base64')
-
-        // Send invoice
-        const result = await client.sendInvoice(
-          args.id as string,
-          base64Pdf,
-          args.message as string | undefined
-        )
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Invoice ${invoice.invoiceNumber} sent to ${invoice.clientEmail}
-
-Email ID: ${result.emailId}`,
-            },
-          ],
-        }
-      }
-
-      case 'mark_invoice_paid': {
-        const invoice = await client.updateInvoice(args.id as string, {
-          status: 'paid',
-        })
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Invoice ${invoice.invoiceNumber} marked as paid.
-
-Client: ${invoice.clientName}
-Total: ${formatCurrency(invoice.total, invoice.currency)}`,
-            },
-          ],
-        }
-      }
-
-      default:
-        return {
-          content: [{ type: 'text', text: `Unknown tool: ${name}` }],
-          isError: true,
-        }
-    }
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        },
-      ],
-      isError: true,
-    }
-  }
-})
-
-function formatCurrency(amount: string, currency: string): string {
-  const num = parseFloat(amount)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency || 'USD',
-  }).format(num)
+function text(body: string, isError = false): CallToolResult {
+  return { content: [{ type: 'text', text: body }], ...(isError ? { isError: true } : {}) }
 }
 
-// Start the server
+async function run(fn: () => Promise<CallToolResult>): Promise<CallToolResult> {
+  try {
+    return await fn()
+  } catch (error) {
+    return text(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, true)
+  }
+}
+
+server.registerTool(
+  'create_invoice',
+  {
+    title: 'Create invoice',
+    description:
+      'Create a draft invoice or estimate. Subtotal, discount, tax, and total are computed from the items and rates. Nothing is emailed.',
+    inputSchema: {
+      invoiceNumber: z.string().trim().min(1).max(64).describe('Invoice number (e.g., INV-001)'),
+      clientName: z.string().trim().min(1).max(255).describe('Client or company name'),
+      clientEmail: z.email().max(255).optional().describe('Client email address for sending the invoice'),
+      senderName: z.string().max(255).optional().describe('Your company or business name'),
+      senderEmail: z.email().max(255).optional().describe('Your email address (used as reply-to)'),
+      items: z
+        .array(
+          z.object({
+            description: z.string().trim().min(1).max(500).describe('Item description'),
+            quantity: z.number().min(0).max(1_000_000).describe('Quantity'),
+            price: z.number().min(0).max(1_000_000_000).describe('Price per unit'),
+          })
+        )
+        .min(1)
+        .max(100)
+        .describe('Line items on the invoice'),
+      taxRate: z.number().min(0).max(100).optional().describe('Tax percentage, applied after any discount (e.g., 8.25)'),
+      discountRate: z.number().min(0).max(100).optional().describe('Discount percentage of the subtotal (e.g., 10)'),
+      invoiceDate: dateString.optional().describe('Invoice date in YYYY-MM-DD format'),
+      dueDate: dateString.optional().describe('Due date in YYYY-MM-DD format'),
+      notes: z.string().max(10_000).optional().describe('Notes to include on the invoice'),
+      terms: z.string().max(10_000).optional().describe('Payment terms'),
+      currency: z
+        .string()
+        .regex(/^[A-Za-z]{3}$/, 'Use a 3-letter ISO currency code')
+        .transform((c) => c.toUpperCase())
+        .optional()
+        .describe('3-letter currency code (default: USD)'),
+      documentType: documentType.optional().describe('Type of document (default: invoice)'),
+    },
+    annotations: { title: 'Create invoice', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  },
+  (args) =>
+    run(async () => {
+      const invoice = await client.createInvoice(args)
+      return text(`Created ${invoice.documentType} ${invoice.invoiceNumber} (ID: ${invoice.id})
+
+Client: ${invoice.clientName}
+${formatTotals(invoice)}
+Status: ${invoice.status}
+
+${invoice.clientEmail ? `Client email on file: ${invoice.clientEmail}` : 'No client email set, so it cannot be sent yet.'}`)
+    })
+)
+
+server.registerTool(
+  'list_invoices',
+  {
+    title: 'List invoices',
+    description: 'List invoices and estimates, newest first, optionally filtered by type or status.',
+    inputSchema: {
+      documentType: documentType.optional().describe('Filter by document type'),
+      status: status.optional().describe('Filter by status'),
+      limit: z.number().int().min(1).max(100).optional().describe('Maximum number of invoices to return (default: 20)'),
+    },
+    annotations: { title: 'List invoices', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  (args) =>
+    run(async () => {
+      const invoices = await client.listInvoices({ ...args, limit: args.limit ?? 20 })
+      if (invoices.length === 0) return text('No invoices found.')
+
+      const list = invoices
+        .map((inv) => `• ${inv.invoiceNumber} - ${inv.clientName} - ${formatCurrency(inv.total, inv.currency)} [${inv.status}] (ID: ${inv.id})`)
+        .join('\n')
+      return text(`Found ${invoices.length} invoice(s):\n\n${list}`)
+    })
+)
+
+server.registerTool(
+  'get_invoice',
+  {
+    title: 'Get invoice',
+    description: 'Get the details of one invoice or estimate by ID.',
+    inputSchema: { id: invoiceId },
+    annotations: { title: 'Get invoice', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  ({ id }) => run(async () => text(describeInvoice(await client.getInvoice(id))))
+)
+
+server.registerTool(
+  'send_invoice',
+  {
+    title: 'Email invoice to client',
+    description:
+      "Email an invoice to the client's address on file, with the PDF attached, and mark it sent. Emails a third party and cannot be undone. Asks the user to confirm first; without a confirm prompt in the client, the first call returns a preview and token instead of sending.",
+    inputSchema: {
+      id: invoiceId,
+      message: z.string().max(5000).optional().describe('Optional message to include in the email'),
+      confirmationToken: z
+        .string()
+        .max(100)
+        .optional()
+        .describe('Token from a previous send_invoice preview of this exact invoice and message, after the user approved it. Only used when the client cannot show a confirmation prompt.'),
+    },
+    annotations: { title: 'Email invoice to client', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+  },
+  ({ id, message, confirmationToken }) =>
+    run(async () => {
+      const invoice = await client.getInvoice(id)
+
+      if (!invoice.clientEmail) {
+        return text(`Cannot send invoice ${invoice.invoiceNumber}: No client email address set.`, true)
+      }
+      if (!invoice.senderEmail) {
+        return text(`Cannot send invoice ${invoice.invoiceNumber}: No sender email address set.`, true)
+      }
+
+      const summary = `${invoice.documentType} ${invoice.invoiceNumber} for ${invoice.clientName}, total ${formatCurrency(invoice.total, invoice.currency)}, to ${invoice.clientEmail}`
+      const messageLine = message ? `\n\nMessage to the client:\n${message}` : '\n\nNo message.'
+
+      // Prefer a prompt the user answers directly (elicitation). Without it,
+      // fall back to preview then confirm: the first call only returns a
+      // single-use token bound to this exact send, so nothing is ever sent
+      // on the first call or with content the preview didn't show.
+      if (server.server.getClientCapabilities()?.elicitation) {
+        const answer = await server.server.elicitInput({
+          mode: 'form',
+          message: `Email ${summary}? This sends a real email to your client.${messageLine}`,
+          requestedSchema: {
+            type: 'object',
+            properties: { confirm: { type: 'boolean', title: 'Send this invoice now' } },
+            required: ['confirm'],
+          },
+        })
+        if (answer.action !== 'accept' || answer.content?.confirm !== true) {
+          return text(`Not sent. The user did not confirm sending ${invoice.invoiceNumber}.`)
+        }
+      } else {
+        const fingerprint = JSON.stringify([id, invoice.clientEmail, invoice.total, invoice.currency, message ?? ''])
+        if (!confirmationToken || !consumeSendToken(confirmationToken, fingerprint)) {
+          const token = issueSendToken(fingerprint)
+          return text(`Not sent yet. Confirmation needed.
+
+Ready to email ${summary}.${messageLine}
+
+To send, the user must approve this exact email. Then call send_invoice with the same id and message and confirmationToken: "${token}" (valid for 10 minutes, one use).`)
+        }
+      }
+
+      const result = await client.sendInvoice(id, message)
+      return text(`Invoice ${invoice.invoiceNumber} sent to ${invoice.clientEmail}\n\nEmail ID: ${result.emailId}`)
+    })
+)
+
+server.registerTool(
+  'mark_invoice_paid',
+  {
+    title: 'Mark invoice paid',
+    description: 'Set an invoice’s status to paid.',
+    inputSchema: { id: invoiceId },
+    annotations: { title: 'Mark invoice paid', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  ({ id }) =>
+    run(async () => {
+      const invoice = await client.updateInvoice(id, { status: 'paid' })
+      return text(`Invoice ${invoice.invoiceNumber} marked as paid.
+
+Client: ${invoice.clientName}
+Total: ${formatCurrency(invoice.total, invoice.currency)}`)
+    })
+)
+
+// Single-use tokens for the preview-then-confirm fallback, bound to the
+// recipient, total, and message the preview showed.
+const SEND_TOKEN_TTL_MS = 10 * 60 * 1000
+const sendTokens = new Map<string, { fingerprint: string; expiresAt: number }>()
+
+function issueSendToken(fingerprint: string): string {
+  const token = randomUUID()
+  sendTokens.set(token, { fingerprint, expiresAt: Date.now() + SEND_TOKEN_TTL_MS })
+  return token
+}
+
+function consumeSendToken(token: string, fingerprint: string): boolean {
+  const entry = sendTokens.get(token)
+  sendTokens.delete(token)
+  for (const [key, value] of sendTokens) {
+    if (value.expiresAt < Date.now()) sendTokens.delete(key)
+  }
+  return !!entry && entry.fingerprint === fingerprint && entry.expiresAt >= Date.now()
+}
+
+function describeInvoice(invoice: Invoice): string {
+  const items = (invoice.items || [])
+    .map((item) => `  - ${item.description}: ${item.quantity} × ${formatCurrency(item.price, invoice.currency)}`)
+    .join('\n')
+
+  return [
+    `Invoice ${invoice.invoiceNumber}`,
+    `ID: ${invoice.id}`,
+    `Type: ${invoice.documentType}`,
+    `Status: ${invoice.status}`,
+    '',
+    `Client: ${invoice.clientName}`,
+    invoice.clientEmail ? `Email: ${invoice.clientEmail}` : '',
+    '',
+    `From: ${invoice.senderName || '(not set)'}`,
+    invoice.senderEmail ? `Email: ${invoice.senderEmail}` : '',
+    '',
+    'Items:',
+    items,
+    '',
+    formatTotals(invoice),
+    invoice.invoiceDate ? `Date: ${invoice.invoiceDate}` : '',
+    invoice.dueDate ? `Due: ${invoice.dueDate}` : '',
+    '',
+    invoice.notes ? `Notes: ${invoice.notes}` : '',
+  ].join('\n')
+}
+
+function formatTotals(invoice: Invoice): string {
+  const lines = [`Subtotal: ${formatCurrency(invoice.subtotal, invoice.currency)}`]
+  if (Number(invoice.discountAmount) > 0) {
+    lines.push(`Discount (${Number(invoice.discountRate)}%): -${formatCurrency(invoice.discountAmount ?? 0, invoice.currency)}`)
+  }
+  if (Number(invoice.tax) > 0) {
+    lines.push(`Tax (${Number(invoice.taxRate)}%): ${formatCurrency(invoice.tax, invoice.currency)}`)
+  }
+  lines.push(`Total: ${formatCurrency(invoice.total, invoice.currency)}`)
+  return lines.join('\n')
+}
+
+function formatCurrency(amount: string | number, currency: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(Number(amount))
+}
+
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
@@ -395,6 +277,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Server error:', error)
+  console.error('Server error:', error instanceof Error ? error.message : error)
   process.exit(1)
 })
