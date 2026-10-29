@@ -6,6 +6,7 @@ import { eq, and, isNull } from 'drizzle-orm'
 import { InvoiceValidationError, parseInvoicePayload } from '@/lib/invoice-payload'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { jsonErrorResponse } from '@/lib/error-response'
+import { isUuid } from '@/lib/api-utils'
 
 // GET /api/v1/invoices/:id - Get a single invoice
 export async function GET(
@@ -19,6 +20,9 @@ export async function GET(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
     const [row] = await db
       .select()
       .from(invoices)
@@ -46,6 +50,9 @@ export async function PUT(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
 
     let body: unknown
     try {
@@ -116,6 +123,9 @@ export async function DELETE(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
     const [deleted] = await db
       .delete(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.userId, authResult.userId)))

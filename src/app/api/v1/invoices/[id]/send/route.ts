@@ -5,7 +5,7 @@ import { invoices } from '@/lib/db/schema'
 import { eq, and, isNull, inArray } from 'drizzle-orm'
 import { sendInvoiceEmail } from '@/lib/email-service'
 import { triggerWebhooks } from '@/lib/webhook-service'
-import { dbInvoiceToInvoiceData } from '@/lib/api-utils'
+import { dbInvoiceToInvoiceData, isUuid } from '@/lib/api-utils'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
 import { renderInvoicePdf } from '@/lib/invoice-pdf-server'
@@ -33,6 +33,9 @@ export async function POST(
   }
 
   const { id } = await params
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+  }
 
   // The body is optional. A legacy `pdfBuffer` field is accepted and ignored:
   // the attachment is always rendered here from the stored invoice.
