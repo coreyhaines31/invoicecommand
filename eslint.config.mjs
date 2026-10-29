@@ -25,6 +25,8 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Remotion source for the homepage og:video, built separately.
+      "og/**",
     ],
   },
 ];

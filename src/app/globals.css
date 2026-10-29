@@ -3,6 +3,8 @@
 
 /* e2e writes reports and the dev server log here mid-run; scanning it makes `next dev` rebuild and reset page state. */
 @source not "../../.e2e";
+/* Remotion source for the homepage og:video, built separately. */
+@source not "../../og";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
