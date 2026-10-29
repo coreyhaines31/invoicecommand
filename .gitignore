@@ -58,3 +58,6 @@ packages/*/package-lock.json
 .e2e/failures/
 .e2e/logs/
 .e2e/videos/
+
+# turbo
+.turbo

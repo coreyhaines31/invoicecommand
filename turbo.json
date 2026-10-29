@@ -1,0 +1,19 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "dangerouslyDisablePackageManagerCheck": true,
+  "tasks": {
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "!*.md", "!*.sql", "!LICENSE", "!.agents/**", "!.github/**", "!public/**"],
+      "tags": ["ci"]
+    },
+    "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "!*.md", "!*.sql", "!LICENSE", "!.agents/**", "!.github/**", "!public/**"],
+      "tags": ["ci"]
+    },
+    "test:ci": {
+      "inputs": ["$TURBO_DEFAULT$", "!*.md", "!*.sql", "!LICENSE", "!.agents/**", "!.github/**", "!public/**", "!tests/**", "!e2e.config.ts"],
+      "outputs": ["coverage/**"],
+      "tags": ["ci"]
+    }
+  }
+}
