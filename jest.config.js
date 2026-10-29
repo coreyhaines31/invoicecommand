@@ -30,6 +30,8 @@ const customJestConfig = {
       statements: 10,
     },
   },
+  // Remotion source for the homepage og:video has its own node_modules.
+  modulePathIgnorePatterns: ['<rootDir>/og/'],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
