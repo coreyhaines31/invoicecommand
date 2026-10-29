@@ -75,6 +75,9 @@ export async function PUT(
     // Keep stored totals consistent with items and rates, filling in whatever
     // the update leaves out from the current row.
     let totals = {}
+    // Only write if the inputs we computed from are still current, so two
+    // concurrent updates can't leave totals that match neither.
+    const inputsUnchanged = []
     if (affectsTotals(payload)) {
       const [current] = await db
         .select({ items: invoices.items, taxRate: invoices.taxRate, discountRate: invoices.discountRate })
@@ -90,6 +93,11 @@ export async function PUT(
         taxRate: payload.taxRate !== undefined ? payload.taxRate : current.taxRate,
         discountRate: payload.discountRate !== undefined ? payload.discountRate : current.discountRate,
       })
+      inputsUnchanged.push(
+        eq(invoices.items, current.items),
+        current.taxRate == null ? isNull(invoices.taxRate) : eq(invoices.taxRate, current.taxRate),
+        current.discountRate == null ? isNull(invoices.discountRate) : eq(invoices.discountRate, current.discountRate)
+      )
     }
 
     // Signed estimates are immutable
@@ -99,7 +107,8 @@ export async function PUT(
       .where(and(
         eq(invoices.id, id),
         eq(invoices.userId, authResult.userId),
-        isNull(invoices.signedAt)
+        isNull(invoices.signedAt),
+        ...inputsUnchanged
       ))
       .returning()
 

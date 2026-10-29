@@ -112,4 +112,27 @@ describe('v1 invoice totals', () => {
     const { data } = await res.json()
     expect(data).toMatchObject({ taxRate: '8.26', tax: '826.00', total: '10826.00' })
   })
+
+  it('concurrent updates never leave totals that match neither', async () => {
+    const created = await (
+      await createInvoice(
+        req('/invoices', 'POST', {
+          invoiceNumber: 'INV-5',
+          clientName: 'Client',
+          items: [{ description: 'Work', quantity: 1, price: 100 }],
+        })
+      )
+    ).json()
+    const ctx = { params: Promise.resolve({ id: created.data.id }) }
+
+    const results = await Promise.all([
+      updateInvoice(req(`/invoices/${created.data.id}`, 'PUT', { items: [{ description: 'Work', quantity: 1, price: 200 }] }), ctx),
+      updateInvoice(req(`/invoices/${created.data.id}`, 'PUT', { taxRate: 10 }), ctx),
+    ])
+
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409])
+    const row = fake.rows[0] as { items: Array<{ price: number }>; taxRate?: string; total: string }
+    const expected = row.items[0].price * (1 + Number(row.taxRate ?? 0) / 100)
+    expect(Number(row.total)).toBe(expected)
+  })
 })
