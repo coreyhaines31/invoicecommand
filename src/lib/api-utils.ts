@@ -1,6 +1,16 @@
 import type { InvoiceData } from '@/stores/invoice-store'
 import type { InvoiceItem } from '@/types/database'
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Invoice IDs are UUIDs. Anything else can't match a row, so routes reject it
+ * up front instead of passing arbitrary path segments to the database.
+ */
+export function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value)
+}
+
 /**
  * Format a monetary amount with currency symbol
  */

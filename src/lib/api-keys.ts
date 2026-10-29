@@ -68,7 +68,7 @@ export async function generateApiKey(
       name,
       keyPrefix,
       keyHash,
-      scopes: options.scopes ?? ['invoices:read', 'invoices:write'],
+      scopes: options.scopes ?? ['invoices:read'],
       rateLimit: options.rateLimit ?? 1000,
       expiresAt: options.expiresAt ?? null,
     })

@@ -1,6 +1,6 @@
 {
   "name": "invoicecommand-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server for Invoice Command - Use AI to manage invoices",
   "main": "dist/index.js",
   "bin": {
@@ -23,13 +23,14 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/invoicecommand/invoicecommand"
+    "url": "https://github.com/coreyhaines31/invoicecommand"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

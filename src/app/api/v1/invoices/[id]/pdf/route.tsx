@@ -5,7 +5,7 @@ import { invoices } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { InvoicePDF } from '@/components/pdf/invoice-pdf'
-import { dbInvoiceToInvoiceData } from '@/lib/api-utils'
+import { dbInvoiceToInvoiceData, isUuid } from '@/lib/api-utils'
 import { jsonErrorResponse } from '@/lib/error-response'
 
 // GET /api/v1/invoices/:id/pdf - Download invoice as PDF
@@ -20,6 +20,9 @@ export async function GET(
     }
 
     const { id } = await params
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
 
     const [invoice] = await db
       .select()

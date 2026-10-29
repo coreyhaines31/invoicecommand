@@ -56,17 +56,20 @@ interface ApiKeysClientProps {
 
 const AVAILABLE_SCOPES = [
   { id: 'invoices:read', label: 'Read Invoices', description: 'View invoices and estimates' },
-  { id: 'invoices:write', label: 'Write Invoices', description: 'Create, update, delete invoices' },
+  { id: 'invoices:write', label: 'Write Invoices', description: 'Create, update, delete, and email invoices to clients' },
   { id: 'webhooks:read', label: 'Read Webhooks', description: 'View webhook endpoints' },
   { id: 'webhooks:write', label: 'Write Webhooks', description: 'Manage webhook endpoints' },
 ]
+
+// Read-only unless the user opts into writes: a leaked read key can't email clients.
+const DEFAULT_SCOPES = ['invoices:read']
 
 export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [newKeyName, setNewKeyName] = useState('')
-  const [selectedScopes, setSelectedScopes] = useState<string[]>(['invoices:read', 'invoices:write'])
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(DEFAULT_SCOPES)
   const [createdKey, setCreatedKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
@@ -150,7 +153,7 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
   const handleCloseCreateDialog = () => {
     setIsCreateDialogOpen(false)
     setNewKeyName('')
-    setSelectedScopes(['invoices:read', 'invoices:write'])
+    setSelectedScopes(DEFAULT_SCOPES)
     setCreatedKey(null)
     setShowKey(false)
   }

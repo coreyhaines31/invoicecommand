@@ -9,7 +9,12 @@ export type Invoice = {
   clientEmail: string | null
   senderName: string | null
   senderEmail: string | null
+  subtotal: string
+  tax: string
   total: string
+  taxRate: string | null
+  discountRate: string | null
+  discountAmount: string | null
   currency: string
   items: Array<{ description: string; quantity: number; price: number }>
   notes: string | null
@@ -37,12 +42,9 @@ export type InvoiceCreate = {
   senderZip?: string
   senderPhone?: string
   items: Array<{ description: string; quantity: number; price: number }>
-  subtotal?: number
-  tax?: number
-  total?: number
+  // Percentages. The API derives subtotal, tax, and total from these and the items.
   taxRate?: number
   discountRate?: number
-  discountAmount?: number
   notes?: string
   terms?: string
   currency?: string
@@ -51,6 +53,17 @@ export type InvoiceCreate = {
 
 // The v1 PATCH endpoint also accepts status, which isn't set on create.
 export type InvoiceUpdate = Partial<InvoiceCreate> & { status?: Invoice['status'] }
+
+export const INVOICE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Tool input lands in the URL path, so an id like "../webhooks/x" would reach
+// another API route with the user's key. Only UUIDs get through, encoded.
+export function invoicePath(id: string, suffix = ''): string {
+  if (!INVOICE_ID_PATTERN.test(id)) {
+    throw new Error('Invalid invoice ID: expected a UUID')
+  }
+  return `/invoices/${encodeURIComponent(id)}${suffix}`
+}
 
 export class ApiClient {
   private apiKey: string
@@ -109,7 +122,7 @@ export class ApiClient {
   }
 
   async getInvoice(id: string): Promise<Invoice> {
-    const result = await this.request<{ data: Invoice }>('GET', `/invoices/${id}`)
+    const result = await this.request<{ data: Invoice }>('GET', invoicePath(id))
     return result.data
   }
 
@@ -119,23 +132,19 @@ export class ApiClient {
   }
 
   async updateInvoice(id: string, updates: InvoiceUpdate): Promise<Invoice> {
-    const result = await this.request<{ data: Invoice }>('PUT', `/invoices/${id}`, updates)
+    const result = await this.request<{ data: Invoice }>('PUT', invoicePath(id), updates)
     return result.data
   }
 
   async deleteInvoice(id: string): Promise<void> {
-    await this.request<{ success: boolean }>('DELETE', `/invoices/${id}`)
+    await this.request<{ success: boolean }>('DELETE', invoicePath(id))
   }
 
-  async sendInvoice(id: string, pdfBuffer: string, senderMessage?: string): Promise<{ emailId: string }> {
-    const result = await this.request<{ success: boolean; emailId: string }>('POST', `/invoices/${id}/send`, {
-      pdfBuffer,
+  // The server renders the PDF attachment from the stored invoice.
+  async sendInvoice(id: string, senderMessage?: string): Promise<{ emailId: string }> {
+    const result = await this.request<{ success: boolean; emailId: string }>('POST', invoicePath(id, '/send'), {
       senderMessage,
     })
     return { emailId: result.emailId }
-  }
-
-  async downloadPdf(id: string): Promise<ArrayBuffer> {
-    return this.request('GET', `/invoices/${id}/pdf`)
   }
 }

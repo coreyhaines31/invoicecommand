@@ -3,6 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { InvoiceItem } from '@/types/database'
 import { generateInvoiceNumber } from '@/lib/utils'
+import { calculateInvoiceTotals } from '@/lib/invoice-totals'
 
 // localStorage versioning for schema migrations
 const STORAGE_VERSION = 1
@@ -17,32 +18,6 @@ function debounce<T extends (...args: Parameters<T>) => void>(
   return (...args: Parameters<T>) => {
     if (timeoutId) clearTimeout(timeoutId)
     timeoutId = setTimeout(() => fn(...args), delay)
-  }
-}
-
-// Helper function to calculate totals from state
-function calculateTotalsFromState(state: InvoiceData): Pick<InvoiceData, 'subtotal' | 'discountAmount' | 'taxAmount' | 'total'> {
-  // Calculate subtotal
-  const subtotal = state.items.reduce((sum, item) =>
-    sum + (Number(item.quantity) * Number(item.price)), 0
-  )
-
-  // Calculate discount
-  const discountAmount = subtotal * (state.discountRate / 100)
-  const afterDiscount = subtotal - discountAmount
-
-  // Calculate tax
-  const taxAmount = afterDiscount * (state.taxRate / 100)
-
-  // Calculate total
-  const total = afterDiscount + taxAmount
-
-  // Round to 2 decimal places
-  return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    discountAmount: Math.round(discountAmount * 100) / 100,
-    taxAmount: Math.round(taxAmount * 100) / 100,
-    total: Math.round(total * 100) / 100
   }
 }
 
@@ -250,7 +225,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           state.isDirty = true
           state.lastUpdated = Date.now()
           // Calculate totals synchronously within the same update
-          const totals = calculateTotalsFromState(state)
+          const totals = calculateInvoiceTotals(state)
           Object.assign(state, totals)
         })
       },
@@ -261,7 +236,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           state.isDirty = true
           state.lastUpdated = Date.now()
           // Calculate totals synchronously within the same update
-          const totals = calculateTotalsFromState(state)
+          const totals = calculateInvoiceTotals(state)
           Object.assign(state, totals)
         })
       },
@@ -372,7 +347,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             state.isDirty = true
             state.lastUpdated = Date.now()
             // Calculate totals synchronously within the same update
-            const totals = calculateTotalsFromState(state)
+            const totals = calculateInvoiceTotals(state)
             Object.assign(state, totals)
           }
         })
@@ -385,33 +360,14 @@ export const useInvoiceStore = create<InvoiceStore>()(
             state.isDirty = true
             state.lastUpdated = Date.now()
             // Calculate totals synchronously within the same update
-            const totals = calculateTotalsFromState(state)
+            const totals = calculateInvoiceTotals(state)
             Object.assign(state, totals)
           }
         })
       },
 
       calculateTotals: () => set((state) => {
-        // Calculate subtotal
-        state.subtotal = state.items.reduce((sum, item) =>
-          sum + (Number(item.quantity) * Number(item.price)), 0
-        )
-
-        // Calculate discount
-        state.discountAmount = state.subtotal * (state.discountRate / 100)
-        const afterDiscount = state.subtotal - state.discountAmount
-
-        // Calculate tax
-        state.taxAmount = afterDiscount * (state.taxRate / 100)
-
-        // Calculate total
-        state.total = afterDiscount + state.taxAmount
-
-        // Round to 2 decimal places
-        state.subtotal = Math.round(state.subtotal * 100) / 100
-        state.discountAmount = Math.round(state.discountAmount * 100) / 100
-        state.taxAmount = Math.round(state.taxAmount * 100) / 100
-        state.total = Math.round(state.total * 100) / 100
+        Object.assign(state, calculateInvoiceTotals(state))
       }),
 
       initializeInvoiceNumber: async (userId?: string) => {

@@ -55,26 +55,7 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
     setIsLoading(true)
 
     try {
-      // First, generate the PDF
-      // We'll need to load the invoice and generate PDF
-      // For now, we'll simulate the PDF generation
-      const pdfResponse = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ invoiceId: invoice.id }),
-      })
-
-      if (!pdfResponse.ok) {
-        throw new Error('Failed to generate PDF')
-      }
-
-      const pdfBlob = await pdfResponse.blob()
-      const pdfBuffer = await pdfBlob.arrayBuffer()
-      const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)))
-
-      // Send the email
+      // The server renders and attaches the PDF from the stored invoice.
       const response = await fetch('/api/send-invoice', {
         method: 'POST',
         headers: {
@@ -82,7 +63,6 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
         },
         body: JSON.stringify({
           invoiceId: invoice.id,
-          pdfBuffer: base64Pdf,
           senderMessage: senderMessage.trim() || undefined,
           clientEmail: clientEmail.trim(),
         }),
