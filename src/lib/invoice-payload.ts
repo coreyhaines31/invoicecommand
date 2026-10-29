@@ -101,8 +101,10 @@ export function parseInvoicePayload(input: unknown, mode: ParseMode): Partial<In
   copyDecimal(source, payload, 'subtotal', { min: 0, max: 1_000_000_000 })
   copyDecimal(source, payload, 'tax', { min: 0, max: 1_000_000_000 })
   copyDecimal(source, payload, 'total', { min: 0, max: 1_000_000_000 })
-  copyDecimal(source, payload, 'taxRate', { min: 0, max: 100 })
-  copyDecimal(source, payload, 'discountRate', { min: 0, max: 100 })
+  // Rates are stored with two decimals; round here so totals computed from
+  // the payload match totals recomputed from the stored row.
+  copyDecimal(source, payload, 'taxRate', { min: 0, max: 100, scale: 2 })
+  copyDecimal(source, payload, 'discountRate', { min: 0, max: 100, scale: 2 })
   copyDecimal(source, payload, 'discountAmount', { min: 0, max: 1_000_000_000 })
 
   copyOptionalString(source, payload, 'notes', 10_000)
@@ -253,7 +255,7 @@ function copyDecimal(
   source: Record<string, unknown>,
   target: Partial<InvoiceInsert>,
   key: string,
-  options: { min: number; max: number }
+  options: { min: number; max: number; scale?: number }
 ) {
   if (!has(source, key)) return
 
@@ -267,7 +269,8 @@ function copyDecimal(
     throw new InvoiceValidationError(`${key} is out of range`)
   }
 
-  setField(target, key, normalized.toString())
+  const rounded = options.scale == null ? normalized : Number(normalized.toFixed(options.scale))
+  setField(target, key, rounded.toString())
 }
 
 function copyBoolean(

@@ -99,4 +99,17 @@ describe('v1 invoice totals', () => {
     const { data } = await res.json()
     expect(data).toMatchObject({ status: 'paid', total: '50.00' })
   })
+
+  it('rounds rates to the two decimals the database keeps', async () => {
+    const res = await createInvoice(
+      req('/invoices', 'POST', {
+        invoiceNumber: 'INV-4',
+        clientName: 'Client',
+        items: [{ description: 'Work', quantity: 1, price: 10000 }],
+        taxRate: 8.255,
+      })
+    )
+    const { data } = await res.json()
+    expect(data).toMatchObject({ taxRate: '8.26', tax: '826.00', total: '10826.00' })
+  })
 })
