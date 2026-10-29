@@ -9,7 +9,12 @@ export type Invoice = {
   clientEmail: string | null
   senderName: string | null
   senderEmail: string | null
+  subtotal: string
+  tax: string
   total: string
+  taxRate: string | null
+  discountRate: string | null
+  discountAmount: string | null
   currency: string
   items: Array<{ description: string; quantity: number; price: number }>
   notes: string | null
@@ -37,12 +42,9 @@ export type InvoiceCreate = {
   senderZip?: string
   senderPhone?: string
   items: Array<{ description: string; quantity: number; price: number }>
-  subtotal?: number
-  tax?: number
-  total?: number
+  // Percentages. The API derives subtotal, tax, and total from these and the items.
   taxRate?: number
   discountRate?: number
-  discountAmount?: number
   notes?: string
   terms?: string
   currency?: string
@@ -138,15 +140,11 @@ export class ApiClient {
     await this.request<{ success: boolean }>('DELETE', invoicePath(id))
   }
 
-  async sendInvoice(id: string, pdfBuffer: string, senderMessage?: string): Promise<{ emailId: string }> {
+  // The server renders the PDF attachment from the stored invoice.
+  async sendInvoice(id: string, senderMessage?: string): Promise<{ emailId: string }> {
     const result = await this.request<{ success: boolean; emailId: string }>('POST', invoicePath(id, '/send'), {
-      pdfBuffer,
       senderMessage,
     })
     return { emailId: result.emailId }
-  }
-
-  async downloadPdf(id: string): Promise<ArrayBuffer> {
-    return this.request('GET', invoicePath(id, '/pdf'))
   }
 }
