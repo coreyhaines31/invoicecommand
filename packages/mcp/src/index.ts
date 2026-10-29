@@ -127,14 +127,18 @@ server.registerTool(
   {
     title: 'Email invoice to client',
     description:
-      "Email an invoice to the client's address on file, with the PDF attached, and mark it sent. Emails a third party and cannot be undone.",
+      "Email an invoice to the client's address on file, with the PDF attached, and mark it sent. Emails a third party and cannot be undone. Asks the user to confirm before sending.",
     inputSchema: {
       id: invoiceId,
       message: z.string().max(5000).optional().describe('Optional message to include in the email'),
+      confirm: z
+        .boolean()
+        .optional()
+        .describe('Set true only after the user has seen the recipient and total and approved sending. Used when the client cannot show a confirmation prompt.'),
     },
     annotations: { title: 'Email invoice to client', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
-  ({ id, message }) =>
+  ({ id, message, confirm }) =>
     run(async () => {
       const invoice = await client.getInvoice(id)
 
@@ -143,6 +147,32 @@ server.registerTool(
       }
       if (!invoice.senderEmail) {
         return text(`Cannot send invoice ${invoice.invoiceNumber}: No sender email address set.`, true)
+      }
+
+      const summary = `${invoice.documentType} ${invoice.invoiceNumber} for ${invoice.clientName}, total ${formatCurrency(invoice.total, invoice.currency)}, to ${invoice.clientEmail}`
+
+      // Prefer a prompt the user answers directly (elicitation). Without it,
+      // fall back to a two-step preview then confirm, so a send never happens
+      // on the first call.
+      if (server.server.getClientCapabilities()?.elicitation) {
+        const answer = await server.server.elicitInput({
+          mode: 'form',
+          message: `Email ${summary}? This sends a real email to your client.`,
+          requestedSchema: {
+            type: 'object',
+            properties: { confirm: { type: 'boolean', title: 'Send this invoice now' } },
+            required: ['confirm'],
+          },
+        })
+        if (answer.action !== 'accept' || answer.content?.confirm !== true) {
+          return text(`Not sent. The user did not confirm sending ${invoice.invoiceNumber}.`)
+        }
+      } else if (confirm !== true) {
+        return text(`Not sent yet. Confirmation needed.
+
+Ready to email ${summary}.${message ? `\nMessage: ${message}` : ''}
+
+Ask the user to approve this exact send, then call send_invoice again with confirm: true.`)
       }
 
       const result = await client.sendInvoice(id, message)
