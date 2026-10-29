@@ -370,7 +370,7 @@ const openApiSpec = {
                 required: ['name'],
                 properties: {
                   name: { type: 'string', maxLength: 100 },
-                  scopes: { type: 'array', items: { type: 'string', enum: ['invoices:read', 'invoices:write', 'webhooks:read', 'webhooks:write', '*'] } },
+                  scopes: { type: 'array', default: ['invoices:read'], items: { type: 'string', enum: ['invoices:read', 'invoices:write', 'webhooks:read', 'webhooks:write', '*'] } },
                   rateLimit: { type: 'integer', minimum: 1, maximum: 10000, default: 1000 },
                   expiresAt: { type: 'string', format: 'date-time' },
                 },
