@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
+import { TracerKit } from "@/components/tracerkit";
 import "./globals.css";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { EnhancedErrorBoundary } from "@/components/error-boundary-enhanced";
@@ -224,11 +224,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <Script
-          src="https://tracerkit.com/t.js"
-          data-key="tk_QciHLTTNC0Ga_1LW"
-          strategy="afterInteractive"
-        />
+        <TracerKit />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
