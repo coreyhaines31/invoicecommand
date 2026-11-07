@@ -225,9 +225,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <Script
-          src="https://cdn.usefathom.com/script.js"
-          data-site="BQDNAWTT"
-          defer
+          src="https://tracerkit.com/t.js"
+          data-key="tk_QciHLTTNC0Ga_1LW"
+          strategy="afterInteractive"
         />
       </head>
       <body
