@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,16 @@ import { getAuthErrorMessage, type FriendlyAuthError } from '@/lib/auth-errors'
 export function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  // Keep the token in state and drop it from the URL, so the history entry
+  // never holds it. Otherwise leaving by a client-side link and pressing Back
+  // would show the token to the analytics loaded on the next page.
+  const [token] = useState(() => searchParams.get('token'))
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('token')) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [])
 
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')

@@ -15,7 +15,7 @@ Invoice Command is a free, open-source (AGPL-3.0) invoicing app hosted at invoic
 - **Resend** for email, **OpenAI** for voice parsing (`src/app/api/parse-voice`)
 - **Zustand** for builder state: `src/stores/invoice-store.ts` (anonymous drafts persist to localStorage)
 - **Tailwind CSS v4 + shadcn/ui** (New York style) with the "Cool Money" theme
-- **Sentry** for errors, **PostHog** and **Fathom** for analytics
+- **Sentry** for errors, **PostHog** and **Headstream** (served via the TracerKit loader) for analytics
 
 ## Commands
 
@@ -54,7 +54,7 @@ tests/              e2e tests; __tests__/ holds Jest tests
 
 ## Do not break
 
-- **Fathom analytics.** The `<Script src="https://cdn.usefathom.com/script.js" data-site="BQDNAWTT">` tag in `src/app/layout.tsx` must stay. It was once lost in a merge and a week of traffic data went missing. After editing the layout, check it with `grep -i fathom src/app/layout.tsx`.
+- **TracerKit analytics loader.** The `<Script src="https://tracerkit.com/t.js" data-key="tk_QciHLTTNC0Ga_1LW">` tag in `src/app/layout.tsx` must stay; it serves the Headstream tracker. Analytics was once lost in a merge and a week of traffic data went missing. After editing the layout, check it with `grep -i tracerkit src/app/layout.tsx`.
 - **Content Security Policy** in `next.config.ts`. A new third-party script, frame, worker, or API host needs a matching CSP entry, or it is silently blocked in production. `'unsafe-eval'` is added only under `next dev`.
 - **Next.js 15 viewport.** Put `viewport` and `themeColor` in a separate `export const viewport`, not in `metadata`. In `metadata` they break manifest generation.
 

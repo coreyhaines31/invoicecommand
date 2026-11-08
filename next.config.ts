@@ -55,9 +55,10 @@ const nextConfig: NextConfig = {
             // hooks.stripe.com + js.stripe.com frames (Elements iframes + 3DS challenges).
             // PostHog: *.i.posthog.com for analytics (connect-src) and remote config/recorder scripts
             // from us-assets.i.posthog.com (script-src). Sentry Replay compresses in a blob: worker.
+            // TracerKit: loader script from tracerkit.com, which serves the Headstream tracker (in.headstream.app).
             // UserProof: SDK script and event beacons on ingest.getuserproof.com (public pages only).
             // Dev only: Next's dev runtime evaluates strings, so without 'unsafe-eval' the page never hydrates.
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://cdn.usefathom.com https://js.stripe.com https://*.i.posthog.com https://ingest.getuserproof.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.openai.com https://cdn.usefathom.com https://*.sentry.io https://api.stripe.com https://m.stripe.com https://r.stripe.com https://*.i.posthog.com https://app.posthog.com https://ingest.getuserproof.com; media-src 'self'; object-src 'none'; frame-src 'self' https://js.stripe.com https://hooks.stripe.com;`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://tracerkit.com https://in.headstream.app https://js.stripe.com https://*.i.posthog.com https://ingest.getuserproof.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.openai.com https://tracerkit.com https://in.headstream.app https://*.sentry.io https://api.stripe.com https://m.stripe.com https://r.stripe.com https://*.i.posthog.com https://app.posthog.com https://ingest.getuserproof.com; media-src 'self'; object-src 'none'; frame-src 'self' https://js.stripe.com https://hooks.stripe.com;`,
           },
           {
             key: 'Strict-Transport-Security',
