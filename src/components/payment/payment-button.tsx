@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Button } from '@/components/ui/button'
+import { fromStripeAmount } from '@/lib/stripe-amount'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -23,7 +24,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 interface PaymentButtonProps {
   invoiceId: string
-  amount: number // Amount in cents
+  amount: number // Amount in the currency's smallest unit (see toStripeAmount)
   currency?: string
   invoiceNumber?: string
   recipientName?: string
@@ -42,11 +43,11 @@ export function PaymentButton({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const formatAmount = (cents: number) => {
+  const formatAmount = (stripeAmount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
-    }).format(cents / 100)
+    }).format(fromStripeAmount(stripeAmount, currency))
   }
 
   const createPaymentIntent = async () => {
