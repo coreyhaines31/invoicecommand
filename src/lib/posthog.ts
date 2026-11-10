@@ -1,46 +1,5 @@
 import posthog from 'posthog-js'
-
-// Query params that carry auth/share secrets. Stripped from any URL-shaped
-// string captured by PostHog (pageleave $current_url, $referrer, etc) so the
-// secrets don't end up viewable in PostHog session replays / event logs.
-const SENSITIVE_QUERY_PARAMS = new Set([
-  'token',
-  't',
-  'reset_token',
-  'verification_token',
-  'access_token',
-  'apiKey',
-  'api_key',
-  'key',
-])
-
-function scrubUrl(value: string): string {
-  try {
-    const looksAbsolute = /^https?:\/\//i.test(value)
-    const u = new URL(value, looksAbsolute ? undefined : 'https://placeholder.invalid')
-    let mutated = false
-    for (const param of SENSITIVE_QUERY_PARAMS) {
-      if (u.searchParams.has(param)) {
-        u.searchParams.set(param, 'REDACTED')
-        mutated = true
-      }
-    }
-    if (!mutated) return value
-    return looksAbsolute ? u.toString() : `${u.pathname}${u.search}${u.hash}`
-  } catch {
-    return value
-  }
-}
-
-function scrubProperties<T extends Record<string, unknown>>(properties: T): T {
-  for (const key of Object.keys(properties)) {
-    const value = properties[key]
-    if (typeof value === 'string' && (value.includes('?') || value.startsWith('/'))) {
-      (properties as Record<string, unknown>)[key] = scrubUrl(value)
-    }
-  }
-  return properties
-}
+import { isSensitivePath, scrubEvent } from '@/lib/analytics-redaction'
 
 interface PostHogConfig {
   enableSessionRecording: boolean
@@ -58,6 +17,9 @@ const getPostHogConfig = (): PostHogConfig => {
   }
 }
 
+let recordingEnabled = false
+let pausedForPath = false
+
 export function initPostHog() {
   if (typeof window !== 'undefined') {
     const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
@@ -65,22 +27,22 @@ export function initPostHog() {
     const config = getPostHogConfig()
 
     if (apiKey) {
+      recordingEnabled = config.enableSessionRecording
+      pausedForPath = isSensitivePath(window.location.pathname)
       posthog.init(apiKey, {
         api_host: host,
         person_profiles: 'identified_only',
         capture_pageview: false, // Manual pageview capture
         capture_pageleave: true,
 
-        // Strip token-bearing query params from every event before it ships.
-        // Reset/share/verification URLs would otherwise leak into PostHog.
-        before_send: (event) => {
-          if (event?.properties) scrubProperties(event.properties as Record<string, unknown>)
-          return event
-        },
+        // Redact share tokens (/i/<token>) and token query params from every
+        // event, and drop click events on invoice pages.
+        before_send: (event) => scrubEvent(event, window.location.pathname),
 
-        // Session recording: off in development. Sampling and min/max duration
-        // are set in the PostHog project's replay settings, not here.
-        disable_session_recording: !config.enableSessionRecording,
+        // Session recording: off in development and on pages that show a share
+        // token or invoice content. Sampling and min/max duration are set in
+        // the PostHog project's replay settings, not here.
+        disable_session_recording: !config.enableSessionRecording || pausedForPath,
         enable_recording_console_log: config.environment === 'development',
         session_recording: {
           maskAllInputs: true,
@@ -89,7 +51,8 @@ export function initPostHog() {
             '.credit-card',
             '.social-security',
             '.api-key',
-            '[data-mask]'
+            '[data-mask]',
+            '[data-exclude]'
           ].join(','),
           blockSelector: [
             '[data-private]',
@@ -166,6 +129,19 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
     error_type: 'manual_capture',
     ...context,
   })
+}
+
+// Called on every route change: replay stops on sensitive pages and resumes
+// (still subject to the project's sampling) once the visitor leaves them.
+export function syncSessionRecordingForPath(pathname: string) {
+  if (!recordingEnabled || !posthog.__loaded) return
+  if (isSensitivePath(pathname)) {
+    if (!pausedForPath) posthog.stopSessionRecording()
+    pausedForPath = true
+  } else if (pausedForPath) {
+    pausedForPath = false
+    posthog.startSessionRecording()
+  }
 }
 
 // Session replay controls
