@@ -60,7 +60,11 @@ tests/              e2e tests; __tests__/ holds Jest tests
 
 ## Database (maintainers)
 
-The hosted app uses **one Neon database for both development and production**. With the maintainer's `.env.local`, any migration or seed script you run locally is live on invoicecommand.com immediately. Don't run migrations until the change should be live, and delete any test rows you create. Contributors should point `DATABASE_URL` at their own database.
+Production runs on the `production` branch of the Neon project `invoicecommand-prod`. The maintainer's `.env.local` points at a separate `dev` branch (copied from production on 2026-11-11), and so do Vercel Preview and Development, so local migrations, `db:push` and test rows never touch invoicecommand.com.
+
+To change production deliberately (for example `db:push` when a schema change ships), load the production URL from the gitignored `.env.prod.local` first: `set -a; . ./.env.prod.local; set +a; npm run db:push`. Contributors should point `DATABASE_URL` at their own database.
+
+Production keeps 24 hours of point-in-time history in Neon, plus nightly `pg_dump`s in the private `coreyhaines31/db-backups` repo's R2 bucket. A restore drill on 2026-11-11 passed.
 
 ## Testing
 
