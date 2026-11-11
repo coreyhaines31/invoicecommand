@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
 import { eq, and, ne } from 'drizzle-orm'
 import { stripe, calculateApplicationFee } from '@/lib/stripe'
+import { toStripeAmount } from '@/lib/stripe-amount'
 import { checkIpRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!Number.isInteger(amount) || amount <= 0) {
-      return NextResponse.json({ error: 'Amount must be a positive integer in cents' }, { status: 400 })
+      return NextResponse.json({ error: 'Amount must be a positive integer in the currency\'s smallest unit' }, { status: 400 })
     }
 
     const [invoice] = await db
@@ -63,15 +64,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payment processing not available for this invoice' }, { status: 400 })
     }
 
-    const expectedAmount = Math.round(Number(invoice.total) * 100)
-    if (amount !== expectedAmount) {
-      return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 })
-    }
-
     const ALLOWED_CURRENCIES = new Set(['usd', 'cad', 'gbp', 'eur', 'aud', 'nzd', 'jpy', 'sgd', 'hkd', 'mxn', 'brl', 'inr', 'sek', 'nok', 'dkk', 'chf', 'pln', 'czk'])
     const invoiceCurrency = (invoice.currency || 'USD').toLowerCase()
     if (!ALLOWED_CURRENCIES.has(invoiceCurrency)) {
       return NextResponse.json({ error: 'Unsupported payment currency' }, { status: 400 })
+    }
+
+    const expectedAmount = toStripeAmount(Number(invoice.total), invoiceCurrency)
+    if (amount !== expectedAmount) {
+      return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 })
     }
 
     const userTier = (userProfile.subscriptionTier as 'free' | 'premium' | 'pro') || 'free'
