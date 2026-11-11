@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { stripe, calculateApplicationFee } from '@/lib/stripe'
+import { toStripeAmount } from '@/lib/stripe-amount'
 import { jsonErrorResponse } from '@/lib/error-response'
 
 export async function POST(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!Number.isInteger(amount) || amount <= 0) {
-      return NextResponse.json({ error: 'Amount must be a positive integer in cents' }, { status: 400 })
+      return NextResponse.json({ error: 'Amount must be a positive integer in the currency\'s smallest unit' }, { status: 400 })
     }
 
     const [invoice] = await db
@@ -29,12 +30,12 @@ export async function POST(request: NextRequest) {
 
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
 
-    const expectedAmount = Math.round(Number(invoice.total) * 100)
+    const invoiceCurrency = (invoice.currency || 'USD').toLowerCase()
+
+    const expectedAmount = toStripeAmount(Number(invoice.total), invoiceCurrency)
     if (amount !== expectedAmount) {
       return NextResponse.json({ error: 'Amount does not match invoice total' }, { status: 400 })
     }
-
-    const invoiceCurrency = (invoice.currency || 'USD').toLowerCase()
 
     const [userProfile] = await db
       .select({

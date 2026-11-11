@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Button } from '@/components/ui/button'
+import { fromStripeAmount } from '@/lib/stripe-amount'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -25,7 +26,7 @@ interface PublicPaymentButtonProps {
    *  the share is enabled — so the invoice UUID alone is no longer enough to
    *  initiate a public payment. */
   shareToken: string
-  amount: number // Amount in cents
+  amount: number // Amount in the currency's smallest unit (see toStripeAmount)
   currency?: string
   invoiceNumber?: string
   recipientName?: string
@@ -44,11 +45,11 @@ export function PublicPaymentButton({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const formatAmount = (cents: number) => {
+  const formatAmount = (stripeAmount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
-    }).format(cents / 100)
+    }).format(fromStripeAmount(stripeAmount, currency))
   }
 
   const createPaymentIntent = async () => {

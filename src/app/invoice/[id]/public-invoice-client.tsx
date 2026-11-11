@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { CheckCircle, Download, CreditCard, Clock, XCircle, Smartphone } from 'lucide-react'
 import { PublicPaymentButton } from '@/components/payment/public-payment-button'
+import { toStripeAmount } from '@/lib/stripe-amount'
 import { EstimateSignature, EstimateSignedBanner } from './estimate-signature'
 import { ShareQR } from '@/components/invoice/share-qr'
 
@@ -348,7 +349,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                     {viewMode === 'public' && shareToken && invoice.paymentEnabled && paymentStatus === 'unpaid' && (
                       <PublicPaymentButton
                         shareToken={shareToken}
-                        amount={Math.round(invoice.total * 100)} // Convert to cents
+                        amount={toStripeAmount(invoice.total, invoice.currency)}
                         currency={invoice.currency}
                         invoiceNumber={invoice.invoiceNumber}
                         recipientName={invoice.senderName}
