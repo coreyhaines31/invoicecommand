@@ -66,6 +66,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Share links carry the access token in the path. Send only the origin
+        // as referrer, so the next page's analytics never see the token.
+        // Overrides the site-wide Referrer-Policy above.
+        source: '/i/:path*',
+        headers: [
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin',
+          },
+        ],
+      },
     ]
   },
   // Redirects for SEO

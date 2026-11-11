@@ -5,7 +5,7 @@
 
 import { render, waitFor } from '@testing-library/react'
 import { PostHogProvider } from '@/components/providers/posthog-provider'
-import { initPostHog, posthog } from '@/lib/posthog'
+import { initPostHog, posthog, syncSessionRecordingForPath } from '@/lib/posthog'
 
 // Mock Next.js navigation
 const mockPathname = jest.fn()
@@ -21,6 +21,7 @@ jest.mock('next/navigation', () => ({
 // Mock PostHog
 jest.mock('@/lib/posthog', () => ({
   initPostHog: jest.fn(),
+  syncSessionRecordingForPath: jest.fn(),
   posthog: {
     capture: jest.fn(),
   },
@@ -253,6 +254,20 @@ describe('PostHogProvider', () => {
           $current_url: 'https://invoicecommand.com/search?q=hello%20world',
         })
       })
+    })
+
+    it('redacts the share token from the pageview URL', async () => {
+      mockPathname.mockReturnValue('/i/Ab3_dEf-GhIjKlMnOpQrStUvWxYz0123')
+      mockSearchParams.mockReturnValue('payment=success')
+
+      render(<PostHogProvider />)
+
+      await waitFor(() => {
+        expect(mockPostHogCapture).toHaveBeenCalledWith('$pageview', {
+          $current_url: 'https://invoicecommand.com/i/[redacted]?payment=success',
+        })
+      })
+      expect(syncSessionRecordingForPath).toHaveBeenCalledWith('/i/Ab3_dEf-GhIjKlMnOpQrStUvWxYz0123')
     })
   })
 })
