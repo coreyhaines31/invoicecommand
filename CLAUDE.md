@@ -69,7 +69,7 @@ Production keeps 24 hours of point-in-time history in Neon, plus nightly `pg_dum
 ## Testing
 
 - **Jest** covers libraries, hooks, stores, and components. Tests live in `__tests__/`, mirroring `src/`.
-- **e2e** ([tester.army/e2e](https://tester.army/e2e)) drives a real browser. `e2e.config.ts` starts `npm run dev` itself. Agent steps (`agent.act`, `agent.assert`) call a model through the Vercel AI Gateway, so they need `AI_GATEWAY_API_KEY` or a `vercel link`ed project. Run `npx e2e guide` for the full reference.
+- **e2e** ([e2e.com](https://e2e.com)) drives a real browser. `e2e.config.ts` starts `npm run dev` itself. Agent steps (`agent.act`, `agent.assert`) call a model through the Vercel AI Gateway, so they need `AI_GATEWAY_API_KEY` or a `vercel link`ed project. Run `npx e2e guide` for the full reference.
 - e2e tests must wait for hydration before typing (see `waitForHydration` in `tests/invoice-builder.e2e.ts`). Input typed into server-rendered HTML before React hydrates is silently dropped.
 - `.e2e/` is excluded from Tailwind's source scanning in `globals.css`. Without that, e2e's output files trigger dev rebuilds that reset page state mid-test.
 - CI runs both suites on every PR. Fork PRs don't receive secrets, so e2e skips there.

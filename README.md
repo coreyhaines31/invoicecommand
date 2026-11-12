@@ -45,7 +45,7 @@ npm test           # Jest unit and component tests
 npm run test:e2e   # end-to-end tests in a real browser
 ```
 
-The end-to-end tests use [e2e](https://tester.army/e2e): an AI agent drives the app through flows like building an invoice, and exact assertions check the results. Agent steps call a model through the [Vercel AI Gateway](https://vercel.com/ai-gateway), so set `AI_GATEWAY_API_KEY` (or `vercel link` the project). The runner starts the dev server itself.
+The end-to-end tests use [e2e](https://e2e.com): an AI agent drives the app through flows like building an invoice, and exact assertions check the results. Agent steps call a model through the [Vercel AI Gateway](https://vercel.com/ai-gateway), so set `AI_GATEWAY_API_KEY` (or `vercel link` the project). The runner starts the dev server itself.
 
 ## Contributing
 
