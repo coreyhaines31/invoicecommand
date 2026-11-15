@@ -8,13 +8,23 @@ import { InvoicePreviewMinimal } from './invoice-preview-minimal'
 export function InvoicePreview() {
   const { style } = useInvoiceStore()
 
+  let preview
   switch (style) {
     case 'classic':
-      return <InvoicePreviewClassic />
+      preview = <InvoicePreviewClassic />
+      break
     case 'minimal':
-      return <InvoicePreviewMinimal />
+      preview = <InvoicePreviewMinimal />
+      break
     case 'modern':
     default:
-      return <InvoicePreviewModern />
+      preview = <InvoicePreviewModern />
   }
+
+  // Keyed on style so switching styles crossfades once; typing never remounts it.
+  return (
+    <div key={style ?? 'modern'} className="page-enter">
+      {preview}
+    </div>
+  )
 }
