@@ -22,9 +22,29 @@ export function redactSecretsInText(text: string): string {
 }
 
 // Redacts in place; objects are walked once, so shared references and cycles
-// are safe.
+// are safe. Only changed values are written back: Sentry payloads can hold
+// getter-only or frozen properties, and a throw here makes the SDK drop the
+// event (INVOICECOMMAND-V).
 export function redactDeep<T>(value: T): T {
   const seen = new WeakSet<object>()
+
+  const visit = (target: Record<PropertyKey, unknown>, key: PropertyKey, depth: number) => {
+    try {
+      const current = target[key]
+      const next = walk(current, depth)
+      if (next === current) return
+      target[key] = next
+      // Sloppy-mode or exotic objects can ignore the write without throwing.
+      if (target[key] !== next) throw new Error('unwritable')
+    } catch {
+      // The value can't be redacted in place; drop it rather than send it.
+      try {
+        delete target[key]
+      } catch {
+        // non-configurable: nothing more we can do
+      }
+    }
+  }
 
   const walk = (node: unknown, depth: number): unknown => {
     if (typeof node === 'string') return redactSecretsInText(node)
@@ -32,14 +52,12 @@ export function redactDeep<T>(value: T): T {
     if (seen.has(node)) return node
     seen.add(node)
 
+    const record = node as Record<PropertyKey, unknown>
     if (Array.isArray(node)) {
-      for (let i = 0; i < node.length; i++) node[i] = walk(node[i], depth + 1)
+      for (let i = 0; i < node.length; i++) visit(record, i, depth + 1)
       return node
     }
-    const record = node as Record<string, unknown>
-    for (const key of Object.keys(record)) {
-      record[key] = walk(record[key], depth + 1)
-    }
+    for (const key of Object.keys(record)) visit(record, key, depth + 1)
     return node
   }
 
