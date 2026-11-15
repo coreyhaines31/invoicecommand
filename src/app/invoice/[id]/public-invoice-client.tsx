@@ -132,17 +132,19 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background tabular-nums">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-card border-b">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Invoice {invoice.invoiceNumber}</h1>
-              <p className="text-muted-foreground">From {invoice.senderName}</p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold break-words">
+                {invoice.documentType === 'estimate' ? 'Estimate' : 'Invoice'} {invoice.invoiceNumber}
+              </h1>
+              <p className="text-muted-foreground break-words">From {invoice.senderName}</p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-primary">
+            <div className="text-right shrink-0">
+              <div className="text-2xl font-bold text-foreground">
                 {formatCurrency(invoice.total)}
               </div>
               {getPaymentStatusBadge()}
@@ -190,9 +192,9 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
 
                 {/* From & To */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-semibold mb-2">From</h3>
-                    <div className="text-sm space-y-1">
+                    <div className="text-sm space-y-1 [overflow-wrap:anywhere]">
                       <p className="font-medium">{invoice.senderName}</p>
                       {invoice.senderEmail && <p>{invoice.senderEmail}</p>}
                       {invoice.senderAddress && <p>{invoice.senderAddress}</p>}
@@ -202,9 +204,9 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                       {invoice.senderPhone && <p>{invoice.senderPhone}</p>}
                     </div>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-semibold mb-2">To</h3>
-                    <div className="text-sm space-y-1">
+                    <div className="text-sm space-y-1 [overflow-wrap:anywhere]">
                       <p className="font-medium">{invoice.clientName}</p>
                       {invoice.clientEmail && <p>{invoice.clientEmail}</p>}
                       {invoice.clientAddress && <p>{invoice.clientAddress}</p>}
@@ -222,14 +224,14 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                   <h3 className="font-semibold mb-4">Items</h3>
                   <div className="space-y-2">
                     {invoice.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center py-2 border-b border-border last:border-0">
-                        <div className="flex-1">
-                          <p className="font-medium">{item.description}</p>
+                      <div key={index} className="flex justify-between items-start gap-4 py-2 border-b border-border last:border-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium [overflow-wrap:anywhere]">{item.description}</p>
                           <p className="text-sm text-muted-foreground">
                             Qty: {item.quantity} × {formatCurrency(item.price)}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <p className="font-medium">{formatCurrency(item.quantity * item.price)}</p>
                         </div>
                       </div>
@@ -243,7 +245,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                       <span>{formatCurrency(invoice.subtotal)}</span>
                     </div>
                     {invoice.discountAmount > 0 && (
-                      <div className="flex justify-between text-green-600">
+                      <div className="flex justify-between">
                         <span>Discount ({invoice.discountRate}%):</span>
                         <span>-{formatCurrency(invoice.discountAmount)}</span>
                       </div>
