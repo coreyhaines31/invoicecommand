@@ -19,7 +19,7 @@ import { useUpgradeTriggers } from '@/hooks/use-upgrade-triggers'
 import { useUserTier } from '@/hooks/use-user-tier'
 import { useUser } from '@/hooks/use-user'
 import { LogoUpload } from '@/components/logo-upload'
-import { Plus, Trash2, Download, Loader2, AlertCircle, Share2, Copy, Save, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, Download, Loader2, AlertCircle, Share2, Copy, Save, ArrowRight, X } from 'lucide-react'
 import { PaymentSettings } from '@/components/payment/payment-settings'
 import { toast } from 'sonner'
 import { validateExpirationDate } from '@/lib/utils'
@@ -96,7 +96,12 @@ export function InvoiceForm() {
   }
 
   const handlePDFDownload = async () => {
-    await downloadPDF(invoice)
+    const downloaded = await downloadPDF(invoice)
+    if (downloaded) {
+      toast.success('PDF downloaded', {
+        description: 'Check your downloads folder.',
+      })
+    }
   }
 
   const handleVoiceCommand = async (transcript: string) => {
@@ -345,7 +350,11 @@ export function InvoiceForm() {
                 placeholder="client@example.com"
                 autoComplete="off"
                 spellCheck={false}
+                aria-describedby="clientEmail-help"
               />
+              <p id="clientEmail-help" className="text-xs text-muted-foreground">
+                Prefills the recipient when you send it from your dashboard.
+              </p>
             </div>
           </div>
 
@@ -416,7 +425,11 @@ export function InvoiceForm() {
                 placeholder={documentType === 'estimate' ? 'EST-1001' : 'INV-1001'}
                 autoComplete="off"
                 spellCheck={false}
+                aria-describedby="invoiceNumber-help"
               />
+              <p id="invoiceNumber-help" className="text-xs text-muted-foreground">
+                Numbered for you. Change it to match your own scheme.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="invoiceDate">
@@ -444,10 +457,14 @@ export function InvoiceForm() {
                     updateInvoiceDetails('dueDate', e.target.value)
                   }
                 }}
-                className={expirationDateError && documentType === 'estimate' ? 'border-red-500' : ''}
+                aria-invalid={Boolean(expirationDateError && documentType === 'estimate') || undefined}
+                aria-describedby={expirationDateError && documentType === 'estimate' ? 'expirationDate-error' : undefined}
               />
               {expirationDateError && documentType === 'estimate' && (
-                <p className="text-sm text-red-500">{expirationDateError}</p>
+                <p id="expirationDate-error" role="alert" className="flex items-center gap-1.5 text-sm text-destructive">
+                  <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  {expirationDateError}
+                </p>
               )}
             </div>
           </div>
@@ -633,6 +650,7 @@ export function InvoiceForm() {
                 placeholder="0.00"
                 inputMode="decimal"
                 autoComplete="off"
+                aria-describedby="taxDiscount-help"
               />
             </div>
             <div className="space-y-2">
@@ -648,9 +666,13 @@ export function InvoiceForm() {
                 placeholder="0.00"
                 inputMode="decimal"
                 autoComplete="off"
+                aria-describedby="taxDiscount-help"
               />
             </div>
           </div>
+          <p id="taxDiscount-help" className="text-xs text-muted-foreground mt-3">
+            The discount comes off the subtotal first, then tax is added to what remains.
+          </p>
         </CardContent>
       </Card>
 
@@ -668,7 +690,11 @@ export function InvoiceForm() {
               onChange={(e) => updateInvoiceDetails('notes', e.target.value)}
               placeholder="Additional notes for your client..."
               rows={3}
+              aria-describedby="notes-help"
             />
+            <p id="notes-help" className="text-xs text-muted-foreground">
+              A message to your client, like a thank you or a project summary.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -679,7 +705,11 @@ export function InvoiceForm() {
               onChange={(e) => updateInvoiceDetails('terms', e.target.value)}
               placeholder="Payment terms and conditions..."
               rows={3}
+              aria-describedby="terms-help"
             />
+            <p id="terms-help" className="text-xs text-muted-foreground">
+              How and when to pay, late fees, or your refund policy.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -694,17 +724,18 @@ export function InvoiceForm() {
 
       {/* Error Display */}
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="motion-enter">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>{error}</span>
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={clearError}
-              className="h-auto p-1 hover:bg-transparent"
+              aria-label="Dismiss error"
+              className="size-8 shrink-0 max-sm:size-11"
             >
-              ×
+              <X aria-hidden="true" className="h-4 w-4" />
             </Button>
           </AlertDescription>
         </Alert>
