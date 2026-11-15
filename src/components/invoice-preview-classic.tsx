@@ -23,13 +23,13 @@ export function InvoicePreviewClassic() {
   }
 
   return (
-    <div className="bg-white text-black p-8 rounded-lg shadow-sm border border-border min-h-[800px] max-w-2xl mx-auto">
+    <div className="bg-white text-black p-8 rounded-lg shadow-sm border border-border min-h-[800px] max-w-2xl mx-auto tabular-nums [overflow-wrap:anywhere]">
       {/* Header - Centered */}
       <div className="text-center mb-8 pb-6 border-b-2 border-gray-800">
         <div className="flex items-center justify-center gap-3">
-          <h1 className="text-4xl font-serif font-bold text-gray-800 mb-2">
+          <div className="text-4xl font-serif font-bold text-gray-800 mb-2">
             {invoice.documentType === 'estimate' ? 'ESTIMATE' : 'INVOICE'}
-          </h1>
+          </div>
           {invoice.documentType === 'estimate' && (
             <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-2">
               QUOTE
