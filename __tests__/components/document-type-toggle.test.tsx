@@ -34,8 +34,8 @@ describe('DocumentTypeToggle', () => {
 
     render(<DocumentTypeToggle />)
 
-    const invoiceButton = screen.getByRole('button', { name: /invoice/i })
-    expect(invoiceButton).toHaveClass('bg-background')
+    expect(screen.getByRole('button', { name: /invoice/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /estimate/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('should highlight estimate when estimate is selected', () => {
@@ -43,8 +43,18 @@ describe('DocumentTypeToggle', () => {
 
     render(<DocumentTypeToggle />)
 
-    const estimateButton = screen.getByRole('button', { name: /estimate/i })
-    expect(estimateButton).toHaveClass('bg-background')
+    expect(screen.getByRole('button', { name: /estimate/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /invoice/i })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('should label the group and slide one indicator to the selected option', () => {
+    setStoreState('estimate')
+
+    const { container } = render(<DocumentTypeToggle />)
+
+    expect(screen.getByRole('group', { name: 'Document Type' })).toBeInTheDocument()
+    const indicator = container.querySelector('[aria-hidden="true"].absolute')
+    expect(indicator).toHaveClass('translate-x-[calc(100%+0.25rem)]')
   })
 
   it('should call updateDocumentType when switching to estimate', async () => {
