@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { SiteFooter } from '@/components/site-footer'
 
 const SITE = 'https://invoicecommand.com'
 const HUB = salesOrderTemplates.hub
@@ -153,9 +154,9 @@ export default function SalesOrderTemplateHubPage() {
                 <Link
                   key={variant.slug}
                   href={buildClusterVariantPath(cluster, variant.slug)}
-                  className="block group"
+                  className="block group rounded-xl focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
-                  <Card className="h-full transition-shadow group-hover:shadow-lg">
+                  <Card className="h-full transition-[translate,border-color] duration-(--motion-base) ease-emphasized group-hover:border-primary/40 motion-safe:group-hover:-translate-y-0.5">
                     <CardHeader>
                       <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                         {VARIANT_TYPE_LABEL[variant.type]}
@@ -181,9 +182,9 @@ export default function SalesOrderTemplateHubPage() {
                 <Link
                   key={variant.slug}
                   href={`/${variant.slug}`}
-                  className="block group"
+                  className="block group rounded-xl focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
-                  <Card className="h-full transition-shadow group-hover:shadow-lg">
+                  <Card className="h-full transition-[translate,border-color] duration-(--motion-base) ease-emphasized group-hover:border-primary/40 motion-safe:group-hover:-translate-y-0.5">
                     <CardHeader>
                       <CardTitle className="text-lg">{variant.h1}</CardTitle>
                       <CardDescription>{variant.metaDescription}</CardDescription>
@@ -198,7 +199,7 @@ export default function SalesOrderTemplateHubPage() {
             {HUB.sections.map((section) => (
               <div
                 key={section.heading}
-                className="bg-card border border-border rounded-lg p-6"
+                data-reveal className="bg-card border border-border rounded-lg p-6"
               >
                 <h2 className="text-2xl font-bold text-foreground mb-4">
                   {section.heading}
@@ -207,7 +208,7 @@ export default function SalesOrderTemplateHubPage() {
               </div>
             ))}
 
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-6">
                 Frequently asked questions
               </h2>
@@ -223,7 +224,7 @@ export default function SalesOrderTemplateHubPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
+            <div data-reveal className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold text-foreground mb-3">
                 Other documents you might need
               </h2>
@@ -234,13 +235,13 @@ export default function SalesOrderTemplateHubPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/purchase-order-template"
-                  className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold transition-[background-color,scale] hover:bg-primary/90 duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Purchase order templates
                 </Link>
                 <Link
                   href="/invoice-templates"
-                  className="inline-flex items-center justify-center px-6 py-3 bg-card border border-border text-foreground rounded-md font-semibold hover:bg-muted transition"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-card border border-border text-foreground rounded-md font-semibold transition-[background-color,scale] hover:bg-muted duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Invoice templates
                 </Link>
@@ -248,6 +249,9 @@ export default function SalesOrderTemplateHubPage() {
             </div>
           </section>
         </main>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   )

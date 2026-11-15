@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Logo } from '@/components/logo'
 import type { TemplateCluster, TemplateVariant } from '@/types/templates'
+import { SiteFooter } from '@/components/site-footer'
 
 const SITE = 'https://invoicecommand.com'
 
@@ -123,7 +124,7 @@ export function StandaloneToolPage({ variant, cluster, hubLabel }: Props) {
             {variant.sections.map((section) => (
               <div
                 key={section.heading}
-                className="bg-card border border-border rounded-lg p-6"
+                data-reveal className="bg-card border border-border rounded-lg p-6"
               >
                 <h2 className="text-2xl font-bold text-foreground mb-4">
                   {section.heading}
@@ -132,7 +133,7 @@ export function StandaloneToolPage({ variant, cluster, hubLabel }: Props) {
               </div>
             ))}
 
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-6">
                 Frequently asked questions
               </h2>
@@ -148,23 +149,26 @@ export function StandaloneToolPage({ variant, cluster, hubLabel }: Props) {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
+            <div data-reveal className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold text-foreground mb-3">
                 Browse all {hubLabel} templates
               </h2>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Need a different format or industry? See our full library — Excel,
+                Need a different format or industry? See our full library: Excel,
                 Word, PDF, and profession-specific variants.
               </p>
               <Link
                 href={cluster.basePath}
-                className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition"
+                className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold transition-[background-color,scale] hover:bg-primary/90 duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 View all {hubLabel} templates
               </Link>
             </div>
           </section>
         </main>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   )

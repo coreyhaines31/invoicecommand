@@ -2,7 +2,9 @@ import { Metadata } from 'next';
 import { professions } from '@/data/professions-expanded';
 import { TemplateGrid } from '@/components/template-grid';
 import { Logo } from '@/components/logo';
-import Link from 'next/link';
+import Link from 'next/link'
+import { LayoutGrid, Briefcase, FileDown, Lock } from 'lucide-react';
+import { SiteFooter } from '@/components/site-footer'
 
 export const metadata: Metadata = {
   title: 'Free Invoice Templates | 405+ Professional Templates by Industry | Invoice Command',
@@ -114,10 +116,10 @@ export default function InvoiceTemplatesPage() {
               Find the perfect template for your business and start creating professional invoices instantly.
             </p>
             <div className="flex flex-wrap justify-center gap-2 text-sm">
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">✨ 405+ Templates</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">🎯 Industry-Specific</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">📄 Instant PDF Export</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">🔒 100% Free</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 0, "--rise-distance": "6px" } as React.CSSProperties}><LayoutGrid aria-hidden="true" className="w-3.5 h-3.5" />405+ Templates</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 1, "--rise-distance": "6px" } as React.CSSProperties}><Briefcase aria-hidden="true" className="w-3.5 h-3.5" />Industry-Specific</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 2, "--rise-distance": "6px" } as React.CSSProperties}><FileDown aria-hidden="true" className="w-3.5 h-3.5" />Instant PDF Export</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 3, "--rise-distance": "6px" } as React.CSSProperties}><Lock aria-hidden="true" className="w-3.5 h-3.5" />100% Free</span>
             </div>
           </div>
         </header>
@@ -131,7 +133,7 @@ export default function InvoiceTemplatesPage() {
         <section className="container mx-auto p-4 mt-16">
           <div className="max-w-4xl mx-auto space-y-8">
             {/* About Invoice Templates */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Professional Invoice Templates for Every Business
               </h2>
@@ -164,7 +166,7 @@ export default function InvoiceTemplatesPage() {
             </div>
 
             {/* Popular Categories */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Popular Invoice Template Categories
               </h2>
@@ -246,13 +248,13 @@ export default function InvoiceTemplatesPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/purchase-order-template"
-                  className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold hover:opacity-90 transition"
+                  className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold transition-[background-color,scale] hover:bg-primary/90 duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Browse purchase order templates
                 </Link>
                 <Link
                   href="/sales-order-template"
-                  className="inline-flex items-center px-4 py-2 bg-card border border-border text-foreground rounded-md text-sm font-semibold hover:bg-muted transition"
+                  className="inline-flex items-center px-4 py-2 bg-card border border-border text-foreground rounded-md text-sm font-semibold transition-[background-color,scale] hover:bg-muted duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Browse sales order templates
                 </Link>
@@ -260,7 +262,7 @@ export default function InvoiceTemplatesPage() {
             </div>
 
             {/* FAQ Section */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-6">Frequently Asked Questions</h2>
               <div className="space-y-4">
                 <details className="disclosure border-b border-border pb-4">
@@ -283,6 +285,9 @@ export default function InvoiceTemplatesPage() {
             </div>
           </div>
         </section>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   );
