@@ -70,6 +70,11 @@
   --shadow-opacity: var(--shadow-opacity);
   --color-shadow-color: var(--shadow-color);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Motion: easing curves exposed as ease-* utilities (ease-emphasized, ease-move, ease-sheet) */
+  --ease-emphasized: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root {
@@ -126,6 +131,14 @@
   --shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 8px 10px -2px hsl(0 0% 0% / 0.10);
   --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
+
+  /* Motion durations. UI feedback stays under 250ms; entrances top out at 600ms. */
+  --motion-instant: 100ms;
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-slow: 420ms;
+  --motion-entrance: 560ms;
+  --motion-stagger: 60ms;
 }
 
 .dark {
@@ -204,14 +217,176 @@
   }
 }
 
-/* Respect user's motion preferences */
+@layer base {
+  html {
+    /* A stray wide child should never make the whole page scroll sideways on phones. */
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+/*
+ * Motion foundation
+ *
+ * Keyframes only describe the hidden starting state, so the resting state is
+ * always the normal, visible element. Content never depends on JS to appear.
+ * Only transform and opacity are animated.
+ */
+@keyframes ic-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--rise-distance, 12px), 0);
+  }
+}
+
+@keyframes ic-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ic-drop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@keyframes ic-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@utility motion-rise {
+  animation: ic-rise var(--motion-entrance) var(--ease-emphasized) both;
+  animation-delay: calc(var(--stagger, 0) * var(--motion-stagger));
+}
+
+@utility motion-fade {
+  animation: ic-fade var(--motion-slow) ease both;
+  animation-delay: calc(var(--stagger, 0) * var(--motion-stagger));
+}
+
+/* Short entrance for a newly added row or panel (line items, inline alerts). */
+@utility motion-enter {
+  animation: ic-drop var(--motion-base) var(--ease-emphasized) both;
+}
+
+/* Small confirmation beat for icons that swap state (copied, saved). */
+@utility motion-pop {
+  animation: ic-pop var(--motion-fast) var(--ease-emphasized) both;
+}
+
+/* Lightweight route entrance for app pages: opacity only, no layout impact. */
+@utility page-enter {
+  animation: ic-fade var(--motion-base) ease both;
+}
+
+/* Tactile press feedback for custom clickable surfaces (buttons get it from the Button variant). */
+@utility pressable {
+  transition-property: scale, opacity;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-emphasized);
+
+  &:active {
+    scale: 0.98;
+  }
+}
+
+/*
+ * Scroll reveal. <ScrollReveal /> marks [data-reveal] elements that start below
+ * the fold as "pending" after hydration and flips them to "shown" once, when they
+ * enter the viewport. Without JS, or with reduced motion, nothing is ever hidden.
+ */
+[data-reveal="pending"] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+[data-reveal="shown"] {
+  transition:
+    opacity var(--motion-entrance) var(--ease-emphasized),
+    transform var(--motion-entrance) var(--ease-emphasized);
+  transition-delay: calc(var(--stagger, 0) * var(--motion-stagger));
+}
+
+/* Disclosure (FAQ) motion: the chevron turns and the answer settles in. */
+details.disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  list-style: none;
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+details.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.disclosure > summary::after {
+  content: "";
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.25rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.6;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+
+details.disclosure[open] > summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
+
+details.disclosure > summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+details.disclosure[open] > :not(summary) {
+  animation: ic-drop var(--motion-base) var(--ease-emphasized) both;
+}
+
+/*
+ * Reduced motion: no movement. Durations collapse to near zero, scroll-driven
+ * and reveal effects are switched off, and nothing stays hidden.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
+  }
+
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .pressable:active {
+    scale: none;
+  }
+}
+
+@media print {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
