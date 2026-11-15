@@ -41,6 +41,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 type WebhookData = {
   id: string
@@ -76,6 +77,7 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showSecret, setShowSecret] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [webhookToDelete, setWebhookToDelete] = useState<WebhookData | null>(null)
 
   const handleCreateWebhook = async () => {
     if (!newWebhookUrl.trim()) {
@@ -143,9 +145,11 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
       }
 
       setWebhooks(webhooks.filter(wh => wh.id !== webhookId))
-      toast.success('Webhook deleted successfully')
+      toast.success('Webhook deleted')
+      return true
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete webhook')
+      return false
     } finally {
       setDeletingId(null)
     }
@@ -178,10 +182,14 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
 
   const handleCopySecret = async () => {
     if (!createdSecret) return
-    await navigator.clipboard.writeText(createdSecret)
-    setCopied(true)
-    toast.success('Webhook secret copied to clipboard')
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(createdSecret)
+      setCopied(true)
+      toast.success('Signing secret copied')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Could not copy. Reveal the secret and copy it manually.')
+    }
   }
 
   const handleCloseCreateDialog = () => {
@@ -240,7 +248,10 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                 Receive real-time notifications when events happen
               </p>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={(open) => (open ? setIsCreateDialogOpen(true) : handleCloseCreateDialog())}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -332,10 +343,11 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                         </AlertDescription>
                       </Alert>
                       <div className="space-y-2">
-                        <Label>Signing Secret</Label>
+                        <Label htmlFor="webhook-signing-secret">Signing Secret</Label>
                         <div className="flex items-center space-x-2">
                           <div className="flex-1 relative">
                             <Input
+                              id="webhook-signing-secret"
                               readOnly
                               value={showSecret ? createdSecret : '•'.repeat(40)}
                               className="font-mono text-sm pr-10"
@@ -345,6 +357,8 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                               size="sm"
                               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
                               onClick={() => setShowSecret(!showSecret)}
+                              aria-label={showSecret ? 'Hide signing secret' : 'Show signing secret'}
+                              aria-pressed={showSecret}
                             >
                               {showSecret ? (
                                 <EyeOff className="h-4 w-4" />
@@ -353,9 +367,15 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                               )}
                             </Button>
                           </div>
-                          <Button onClick={handleCopySecret} variant="outline" size="icon">
+                          <Button
+                            onClick={handleCopySecret}
+                            variant="outline"
+                            size="icon"
+                            aria-label={copied ? 'Signing secret copied' : 'Copy signing secret'}
+                            className="max-sm:size-11"
+                          >
                             {copied ? (
-                              <Check className="h-4 w-4 text-green-500" />
+                              <Check key="copied" aria-hidden="true" className="motion-pop h-4 w-4 text-primary" />
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
@@ -409,8 +429,12 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
             <CardContent>
               {webhooks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Webhook className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No webhooks configured. Add one to receive real-time notifications.</p>
+                  <Webhook aria-hidden="true" className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="mb-4">No webhooks yet. Add one to get a POST request when invoices are created, sent, or paid.</p>
+                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus aria-hidden="true" />
+                    Add your first webhook
+                  </Button>
                 </div>
               ) : (
                 <Table>
@@ -436,9 +460,10 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                                 href={webhook.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-muted-foreground hover:text-foreground"
+                                aria-label={`Open ${webhook.url} in a new tab`}
+                                className="inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                               >
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink aria-hidden="true" className="w-3 h-3" />
                               </a>
                             </div>
                             {webhook.description && (
@@ -468,6 +493,7 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                               checked={webhook.isActive ?? false}
                               onCheckedChange={(checked) => handleToggleActive(webhook.id, checked)}
                               disabled={togglingId === webhook.id}
+                              aria-label={`Send events to ${webhook.url}`}
                             />
                             <span className="text-sm text-muted-foreground">
                               {webhook.isActive ? 'Active' : 'Disabled'}
@@ -480,10 +506,11 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
                         <TableCell>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteWebhook(webhook.id)}
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 max-sm:size-11"
+                            onClick={() => setWebhookToDelete(webhook)}
                             disabled={deletingId === webhook.id}
+                            aria-label={`Delete webhook ${webhook.url}`}
                           >
                             {deletingId === webhook.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -499,6 +526,21 @@ export function WebhooksClient({ webhooks: initialWebhooks }: WebhooksClientProp
               )}
             </CardContent>
           </Card>
+
+          <ConfirmDialog
+            open={webhookToDelete !== null}
+            onOpenChange={(open) => !open && setWebhookToDelete(null)}
+            title="Delete this webhook?"
+            description={
+              <>
+                Events will stop being sent to <span className="font-mono break-all">{webhookToDelete?.url}</span>. To pause it instead, use the switch.
+              </>
+            }
+            confirmLabel="Delete webhook"
+            pendingLabel="Deleting..."
+            destructive
+            onConfirm={() => (webhookToDelete ? handleDeleteWebhook(webhookToDelete.id) : false)}
+          />
         </div>
       </div>
     </div>

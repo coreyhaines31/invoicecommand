@@ -38,6 +38,7 @@ import {
   EyeOff,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 type ApiKey = {
   id: string
@@ -74,6 +75,7 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
   const [copied, setCopied] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [showKey, setShowKey] = useState(false)
+  const [keyToRevoke, setKeyToRevoke] = useState<ApiKey | null>(null)
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) {
@@ -134,9 +136,11 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
       }
 
       setApiKeys(apiKeys.filter(key => key.id !== keyId))
-      toast.success('API key revoked successfully')
+      toast.success('API key revoked')
+      return true
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to revoke API key')
+      return false
     } finally {
       setRevokingId(null)
     }
@@ -144,10 +148,14 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
 
   const handleCopyKey = async () => {
     if (!createdKey) return
-    await navigator.clipboard.writeText(createdKey)
-    setCopied(true)
-    toast.success('API key copied to clipboard')
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(createdKey)
+      setCopied(true)
+      toast.success('API key copied')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Could not copy. Reveal the key and copy it manually.')
+    }
   }
 
   const handleCloseCreateDialog = () => {
@@ -195,7 +203,10 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
                 Manage your API keys for programmatic access
               </p>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={(open) => (open ? setIsCreateDialogOpen(true) : handleCloseCreateDialog())}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -277,10 +288,11 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
                         </AlertDescription>
                       </Alert>
                       <div className="space-y-2">
-                        <Label>Your API Key</Label>
+                        <Label htmlFor="created-api-key">Your API Key</Label>
                         <div className="flex items-center space-x-2">
                           <div className="flex-1 relative">
                             <Input
+                              id="created-api-key"
                               readOnly
                               value={showKey ? createdKey : '•'.repeat(40)}
                               className="font-mono text-sm pr-10"
@@ -290,6 +302,8 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
                               size="sm"
                               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
                               onClick={() => setShowKey(!showKey)}
+                              aria-label={showKey ? 'Hide API key' : 'Show API key'}
+                              aria-pressed={showKey}
                             >
                               {showKey ? (
                                 <EyeOff className="h-4 w-4" />
@@ -298,9 +312,15 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
                               )}
                             </Button>
                           </div>
-                          <Button onClick={handleCopyKey} variant="outline" size="icon">
+                          <Button
+                            onClick={handleCopyKey}
+                            variant="outline"
+                            size="icon"
+                            aria-label={copied ? 'API key copied' : 'Copy API key'}
+                            className="max-sm:size-11"
+                          >
                             {copied ? (
-                              <Check className="h-4 w-4 text-green-500" />
+                              <Check key="copied" aria-hidden="true" className="motion-pop h-4 w-4 text-primary" />
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
@@ -356,8 +376,12 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
             <CardContent>
               {apiKeys.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Key className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No API keys yet. Create one to get started.</p>
+                  <Key aria-hidden="true" className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="mb-4">No API keys yet. Create one to use the API, the CLI, or the MCP server.</p>
+                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus aria-hidden="true" />
+                    Create your first API key
+                  </Button>
                 </div>
               ) : (
                 <Table>
@@ -403,10 +427,11 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
                         <TableCell>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRevokeKey(key.id)}
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 max-sm:size-11"
+                            onClick={() => setKeyToRevoke(key)}
                             disabled={revokingId === key.id}
+                            aria-label={`Revoke API key ${key.name}`}
                           >
                             {revokingId === key.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -422,6 +447,17 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
               )}
             </CardContent>
           </Card>
+
+          <ConfirmDialog
+            open={keyToRevoke !== null}
+            onOpenChange={(open) => !open && setKeyToRevoke(null)}
+            title={`Revoke ${keyToRevoke?.name || 'this API key'}?`}
+            description="Anything using this key, like scripts, the CLI, or the MCP server, will stop working right away. This cannot be undone."
+            confirmLabel="Revoke key"
+            pendingLabel="Revoking..."
+            destructive
+            onConfirm={() => (keyToRevoke ? handleRevokeKey(keyToRevoke.id) : false)}
+          />
         </div>
       </div>
     </div>
