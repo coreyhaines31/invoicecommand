@@ -111,13 +111,13 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
         <div className="order-2 lg:order-2 motion-rise" style={{ "--stagger": 3, "--rise-distance": "16px" } as CSSProperties}>
           <Card className="lg:sticky lg:top-8 bg-card border-border shadow-lg">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
                 <h2 className="text-xl font-semibold text-foreground">
                   Estimate Preview
                 </h2>
                 <div className="flex items-center gap-4">
                   <InvoiceStyleDropdown />
-                  <div className="text-sm text-muted-foreground">
+                  <div className="hidden text-sm text-muted-foreground sm:block">
                     Live Preview
                   </div>
                 </div>
