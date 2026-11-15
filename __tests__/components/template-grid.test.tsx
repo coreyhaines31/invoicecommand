@@ -100,11 +100,19 @@ describe('TemplateGrid', () => {
       expect(screen.getByText('Logo design')).toBeInTheDocument()
     })
 
-    it('should render Use Template buttons', () => {
+    it('should render a Use template cue on each card', () => {
       render(<TemplateGrid templates={mockTemplates} />)
 
-      const useTemplateButtons = screen.getAllByText('Use Template')
-      expect(useTemplateButtons.length).toBe(3)
+      const useTemplateCues = screen.getAllByText('Use template')
+      expect(useTemplateCues.length).toBe(3)
+    })
+
+    it('should make each card a single link with no nested button', () => {
+      render(<TemplateGrid templates={mockTemplates} />)
+
+      const card = screen.getByText('Web Developer').closest('a')
+      expect(card).toHaveAttribute('href', '/invoice-templates/web-developer')
+      expect(card?.querySelector('button')).toBeNull()
     })
 
     it('should render search input', () => {
@@ -183,7 +191,7 @@ describe('TemplateGrid', () => {
       fireEvent.change(searchInput, { target: { value: 'nonexistent' } })
 
       expect(screen.getByText('No templates found')).toBeInTheDocument()
-      expect(screen.getByText('Try adjusting your search terms or category filter.')).toBeInTheDocument()
+      expect(screen.getByText(/Try a broader word/)).toBeInTheDocument()
     })
 
     it('should clear search when Clear Filters button is clicked', () => {
@@ -420,7 +428,7 @@ describe('TemplateGrid', () => {
     it('should not render template cards when empty', () => {
       render(<TemplateGrid templates={[]} />)
 
-      expect(screen.queryByText('Use Template')).not.toBeInTheDocument()
+      expect(screen.queryByText('Use template')).not.toBeInTheDocument()
     })
   })
 
@@ -452,8 +460,17 @@ describe('TemplateGrid', () => {
     it('should have accessible search input', () => {
       render(<TemplateGrid templates={mockTemplates} />)
 
-      const searchInput = screen.getByPlaceholderText('Search invoice templates...')
-      expect(searchInput).toHaveAttribute('type', 'text')
+      const searchInput = screen.getByRole('searchbox', { name: 'Search invoice templates' })
+      expect(searchInput).toHaveAttribute('type', 'search')
+    })
+
+    it('should mark the active category filter as pressed', () => {
+      render(<TemplateGrid templates={mockTemplates} />)
+
+      expect(screen.getByRole('button', { name: /^All$/ })).toHaveAttribute('aria-pressed', 'true')
+      fireEvent.click(screen.getByRole('button', { name: /Technology/ }))
+      expect(screen.getByRole('button', { name: /Technology/ })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: /^All$/ })).toHaveAttribute('aria-pressed', 'false')
     })
 
     it('should have accessible category buttons', () => {

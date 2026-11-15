@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { ProfessionData } from '@/data/professions-expanded';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,9 +106,10 @@ export function TemplateGrid({ templates, basePath = '/invoice-templates' }: Tem
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              type="text"
+              type="search"
+              aria-label={`Search ${templateType} templates`}
               placeholder={`Search ${templateType} templates...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -124,10 +124,11 @@ export function TemplateGrid({ templates, basePath = '/invoice-templates' }: Tem
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
+                aria-pressed={selectedCategory === category}
                 onClick={() => setSelectedCategory(category)}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap max-sm:h-10"
               >
-                <Filter className="w-3 h-3 mr-1" />
+                <Filter aria-hidden="true" className="w-3 h-3 mr-1" />
                 {category}
               </Button>
             ))}
@@ -135,7 +136,7 @@ export function TemplateGrid({ templates, basePath = '/invoice-templates' }: Tem
         </div>
 
         {/* Results count */}
-        <div className="mt-4 text-sm text-muted-foreground">
+        <div className="mt-4 text-sm text-muted-foreground tabular-nums" aria-live="polite">
           Showing {filteredTemplates.length} of {templates.length} {templateType} templates
           {searchTerm && ` for "${searchTerm}"`}
           {selectedCategory !== 'All' && ` in ${selectedCategory}`}
@@ -143,29 +144,31 @@ export function TemplateGrid({ templates, basePath = '/invoice-templates' }: Tem
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredTemplates.map((template) => (
-          <Card key={template.id} className="group hover:shadow-lg transition-shadow duration-200">
-            <div className="p-4">
-              <div className="mb-3">
-                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                  {template.profession}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {template.description}
-                </p>
-              </div>
+          <li key={template.id} className="flex">
+            {/* The whole card is one link: a bigger target and no button nested in an anchor. */}
+            <Link
+              href={`${basePath}/${template.id}`}
+              className="group relative flex w-full flex-col rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm outline-none transition-[translate,scale,border-color] duration-(--motion-base) ease-emphasized before:pointer-events-none before:absolute before:inset-0 before:rounded-xl before:opacity-0 before:shadow-lg before:transition-opacity before:duration-(--motion-base) hover:border-primary/40 hover:before:opacity-100 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.99]"
+            >
+              <h3 className="font-semibold text-lg transition-colors group-hover:text-primary">
+                {template.profession}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {template.description}
+              </p>
 
               {/* Rate badge */}
               {template.averageRates.hourly && (
-                <Badge variant="secondary" className="mb-3">
-                  {template.averageRates.hourly}
+                <Badge variant="secondary" className="mt-3 tabular-nums" title="Typical hourly rate">
+                  {template.averageRates.hourly}<span className="text-muted-foreground">/hr</span>
                 </Badge>
               )}
 
               {/* Common services preview */}
-              <div className="mb-4">
-                <div className="text-xs text-muted-foreground mb-1">Common Services:</div>
+              <div className="mt-4 mb-5">
+                <div className="text-xs text-muted-foreground mb-1">Common services</div>
                 <div className="flex flex-wrap gap-1">
                   {template.commonServices.slice(0, 2).map((service, index) => (
                     <span key={index} className="text-xs bg-muted px-2 py-0.5 rounded">
@@ -173,32 +176,32 @@ export function TemplateGrid({ templates, basePath = '/invoice-templates' }: Tem
                     </span>
                   ))}
                   {template.commonServices.length > 2 && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground px-1 py-0.5">
                       +{template.commonServices.length - 2} more
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* CTA Button */}
-              <Link href={`${basePath}/${template.id}`}>
-                <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  Use Template
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </Card>
+              <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+                Use template
+                <ArrowRight
+                  aria-hidden="true"
+                  className="w-4 h-4 transition-[translate] duration-(--motion-fast) ease-emphasized motion-safe:group-hover:translate-x-1"
+                />
+              </span>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {/* No results state */}
       {filteredTemplates.length === 0 && (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
-            <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">No templates found</h3>
-            <p>Try adjusting your search terms or category filter.</p>
+            <Search aria-hidden="true" className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No templates found</h3>
+            <p>Try a broader word, like &quot;design&quot; or &quot;repair&quot;, or clear the filters.</p>
           </div>
           <Button
             variant="outline"
