@@ -132,6 +132,8 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   }
 
 
+  const voiceState = isListening ? 'listening' : isProcessing ? 'processing' : 'idle'
+
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return 'text-green-600'
     if (confidence >= 0.6) return 'text-yellow-600'
@@ -140,10 +142,10 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
 
   if (!isSupported) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+      <Alert>
+        <AlertCircle aria-hidden="true" className="h-4 w-4" />
         <AlertDescription>
-          Voice recognition is not supported in this browser. Please use Chrome, Safari, or Edge for voice features.
+          Voice commands need Chrome, Safari, or Edge. You can still fill in everything by typing.
         </AlertDescription>
       </Alert>
     )
@@ -152,17 +154,22 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   return (
     <div className="space-y-6">
       {/* Voice Commands Header with Recording Button */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1 min-w-0">
           <h3 className="text-lg font-semibold">Voice Commands</h3>
-          <p className="text-sm text-muted-foreground">
-            Use voice commands to quickly update your invoice
+          {/* Contextual guidance that follows the recording state */}
+          <p key={voiceState} className="page-enter text-sm text-muted-foreground">
+            {voiceState === 'listening'
+              ? 'Listening. Speak your changes, then stop recording.'
+              : voiceState === 'processing'
+                ? 'Updating your invoice from what you said.'
+                : 'Say something like “Add 5 hours of consulting at $150 per hour.”'}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
           {/* Usage Counter */}
-          <div className="text-sm text-muted-foreground">
-            <span className="font-mono">
+          <div className="text-sm text-muted-foreground whitespace-nowrap" title="Voice commands used this month">
+            <span className="font-mono tabular-nums">
               {voiceUsage.used}/{voiceUsage.limit}
             </span>
             <span className="ml-1">this month</span>
@@ -185,11 +192,16 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
             disabled={disabled || isProcessing}
             variant={isListening ? "destructive" : "default"}
             size="lg"
-            className="min-w-[140px]"
+            className="min-w-[140px] max-sm:h-11 max-sm:flex-1"
           >
             {isListening ? (
               <>
-                <MicOff className="mr-2 h-5 w-5" />
+                {/* Live indicator: a dot that pings while the mic is open */}
+                <span aria-hidden="true" className="relative mr-1 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-white/70 motion-safe:animate-ping" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                </span>
+                <MicOff aria-hidden="true" className="mr-2 h-5 w-5" />
                 Stop Recording
               </>
             ) : isProcessing ? (
@@ -205,11 +217,14 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
             )}
           </Button>
         </div>
+        <p className="sr-only" role="status" aria-live="polite">
+          {voiceState === 'listening' ? 'Recording started' : voiceState === 'processing' ? 'Processing voice command' : ''}
+        </p>
       </div>
 
       {/* Transcript Tray - only show when transcript exists */}
       {transcript && (
-        <Card className="p-4">
+        <Card className="motion-enter p-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium text-foreground">Transcript</h4>
@@ -240,7 +255,7 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
               </div>
             </div>
 
-            <div className="p-3 bg-muted/50 rounded-lg border-l-4 border-primary">
+            <div className="p-3 bg-muted/50 rounded-lg border border-border">
               <p className="text-foreground font-mono text-sm leading-relaxed">
                 &quot;{transcript}&quot;
               </p>
@@ -251,7 +266,7 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
 
       {/* Error Display */}
       {(speechError || processingError) && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="motion-enter">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             {speechError || processingError}
