@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label'
 import { Copy, Loader2, RefreshCcw, Trash2, Check, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import { ShareQR } from '@/components/invoice/share-qr'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 interface ShareInfo {
   shareToken: string | null
@@ -41,6 +43,7 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
   const [busy, setBusy] = useState<'enable' | 'rotate' | 'revoke' | null>(null)
   const [share, setShare] = useState<ShareInfo | null>(null)
   const [copied, setCopied] = useState(false)
+  const [confirming, setConfirming] = useState<'rotate' | 'revoke' | null>(null)
 
   useEffect(() => {
     if (!open || !invoiceId) return
@@ -64,7 +67,7 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
     label: 'enable' | 'rotate' | 'revoke',
     body?: Record<string, unknown>,
   ) => {
-    if (!invoiceId) return
+    if (!invoiceId) return false
     setBusy(label)
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/share`, {
@@ -81,9 +84,15 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
         setShare(data)
         toast.success(label === 'rotate' ? 'New share link generated' : 'Share link enabled')
       }
+      return true
     } catch (err) {
       console.error(err)
-      toast.error('Something went wrong')
+      toast.error(
+        label === 'revoke'
+          ? 'Could not revoke the link. It is still live. Please try again.'
+          : 'Could not update the share link. Please try again.'
+      )
+      return false
     } finally {
       setBusy(null)
     }
@@ -95,9 +104,10 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      toast.success('Link copied', { description: 'Paste it into an email or message to your client.' })
+      setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('Could not copy to clipboard')
+      toast.error('Could not copy the link. Select it and copy it manually.')
     }
   }
 
@@ -115,12 +125,21 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Loading…
+          <div className="space-y-4" role="status" aria-label="Loading share link">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <div className="flex gap-2">
+                <Skeleton className="h-9 flex-1" />
+                <Skeleton className="size-9" />
+                <Skeleton className="size-9" />
+              </div>
+            </div>
+            <div className="flex justify-center pt-2">
+              <Skeleton className="size-40" />
+            </div>
           </div>
         ) : !isLive ? (
-          <div className="py-4">
+          <div className="page-enter py-4">
             <p className="text-sm text-muted-foreground mb-4">
               Sharing is currently disabled for this invoice. Enable it to generate a public link.
             </p>
@@ -130,13 +149,31 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="page-enter space-y-4">
             <div className="space-y-2">
               <Label htmlFor="share-url">Public link</Label>
               <div className="flex gap-2">
-                <Input id="share-url" value={url} readOnly className="font-mono text-xs" />
-                <Button variant="outline" size="icon" onClick={handleCopy} aria-label="Copy link">
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <Input
+                  id="share-url"
+                  value={url}
+                  readOnly
+                  onFocus={(e) => e.currentTarget.select()}
+                  aria-describedby="share-url-help"
+                  className="font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopy}
+                  aria-label={copied ? 'Link copied' : 'Copy link'}
+                  title="Copy link"
+                  className="max-sm:size-11"
+                >
+                  {copied ? (
+                    <Check key="copied" aria-hidden="true" className="motion-pop w-4 h-4 text-primary" />
+                  ) : (
+                    <Copy key="copy" aria-hidden="true" className="w-4 h-4" />
+                  )}
                 </Button>
                 <Button
                   variant="outline"
@@ -144,6 +181,7 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
                   asChild
                   aria-label="Share via SMS"
                   title="Share via SMS"
+                  className="max-sm:size-11"
                 >
                   {/* sms:?body= opens the OS SMS composer with the URL prefilled.
                       Works on iOS Safari/Chrome out of the box; on Android the
@@ -151,13 +189,16 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
                       opens the messaging app. */}
                   <a
                     href={`sms:?body=${encodeURIComponent(
-                      `Invoice from ${invoiceNumber ? `${invoiceNumber} ` : ''}— view and pay here: ${url}`,
+                      `${invoiceNumber ? `Invoice ${invoiceNumber}` : 'Your invoice'}. View and pay here: ${url}`,
                     )}`}
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <MessageSquare aria-hidden="true" className="w-4 h-4" />
                   </a>
                 </Button>
               </div>
+              <p id="share-url-help" className="text-xs text-muted-foreground">
+                Anyone with this link can open this invoice. Revoke it here at any time.
+              </p>
             </div>
 
             <div className="flex justify-center pt-2">
@@ -184,7 +225,7 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => callShareApi('POST', 'rotate', { rotate: true })}
+                onClick={() => setConfirming('rotate')}
                 disabled={busy !== null}
               >
                 {busy === 'rotate' ? (
@@ -197,9 +238,9 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => callShareApi('DELETE', 'revoke')}
+                onClick={() => setConfirming('revoke')}
                 disabled={busy !== null}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 {busy === 'revoke' ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -215,6 +256,25 @@ export function ShareInvoiceDialog({ invoiceId, invoiceNumber, open, onOpenChang
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirming !== null}
+        onOpenChange={(next) => !next && setConfirming(null)}
+        title={confirming === 'revoke' ? 'Turn off this share link?' : 'Replace this share link?'}
+        description={
+          confirming === 'revoke'
+            ? 'Your client will no longer be able to open the current link. You can turn sharing back on at any time.'
+            : 'The current link stops working right away. Anyone you already sent it to will need the new one.'
+        }
+        confirmLabel={confirming === 'revoke' ? 'Revoke link' : 'Make a new link'}
+        pendingLabel={confirming === 'revoke' ? 'Revoking...' : 'Generating...'}
+        destructive={confirming === 'revoke'}
+        onConfirm={() =>
+          confirming === 'revoke'
+            ? callShareApi('DELETE', 'revoke')
+            : callShareApi('POST', 'rotate', { rotate: true })
+        }
+      />
     </Dialog>
   )
 }
