@@ -218,8 +218,8 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
               </h2>
               <div className="space-y-4">
                 {variant.faq.map((q) => (
-                  <details key={q.question} className="border-b border-border pb-4">
-                    <summary className="font-semibold cursor-pointer hover:text-primary">
+                  <details key={q.question} className="disclosure border-b border-border pb-4">
+                    <summary className="font-semibold py-1 transition-colors hover:text-primary">
                       {q.question}
                     </summary>
                     <p className="text-sm text-muted-foreground mt-2">{q.answer}</p>

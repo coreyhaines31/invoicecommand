@@ -263,20 +263,20 @@ export default function InvoiceTemplatesPage() {
             <div className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-6">Frequently Asked Questions</h2>
               <div className="space-y-4">
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">How many invoice templates are available?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">How many invoice templates are available?</summary>
                   <p className="text-sm text-muted-foreground mt-2">We offer 405+ professional invoice templates covering virtually every industry, profession, and business type. Each template is specifically designed for its target industry with relevant services and professional formatting.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">Are these invoice templates really free?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">Are these invoice templates really free?</summary>
                   <p className="text-sm text-muted-foreground mt-2">Yes! All 405+ invoice templates are completely free to use with no hidden costs, subscriptions, or registration requirements. Create unlimited professional invoices without paying anything.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">Can I customize the invoice templates?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">Can I customize the invoice templates?</summary>
                   <p className="text-sm text-muted-foreground mt-2">Absolutely! Each template is fully customizable. You can modify all text fields, add your branding, adjust line items, set tax rates, and include custom notes or terms. The templates adapt to your specific business needs.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">What file format can I download my invoices in?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">What file format can I download my invoices in?</summary>
                   <p className="text-sm text-muted-foreground mt-2">You can download your completed invoices as high-quality PDF files that are ready to email to clients or print. The PDFs maintain professional formatting and are compatible with all devices and software.</p>
                 </details>
               </div>
