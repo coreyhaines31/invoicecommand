@@ -167,7 +167,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="container mx-auto p-6 max-w-4xl page-enter">
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">

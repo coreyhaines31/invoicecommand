@@ -193,7 +193,7 @@ export function ApiKeysClient({ apiKeys: initialApiKeys }: ApiKeysClientProps) {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <div className="container mx-auto p-6 max-w-5xl">
+      <div className="container mx-auto p-6 max-w-5xl page-enter">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
