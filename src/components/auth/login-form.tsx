@@ -59,15 +59,19 @@ export function LoginForm() {
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Mail aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               id="email"
               type="email"
+              autoComplete="email"
+              inputMode="email"
               placeholder="john@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10"
               required
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'auth-error' : undefined}
             />
           </div>
         </div>
@@ -75,21 +79,24 @@ export function LoginForm() {
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Lock aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               id="password"
               type="password"
+              autoComplete="current-password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pl-10"
               required
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'auth-error' : undefined}
             />
           </div>
         </div>
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" id="auth-error" className="motion-enter">
             <AlertDescription>
               {error.message}
               {error.actionHref && error.actionLabel && (
@@ -104,10 +111,10 @@ export function LoginForm() {
           </Alert>
         )}
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full h-10" disabled={isLoading} aria-busy={isLoading || undefined}>
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
               Signing in...
             </>
           ) : (

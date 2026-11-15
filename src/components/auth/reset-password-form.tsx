@@ -32,7 +32,7 @@ export function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" id="auth-error" className="motion-enter">
         <AlertDescription>
           This reset link is missing its token. Please{' '}
           <Link href="/auth/forgot-password" className="underline font-medium">
@@ -79,37 +79,46 @@ export function ResetPasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="password">New password</Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Lock aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             id="password"
             type="password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="pl-10"
             minLength={8}
             required
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'password-help auth-error' : 'password-help'}
           />
         </div>
+        <p id="password-help" className="text-xs text-muted-foreground">
+          At least 8 characters.
+        </p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="confirm">Confirm new password</Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Lock aria-hidden="true" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             id="confirm"
             type="password"
+            autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             className="pl-10"
             minLength={8}
             required
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'auth-error' : undefined}
           />
         </div>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" id="auth-error" className="motion-enter">
           <AlertDescription>
             {error.message}
             {error.actionHref && error.actionLabel && (
@@ -124,10 +133,10 @@ export function ResetPasswordForm() {
         </Alert>
       )}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full h-10" disabled={isLoading} aria-busy={isLoading || undefined}>
         {isLoading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
             Resetting password…
           </>
         ) : (

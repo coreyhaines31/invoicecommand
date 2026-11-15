@@ -53,10 +53,14 @@ export function SignupForm() {
           <Input
             id="email"
             type="email"
+            autoComplete="email"
+            inputMode="email"
             placeholder="m@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'auth-error' : undefined}
           />
         </div>
 
@@ -65,15 +69,21 @@ export function SignupForm() {
           <Input
             id="password"
             type="password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'password-help auth-error' : 'password-help'}
+            minLength={8}
           />
+          <p id="password-help" className="text-xs text-muted-foreground">
+            At least 8 characters.
+          </p>
         </div>
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" id="auth-error" className="motion-enter">
             <AlertDescription>
               {error.message}
               {error.actionHref && error.actionLabel && (
@@ -89,15 +99,15 @@ export function SignupForm() {
         )}
 
         {message && (
-          <Alert>
+          <Alert role="status" className="motion-enter">
             <AlertDescription>{message}</AlertDescription>
           </Alert>
         )}
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full h-10" disabled={isLoading} aria-busy={isLoading || undefined}>
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
               Creating account...
             </>
           ) : (
