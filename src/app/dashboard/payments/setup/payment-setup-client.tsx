@@ -23,8 +23,10 @@ import {
   Loader2,
   DollarSign,
   Users,
-  Crown
+  Crown,
+  RefreshCw
 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import type { User } from 'better-auth'
 
@@ -55,6 +57,9 @@ interface AccountStatus {
 
 export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentSetupClientProps) {
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null)
+  // Until the status is known we can't tell connected users from new ones, so
+  // show a skeleton instead of the "create account" form.
+  const [statusState, setStatusState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState(user.email || '')
   const [country, setCountry] = useState('US')
@@ -77,14 +82,16 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
   }, [])
 
   const fetchAccountStatus = async () => {
+    setStatusState('loading')
     try {
       const response = await fetch('/api/stripe/connect/account-status')
-      if (response.ok) {
-        const status = await response.json()
-        setAccountStatus(status)
-      }
+      if (!response.ok) throw new Error(`Account status request failed: ${response.status}`)
+      const status = await response.json()
+      setAccountStatus(status)
+      setStatusState('ready')
     } catch (error) {
       console.error('Failed to fetch account status:', error)
+      setStatusState('error')
     }
   }
 
@@ -179,13 +186,42 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
             <AlertDescription>
               <strong>Transaction Fee:</strong> We charge a {getApplicationFeeRate()} application fee on payments you collect.
               {userProfile?.subscriptionTier !== 'pro' && (
-                <span className="text-blue-600"> Upgrade to Pro to eliminate all transaction fees!</span>
+                <span className="font-medium text-foreground"> Upgrade to Pro to remove transaction fees.</span>
               )}
             </AlertDescription>
           </Alert>
 
+          {statusState === 'loading' && (
+            <Card role="status" aria-label="Checking your Stripe account">
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-5 w-full" />
+                  ))}
+                </div>
+                <Skeleton className="h-9 w-40" />
+              </CardContent>
+            </Card>
+          )}
+
+          {statusState === 'error' && (
+            <Alert variant="destructive" className="motion-enter">
+              <AlertCircle aria-hidden="true" className="h-4 w-4" />
+              <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>We couldn&apos;t check your Stripe account. Your settings are unchanged.</span>
+                <Button variant="outline" size="sm" onClick={fetchAccountStatus} className="shrink-0">
+                  <RefreshCw aria-hidden="true" />
+                  Try again
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Account Status Card */}
-          {accountStatus && (
+          {statusState === 'ready' && accountStatus && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -242,7 +278,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
 
                 {accountStatus.hasAccount && (
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p><strong>Account ID:</strong> {accountStatus.accountId}</p>
+                    <p className="break-all"><strong>Account ID:</strong> <span className="font-mono">{accountStatus.accountId}</span></p>
                     <p><strong>Country:</strong> {accountStatus.country?.toUpperCase()}</p>
                     <p><strong>Currency:</strong> {accountStatus.currency?.toUpperCase()}</p>
                   </div>
@@ -252,7 +288,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
           )}
 
           {/* Setup Actions */}
-          {!accountStatus?.hasAccount ? (
+          {statusState !== 'ready' ? null : !accountStatus?.hasAccount ? (
             <Card>
               <CardHeader>
                 <CardTitle>Create Stripe Express Account</CardTitle>
@@ -276,7 +312,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
                   <div className="space-y-2">
                     <Label htmlFor="country">Country</Label>
                     <Select value={country} onValueChange={setCountry}>
-                      <SelectTrigger>
+                      <SelectTrigger id="country" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -293,7 +329,7 @@ export function PaymentSetupClient({ user, userProfile, searchParams }: PaymentS
                 <div className="space-y-2">
                   <Label htmlFor="businessType">Business Type</Label>
                   <Select value={businessType} onValueChange={setBusinessType}>
-                    <SelectTrigger>
+                    <SelectTrigger id="businessType" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

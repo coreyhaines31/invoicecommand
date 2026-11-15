@@ -3,7 +3,7 @@
  * so the client must read the same field names to show the user's tier.
  */
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PaymentSetupClient } from '@/app/dashboard/payments/setup/payment-setup-client'
 import type { User } from 'better-auth'
 
@@ -59,5 +59,32 @@ describe('PaymentSetupClient subscription tier', () => {
 
     expect(screen.getByText('Free')).toBeInTheDocument()
     expect(screen.getByText(/Upgrade to Pro/)).toBeInTheDocument()
+  })
+})
+
+describe('PaymentSetupClient account status states', () => {
+  it('shows a skeleton, not the create-account form, while the status loads', () => {
+    global.fetch = jest.fn(() => new Promise(() => {})) as unknown as typeof fetch
+    renderWithTier('free')
+
+    expect(screen.getByRole('status', { name: 'Checking your Stripe account' })).toBeInTheDocument()
+    expect(screen.queryByText('Create Stripe Express Account')).not.toBeInTheDocument()
+  })
+
+  it('offers a retry when the status request fails, then shows the form', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ hasAccount: false }) })
+    renderWithTier('free')
+
+    const retry = await screen.findByRole('button', { name: /try again/i })
+    expect(screen.getByText(/couldn.t check your Stripe account/)).toBeInTheDocument()
+    expect(screen.queryByText('Create Stripe Express Account')).not.toBeInTheDocument()
+
+    fireEvent.click(retry)
+
+    await waitFor(() => expect(screen.getByText('Create Stripe Express Account')).toBeInTheDocument())
+    expect(screen.getByLabelText('Country')).toBeInTheDocument()
   })
 })
