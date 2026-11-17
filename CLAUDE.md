@@ -12,7 +12,7 @@ Invoice Command is a free, open-source (AGPL-3.0) invoicing app hosted at invoic
 - **Postgres** via **Drizzle**: schema in `src/lib/db/schema.ts`, client in `src/lib/db/index.ts`
 - **Better Auth** (email + password, cookie sessions): `src/lib/auth.ts`, `src/lib/auth-client.ts`
 - **Stripe Connect** (Express accounts) with an application fee per payment: `src/lib/stripe.ts`
-- **Resend** for email, **OpenAI** for voice parsing (`src/app/api/parse-voice`)
+- **PostShiba** for email when `POSTSHIBA_API_KEY` is set, else **Resend** (`src/lib/mail.ts`), **OpenAI** for voice parsing (`src/app/api/parse-voice`)
 - **Zustand** for builder state: `src/stores/invoice-store.ts` (anonymous drafts persist to localStorage)
 - **Tailwind CSS v4 + shadcn/ui** (New York style) with the "Cool Money" theme
 - **Sentry** for errors, **PostHog** and **Headstream** (served via the TracerKit loader) for analytics
