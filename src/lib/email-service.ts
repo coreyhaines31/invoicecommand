@@ -1,7 +1,7 @@
-import { resend, FROM_EMAIL, REPLY_TO_EMAIL, APP_FROM_EMAIL } from './resend'
+import { sendMail, invoiceFromEmail, appFromEmail, replyToEmail } from './mail'
 import type { InvoiceData } from '@/stores/invoice-store'
 
-// Resend rejects an email with neither an HTML nor a text body.
+// Providers reject an email with neither an HTML nor a text body.
 type EmailBody = { html: string; text?: string } | { html?: string; text: string }
 
 export type EmailOptions = EmailBody & {
@@ -17,21 +17,14 @@ export type EmailOptions = EmailBody & {
 export async function sendEmail(options: EmailOptions) {
   const { to, subject, attachments, ...body } = options
   try {
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
+    return await sendMail({
+      from: invoiceFromEmail(),
       to,
       subject,
       ...body,
-      replyTo: REPLY_TO_EMAIL,
+      replyTo: replyToEmail(),
       attachments
     })
-
-    if (result.error) {
-      console.error('Resend API error:', result.error)
-      throw new Error(result.error.message)
-    }
-
-    return result.data
   } catch (error) {
     console.error('Failed to send email:', error)
     throw error
@@ -46,7 +39,7 @@ export interface InvoiceEmailData {
 }
 
 // Strip CR/LF and control chars from email subject inputs.
-// Resend exposes `subject` as JSON, but we don't want to depend on provider-side header sanitization.
+// Providers take `subject` as JSON, but we don't want to depend on provider-side header sanitization.
 function sanitizeSubjectInput(value: string): string {
   return value.replace(/[\r\n\t\x00-\x1f\x7f]/g, ' ').trim()
 }
@@ -82,16 +75,16 @@ export async function sendInvoiceEmail(data: InvoiceEmailData) {
   })
 
   // Use sender's email as reply-to so clients can respond directly to them
-  const replyToEmail = invoice.senderEmail || REPLY_TO_EMAIL
+  const replyTo = invoice.senderEmail || replyToEmail()
 
   try {
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
+    return await sendMail({
+      from: invoiceFromEmail(),
       to: invoice.clientEmail,
       subject,
       html: htmlContent,
       text: textContent,
-      replyTo: replyToEmail,
+      replyTo,
       attachments: [
         {
           filename: `invoice-${invoice.invoiceNumber}.pdf`,
@@ -100,13 +93,6 @@ export async function sendInvoiceEmail(data: InvoiceEmailData) {
         }
       ]
     })
-
-    if (result.error) {
-      console.error('Resend API error:', result.error)
-      throw new Error(result.error.message)
-    }
-
-    return result.data
   } catch (error) {
     console.error('Failed to send invoice email:', error)
     throw error
@@ -362,19 +348,14 @@ View estimate: ${estimateUrl}
 — Invoice Command`
 
   try {
-    const result = await resend.emails.send({
-      from: APP_FROM_EMAIL,
+    return await sendMail({
+      from: appFromEmail(),
       to: data.toEmail,
       subject,
       html,
       text,
-      replyTo: REPLY_TO_EMAIL,
+      replyTo: replyToEmail(),
     })
-    if (result.error) {
-      console.error('Resend API error:', result.error)
-      throw new Error(result.error.message)
-    }
-    return result.data
   } catch (error) {
     console.error('Failed to send estimate acceptance email:', error)
     throw error
@@ -459,19 +440,14 @@ If you didn't request this, you can safely ignore this email — your password w
 https://invoicecommand.com`
 
   try {
-    const result = await resend.emails.send({
-      from: APP_FROM_EMAIL,
+    return await sendMail({
+      from: appFromEmail(),
       to,
       subject,
       html,
       text,
-      replyTo: REPLY_TO_EMAIL,
+      replyTo: replyToEmail(),
     })
-    if (result.error) {
-      console.error('Resend API error:', result.error)
-      throw new Error(result.error.message)
-    }
-    return result.data
   } catch (error) {
     console.error('Failed to send password reset email:', error)
     throw error

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { sendMail, appFromEmail } from '@/lib/mail'
 import { checkIpRateLimit } from '@/lib/rate-limit'
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -94,8 +94,6 @@ export async function POST(request: NextRequest) {
     if (!supportEmail) {
       throw new Error('SUPPORT_EMAIL is not configured')
     }
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    const APP_FROM_EMAIL = process.env.RESEND_APP_FROM_EMAIL || 'hello@m.invoicecommand.com'
 
     const typeLabel = TYPE_LABELS[type]
     const safeSubject = escapeHtml(subject)
@@ -144,21 +142,18 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`
 
-    const supportResult = await resend.emails.send({
-      from: APP_FROM_EMAIL,
+    await sendMail({
+      from: appFromEmail(),
       to: supportEmail,
       replyTo: userEmail ?? undefined,
       subject: sanitizeSubjectInput(`[Invoice Command] [${typeLabel}] ${subject}`),
       html: supportHtml,
       attachments,
     })
-    if (supportResult.error) {
-      throw new Error(supportResult.error.message)
-    }
 
     // We deliberately do not auto-send a confirmation email to userEmail.
     // The endpoint is unauthenticated and userEmail is not verified, so any
-    // caller could direct a "from: hello@m.invoicecommand.com" "Re: <subject>"
+    // caller could direct a "from: hello@mail.invoicecommand.com" "Re: <subject>"
     // email to an arbitrary recipient with attacker-controlled subject — a
     // ready-made phishing vector against our own domain. Replies will come
     // from a human when support responds to the original request.
