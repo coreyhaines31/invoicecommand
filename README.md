@@ -31,7 +31,7 @@ npm run dev       # http://localhost:3005
 | `NEXT_PUBLIC_APP_URL` | Absolute links in emails and share links, e.g. `http://localhost:3005` |
 | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Card payments via Stripe Connect (Express accounts) |
 | `POSTSHIBA_API_KEY` | Sending email through PostShiba. When unset, email goes through Resend with `RESEND_API_KEY` |
-| `MAIL_FROM_EMAIL`, `MAIL_APP_FROM_EMAIL`, `MAIL_REPLY_TO` | From addresses for invoices and app email, and the reply-to. Default to `invoices@`, `hello@` and `support@mail.invoicecommand.com`. The old `RESEND_FROM_EMAIL`, `RESEND_APP_FROM_EMAIL` and `RESEND_REPLY_TO` names are still read. With PostShiba on, a from address outside `mail.invoicecommand.com` is ignored |
+| `MAIL_FROM_EMAIL`, `MAIL_APP_FROM_EMAIL`, `MAIL_REPLY_TO` | From addresses for invoices and app email, and the reply-to. Default to `invoices@` and `hello@mail.invoicecommand.com`, and `support@invoicecommand.com` (the mail subdomain has no inbox). The old `RESEND_FROM_EMAIL`, `RESEND_APP_FROM_EMAIL` and `RESEND_REPLY_TO` names are still read. With PostShiba on, a from address outside `mail.invoicecommand.com` is ignored |
 | `SUPPORT_EMAIL` | Inbox that receives the in-app support form |
 | `OPENAI_API_KEY` | Voice dictation |
 | `CRON_SECRET` | The scheduled jobs in `vercel.json` |

@@ -118,7 +118,7 @@ describe('from addresses', () => {
   it('defaults to the verified mail.invoicecommand.com domain', () => {
     expect(invoiceFromEmail()).toBe('invoices@mail.invoicecommand.com')
     expect(appFromEmail()).toBe('hello@mail.invoicecommand.com')
-    expect(replyToEmail()).toBe('support@mail.invoicecommand.com')
+    expect(replyToEmail()).toBe('support@invoicecommand.com')
   })
 
   it('prefers MAIL_* over the legacy RESEND_* names', () => {

@@ -11,7 +11,8 @@ const VERIFIED_DOMAIN = 'mail.invoicecommand.com'
 
 const DEFAULT_FROM_EMAIL = `invoices@${VERIFIED_DOMAIN}`
 const DEFAULT_APP_FROM_EMAIL = `hello@${VERIFIED_DOMAIN}`
-const DEFAULT_REPLY_TO = `support@${VERIFIED_DOMAIN}`
+// mail.invoicecommand.com has no MX, so replies go to the root domain inbox.
+const DEFAULT_REPLY_TO = 'support@invoicecommand.com'
 
 export type MailAttachment = {
   filename: string
