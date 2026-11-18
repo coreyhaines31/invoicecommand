@@ -2,7 +2,10 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from './db'
 import * as schema from './db/schema'
-import { sendPasswordResetEmail } from './email-service'
+import { sendPasswordResetEmail, sendVerificationEmail } from './email-service'
+import { reportError } from './error-response'
+
+const VERIFICATION_EXPIRES_IN_SECONDS = 60 * 60 * 24
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error('BETTER_AUTH_SECRET environment variable is not set')
@@ -28,6 +31,25 @@ export const auth = betterAuth({
       // Better Auth assembles the reset URL using the redirectTo passed from
       // the client form plus its own token query param, so we just relay it.
       await sendPasswordResetEmail({ to: user.email, resetUrl: url })
+    },
+  },
+  // Login does not need a verified email; sending invoices by email does.
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: VERIFICATION_EXPIRES_IN_SECONDS,
+    sendVerificationEmail: async ({ user, url }, request) => {
+      try {
+        await sendVerificationEmail({ to: user.email, verifyUrl: url })
+      } catch (error) {
+        // The account already exists by the time the signup email goes out,
+        // so a mail failure must not fail signup. The user can resend later.
+        if (request && new URL(request.url).pathname.endsWith('/sign-up/email')) {
+          reportError(error, 'Failed to send signup verification email')
+          return
+        }
+        throw error
+      }
     },
   },
   trustedOrigins: [
