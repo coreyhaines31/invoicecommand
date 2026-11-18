@@ -33,6 +33,9 @@ describe('DeleteAccountSection', () => {
     render(<DeleteAccountSection email="a@example.com" />)
     expect(screen.getByText('Your saved invoices and estimates')).toBeInTheDocument()
     expect(screen.getByText('Your Stripe account, which you manage at Stripe')).toBeInTheDocument()
+    expect(screen.getByText(/unpaid invoices stop working/i)).toHaveTextContent(
+      /reach your Stripe account with no record here/i
+    )
   })
 
   it('stays disabled with a visible reason until the email and password are entered', () => {
@@ -62,6 +65,15 @@ describe('DeleteAccountSection', () => {
     expect(button()).toBeEnabled()
     expect(mockResetInvoice).not.toHaveBeenCalled()
     expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('says when attempts are rate limited', async () => {
+    mockDeleteUser.mockResolvedValue({ error: { status: 429 } })
+    render(<DeleteAccountSection email="a@example.com" />)
+    fill('a@example.com', 'secret')
+    fireEvent.click(button())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/too many attempts/i)
   })
 
   it('blocks a double submit while pending', async () => {

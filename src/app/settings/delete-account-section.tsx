@@ -9,14 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-function deleteErrorMessage(error: { code?: string; message?: string }) {
+function deleteErrorMessage(error: { code?: string; status?: number }) {
+  if (error.status === 429) return 'Too many attempts. Wait a few minutes, then try again.'
   switch (error.code) {
     case 'INVALID_PASSWORD':
       return 'That password is not correct.'
     case 'PASSWORD_REQUIRED':
       return 'Enter your password to delete your account.'
-    case 'SESSION_EXPIRED':
-      return 'Your session has expired. Sign in again, then retry.'
     default:
       return 'We could not delete your account. Please try again.'
   }
@@ -90,6 +89,12 @@ export function DeleteAccountSection({ email }: { email: string }) {
             </ul>
           </div>
         </div>
+
+        <p className="text-sm">
+          Share links and payment links on unpaid invoices stop working. A payment a client completes
+          after you delete your account would still reach your Stripe account with no record here, so
+          let your clients know first.
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
