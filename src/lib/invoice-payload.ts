@@ -1,4 +1,5 @@
 import type { invoices } from '@/lib/db/schema'
+import { isInlineLogo } from '@/lib/logo'
 
 const ALLOWED_FIELDS = new Set([
   'documentType',
@@ -85,7 +86,7 @@ export function parseInvoicePayload(input: unknown, mode: ParseMode): Partial<In
   copyOptionalString(source, payload, 'senderState', 255)
   copyOptionalString(source, payload, 'senderZip', 64)
   copyOptionalString(source, payload, 'senderPhone', 64)
-  copyOptionalString(source, payload, 'senderLogo', 4000)
+  copySenderLogo(source, payload)
 
   if (has(source, 'items')) {
     const items = source.items
@@ -187,6 +188,27 @@ function copyOptionalString(
   }
 
   setField(target, key, trimmed)
+}
+
+function copySenderLogo(source: Record<string, unknown>, target: Partial<InvoiceInsert>) {
+  if (!has(source, 'senderLogo')) return
+
+  const value = source.senderLogo
+  if (value == null || value === '') {
+    setField(target, 'senderLogo', null)
+    return
+  }
+
+  if (typeof value !== 'string') {
+    throw new InvoiceValidationError('senderLogo must be a string')
+  }
+
+  const trimmed = value.trim()
+  if (!isInlineLogo(trimmed)) {
+    throw new InvoiceValidationError('senderLogo must be a PNG, JPEG, WebP or GIF data URL within the logo size limit')
+  }
+
+  setField(target, 'senderLogo', trimmed)
 }
 
 function copyNullableString(
