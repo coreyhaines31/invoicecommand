@@ -1,5 +1,5 @@
 import type { invoices } from '@/lib/db/schema'
-import { isValidLogoValue } from '@/lib/logo'
+import { isInlineLogo } from '@/lib/logo'
 
 const ALLOWED_FIELDS = new Set([
   'documentType',
@@ -204,8 +204,8 @@ function copySenderLogo(source: Record<string, unknown>, target: Partial<Invoice
   }
 
   const trimmed = value.trim()
-  if (!isValidLogoValue(trimmed)) {
-    throw new InvoiceValidationError('senderLogo must be a PNG, JPEG, WebP or GIF data URL within the logo size limit, or an https URL')
+  if (!isInlineLogo(trimmed)) {
+    throw new InvoiceValidationError('senderLogo must be a PNG, JPEG, WebP or GIF data URL within the logo size limit')
   }
 
   setField(target, 'senderLogo', trimmed)

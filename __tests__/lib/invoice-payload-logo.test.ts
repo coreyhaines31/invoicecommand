@@ -39,11 +39,11 @@ describe('parseInvoicePayload senderLogo', () => {
     expect(() => parseLogo('data:image/png;base64,abc"onerror=x')).toThrow(InvoiceValidationError)
   })
 
-  it('keeps accepting https logo URLs, and rejects other schemes', () => {
-    expect(parseLogo('https://example.com/logo.png')).toBe('https://example.com/logo.png')
-    expect(() => parseLogo('javascript:alert(1)')).toThrow(InvoiceValidationError)
+  it('rejects remote and other non-inline logo values', () => {
+    expect(() => parseLogo('https://example.com/logo.png')).toThrow(InvoiceValidationError)
     expect(() => parseLogo('http://example.com/logo.png')).toThrow(InvoiceValidationError)
-    expect(() => parseLogo(`https://example.com/${'a'.repeat(4000)}`)).toThrow(InvoiceValidationError)
+    expect(() => parseLogo('javascript:alert(1)')).toThrow(InvoiceValidationError)
+    expect(() => parseLogo('/logo.png')).toThrow(InvoiceValidationError)
   })
 
   it('clears the logo with an empty string or null', () => {
