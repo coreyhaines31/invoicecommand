@@ -9,6 +9,7 @@ jest.mock('next/headers', () => ({ headers: jest.fn(async () => new Headers()) }
 const mockGetSession = jest.fn()
 jest.mock('@/lib/auth', () => ({ auth: { api: { getSession: () => mockGetSession() } } }))
 jest.mock('@/components/navigation', () => ({ Navigation: () => null }))
+jest.mock('@/app/settings/delete-account-section', () => ({ DeleteAccountSection: () => null }))
 
 import SettingsPage from '@/app/settings/page'
 

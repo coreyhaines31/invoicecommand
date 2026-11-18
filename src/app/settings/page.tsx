@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth'
 import { withNextPath } from '@/lib/next-path'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DeleteAccountSection } from './delete-account-section'
 import { ExportDataButton } from './export-data-button'
 
 export const metadata: Metadata = {
@@ -96,6 +97,10 @@ export default async function SettingsPage() {
               <ExportDataButton />
             </CardContent>
           </Card>
+
+          <div className="pt-6 border-t">
+            <DeleteAccountSection email={user.email} />
+          </div>
         </div>
       </div>
     </div>
