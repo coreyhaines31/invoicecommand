@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
-import { eq, and, ne } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { stripe, calculateApplicationFee } from '@/lib/stripe'
 import { toStripeAmount } from '@/lib/stripe-amount'
 import { checkIpRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
+
+function alreadyPaid() {
+  return NextResponse.json({ error: 'This invoice has already been paid' }, { status: 409 })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,15 +42,18 @@ export async function POST(request: NextRequest) {
         eq(invoices.shareToken, shareToken),
         eq(invoices.shareEnabled, true),
         eq(invoices.paymentEnabled, true),
-        ne(invoices.stripePaymentStatus, 'paid'),
       ))
 
     if (!invoice) {
-      return NextResponse.json({ error: 'Invoice not found, already paid, or payments not enabled' }, { status: 404 })
+      return NextResponse.json({ error: 'Invoice not found or payments not enabled' }, { status: 404 })
     }
 
     if (invoice.shareExpiresAt && invoice.shareExpiresAt.getTime() < Date.now()) {
       return NextResponse.json({ error: 'This share link has expired' }, { status: 410 })
+    }
+
+    if (invoice.status === 'paid' || invoice.stripePaymentStatus === 'paid') {
+      return alreadyPaid()
     }
 
     const invoiceId = invoice.id
@@ -78,25 +85,37 @@ export async function POST(request: NextRequest) {
     const userTier = (userProfile.subscriptionTier as 'free' | 'premium' | 'pro') || 'free'
     const applicationFeeAmount = calculateApplicationFee(amount, userTier)
 
-    // Reuse an in-flight payment intent rather than creating a new one. If we always
-    // overwrote stripePaymentIntentId on every call, the OLD intent could still be
-    // completed by the client (the clientSecret was already handed out), and our
-    // webhook handler — which looks up the row by stripePaymentIntentId — would no
-    // longer find a match. The payment would succeed on Stripe but our DB would
-    // show 'processing' forever.
-    if (
-      invoice.stripePaymentIntentId &&
-      invoice.stripePaymentStatus === 'processing' &&
-      invoice.paymentAmountCents === amount
-    ) {
+    // Reuse an in-flight payment intent rather than creating a new one, and
+    // cancel one we replace (e.g. the total changed): its clientSecret was
+    // already handed out, so it could otherwise still be paid alongside the new
+    // one. Either way, an intent that already succeeded means the invoice is
+    // paid and the webhook just hasn't landed yet.
+    if (invoice.stripePaymentIntentId) {
       const existing = await stripe.paymentIntents.retrieve(invoice.stripePaymentIntentId)
-      if (existing.status !== 'canceled' && existing.status !== 'succeeded') {
+      if (existing.status === 'succeeded') return alreadyPaid()
+
+      if (
+        existing.status !== 'canceled' &&
+        invoice.stripePaymentStatus === 'processing' &&
+        invoice.paymentAmountCents === amount
+      ) {
         return NextResponse.json({
           clientSecret: existing.client_secret,
           paymentIntentId: existing.id,
           applicationFeeAmount: invoice.applicationFeeCents ?? applicationFeeAmount,
           message: 'Existing payment intent reused',
         })
+      }
+
+      if (existing.status !== 'canceled') {
+        try {
+          await stripe.paymentIntents.cancel(existing.id)
+        } catch (error) {
+          // The client may have paid it between the retrieve and the cancel.
+          const latest = await stripe.paymentIntents.retrieve(existing.id)
+          if (latest.status === 'succeeded') return alreadyPaid()
+          if (latest.status !== 'canceled') throw error
+        }
       }
     }
 
@@ -112,7 +131,9 @@ export async function POST(request: NextRequest) {
       },
       description: `Payment for Invoice ${invoice.invoiceNumber || invoiceId}`,
     }, {
-      idempotencyKey: `public-invoice-${invoiceId}-${amount}`,
+      // Keyed on the intent being replaced too, so a retry after a cancel gets a
+      // fresh intent instead of Stripe replaying the canceled one.
+      idempotencyKey: `public-invoice-${invoiceId}-${amount}-${invoice.stripePaymentIntentId ?? 'first'}`,
     })
 
     await db
