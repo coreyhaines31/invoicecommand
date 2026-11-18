@@ -143,7 +143,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
           Create your first invoice to get started with Invoice Command
         </p>
         <Button asChild>
-          <Link href="/">
+          <Link href="/?new=1">
             Create Your First Invoice
           </Link>
         </Button>
