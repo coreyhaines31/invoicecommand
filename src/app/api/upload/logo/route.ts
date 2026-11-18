@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024
 // SVG intentionally excluded — it can carry <script> and event handlers.
@@ -64,7 +65,6 @@ export async function POST(request: NextRequest) {
       size: file.size,
     })
   } catch (error) {
-    console.error('Logo upload failed:', error)
-    return NextResponse.json({ error: 'Failed to upload logo' }, { status: 500 })
+    return jsonErrorResponse(error, 'Failed to upload logo')
   }
 }
