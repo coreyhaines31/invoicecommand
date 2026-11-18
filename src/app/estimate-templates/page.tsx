@@ -178,8 +178,8 @@ export default function EstimateTemplatesPage() {
                 <div>
                   <p className="mb-4">
                     Every template is completely free to use with no registration required.
-                    Your data stays private and secure in your browser - we never store your
-                    business or client information on our servers.
+                    Drafts stay in your browser until you create an account, so you can build and
+                    download an estimate without signing up.
                   </p>
                   <p>
                     Start creating professional estimates today with our industry-specific templates

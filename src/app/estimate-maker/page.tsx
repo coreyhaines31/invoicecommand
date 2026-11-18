@@ -69,7 +69,7 @@ export default function EstimateMakerPage() {
       "Multiple template styles",
       "Automatic calculations",
       "No registration required",
-      "Privacy-first design"
+      "Drafts saved in your browser"
     ],
     "screenshot": "/og-image.png",
     "aggregateRating": {
@@ -204,9 +204,9 @@ export default function EstimateMakerPage() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4">
                 <Shield className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Privacy First</h3>
+              <h3 className="text-xl font-semibold mb-3">Drafts Stay in Your Browser</h3>
               <p className="text-muted-foreground">
-                Your data stays in your browser. No cloud storage, no data collection, no registration required.
+                Drafts stay in your browser until you create an account. No signup needed to build and download an estimate.
               </p>
             </Card>
 
@@ -285,8 +285,8 @@ export default function EstimateMakerPage() {
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-2">Is this estimate maker really free?</h3>
                 <p className="text-muted-foreground">
-                  Yes! Our estimate maker is 100% free with no hidden costs, subscriptions, or feature limitations.
-                  You can create unlimited estimates and download them as PDFs without paying anything.
+                  Yes. Building estimates and downloading them as PDFs is free, with no subscription, and you can
+                  make as many as you like. Voice commands are capped at 10 a month on a free account.
                 </p>
               </Card>
 
@@ -310,9 +310,9 @@ export default function EstimateMakerPage() {
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-2">How does the AI voice input work?</h3>
                 <p className="text-muted-foreground">
-                  Simply click the microphone button and speak naturally. Our AI understands phrases like
-                  &quot;Add $500 for design work&quot; or &quot;Set the client name to John Smith&quot; and automatically updates your estimate.
-                  It&apos;s perfect for creating estimates hands-free or on mobile devices.
+                  Sign in, click the microphone button and say what you want, like &quot;Add $500 for design work&quot; or
+                  &quot;Set the client name to John Smith&quot;. Your words and the current estimate are sent to OpenAI to work out
+                  the change. Free accounts get 10 voice commands a month.
                 </p>
               </Card>
 

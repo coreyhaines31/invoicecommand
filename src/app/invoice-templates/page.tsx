@@ -152,8 +152,8 @@ export default function InvoiceTemplatesPage() {
                 <div>
                   <p className="mb-4">
                     Every template is completely free to use with no registration required.
-                    Your data stays private and secure in your browser - we never store your
-                    business or client information on our servers.
+                    Drafts stay in your browser until you create an account, so you can build and
+                    download an invoice without signing up.
                   </p>
                   <p>
                     Start creating professional invoices today with our industry-specific templates
