@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
         eq(invoices.shareToken, shareToken),
         eq(invoices.shareEnabled, true),
         eq(invoices.paymentEnabled, true),
+        // Estimates are not paid online; rows from before document types count as invoices
+        or(isNull(invoices.documentType), eq(invoices.documentType, 'invoice')),
       ))
 
     if (!invoice) {

@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
       .from(invoices)
       .where(and(eq(invoices.id, invoiceId), eq(invoices.userId, session.user.id)))
 
-    if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    // Estimates are not paid online
+    if (!invoice || invoice.documentType === 'estimate') {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
 
     const invoiceCurrency = (invoice.currency || 'USD').toLowerCase()
 
