@@ -40,9 +40,11 @@ jest.mock('@/lib/error-response', () => ({
   jsonErrorResponse: (error: unknown) => {
     throw error
   },
+  reportError: jest.fn(),
 }))
 
 import { POST } from '@/app/api/v1/feedback/route'
+import { reportError } from '@/lib/error-response'
 
 const body = {
   task: 'Send an invoice',
@@ -91,10 +93,12 @@ it('stores scrubbed feedback with IDs only and emails the owner', async () => {
 })
 
 it('still stores the report when the email fails', async () => {
-  sendMail.mockRejectedValueOnce(new Error('PostShiba 500'))
+  const failure = new Error('PostShiba 500')
+  sendMail.mockRejectedValueOnce(failure)
   const res = await POST(req('sk_live_read_only', body))
   expect(res.status).toBe(201)
   expect(inserted).toHaveLength(1)
+  expect(reportError).toHaveBeenCalledWith(failure, 'Agent feedback email failed', expect.any(Object))
 })
 
 it('rejects placeholder descriptions', async () => {

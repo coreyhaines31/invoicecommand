@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendMail, appFromEmail } from '@/lib/mail'
 import { checkIpRateLimit } from '@/lib/rate-limit'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
@@ -160,10 +161,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Support request failed:', error)
-    return NextResponse.json(
-      { error: 'Failed to send support request' },
-      { status: 500 }
-    )
+    return jsonErrorResponse(error, 'Failed to send support request')
   }
 }
