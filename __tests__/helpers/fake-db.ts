@@ -13,10 +13,17 @@ export const drizzleOrmMock = {
   isNull: (col: Column): Predicate => (row) => row[col.key] == null,
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),
   desc: (col: Column) => col,
+  lt: (col: Column, value: number): Predicate => (row) => (row[col.key] as number) < value,
+  // Supports only the `${column} + n` increment the voice usage routes use.
+  sql: (strings: TemplateStringsArray, col: Column) => {
+    const by = Number(strings[1].replace('+', '').trim())
+    return (row: Row) => (row[col.key] as number) + by
+  },
 }
 
 export const schemaMock = {
   invoices: new Proxy({} as Record<string, Column>, { get: (_, key) => ({ key: String(key) }) }),
+  voiceUsage: new Proxy({} as Record<string, Column>, { get: (_, key) => ({ key: String(key) }) }),
 }
 
 export function createFakeDb() {
@@ -39,6 +46,17 @@ export function createFakeDb() {
     orderBy() { return this }
     limit(n: number) { this.max = n; return this }
     offset(n: number) { this.skip = n; return this }
+    onConflictDoNothing({ target }: { target: Column[] }) {
+      const inserted = rows[rows.length - 1]
+      const conflict = rows.some(
+        (r) => r !== inserted && target.every((col) => r[col.key] === inserted[col.key])
+      )
+      if (conflict) {
+        rows.pop()
+        this.predicate = () => false
+      }
+      return this
+    }
     returning(projection?: Record<string, Column>) {
       if (projection) this.projection = projection
       return this
@@ -69,7 +87,11 @@ export function createFakeDb() {
       set: (values: Row) =>
         new Query({
           mutate: (matches) => {
-            matches.forEach((r) => Object.assign(r, values))
+            matches.forEach((r) => {
+              for (const [key, value] of Object.entries(values)) {
+                r[key] = typeof value === 'function' ? value(r) : value
+              }
+            })
             return matches
           },
         }),
