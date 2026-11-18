@@ -26,10 +26,12 @@ jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 
 const mockGetSession = jest.fn()
 jest.mock('@/lib/auth', () => ({ auth: { api: { getSession: () => mockGetSession() } } }))
+const mockReportError = jest.fn()
 jest.mock('@/lib/error-response', () => ({
   jsonErrorResponse: (error: unknown) => {
     throw error
   },
+  reportError: (...args: unknown[]) => mockReportError(...args),
 }))
 
 import { GET } from '@/app/api/account/export/route'
@@ -113,6 +115,26 @@ describe('GET /api/account/export', () => {
     const text = JSON.stringify(body)
     for (const other of ['user-b', 'acct_b', 'INV-B', 'sk_live_bbbb', 'b.example.test', 'feedback b']) {
       expect(text).not.toContain(other)
+    }
+  })
+
+  it('still exports everything else when the agent feedback table cannot be read', async () => {
+    mockGetSession.mockResolvedValue({ user: { id: 'user-c' } })
+    const realSelect = fake.db.select
+    // A database where the feedback migration has not run rejects that query.
+    fake.db.select = ((projection?: Record<string, { key: string }>) => {
+      if (projection && 'toolName' in projection) throw new Error('relation "agent_feedback" does not exist')
+      return realSelect(projection)
+    }) as typeof fake.db.select
+
+    try {
+      const res = await GET(request())
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.agentFeedback).toEqual([])
+      expect(mockReportError).toHaveBeenCalledTimes(1)
+    } finally {
+      fake.db.select = realSelect
     }
   })
 
