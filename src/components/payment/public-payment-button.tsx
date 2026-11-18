@@ -31,6 +31,10 @@ interface PublicPaymentButtonProps {
   invoiceNumber?: string
   recipientName?: string
   onSuccess?: () => void
+  /** The server found the invoice already paid. */
+  onAlreadyPaid?: () => void
+  /** The server found a payment already in flight at Stripe. */
+  onInProgress?: () => void
 }
 
 export function PublicPaymentButton({
@@ -39,7 +43,9 @@ export function PublicPaymentButton({
   currency = 'usd',
   invoiceNumber,
   recipientName,
-  onSuccess
+  onSuccess,
+  onAlreadyPaid,
+  onInProgress,
 }: PublicPaymentButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -69,6 +75,16 @@ export function PublicPaymentButton({
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}))
+        if (body?.code === 'already_paid' && onAlreadyPaid) {
+          setIsOpen(false)
+          onAlreadyPaid()
+          return
+        }
+        if (body?.code === 'payment_in_progress' && onInProgress) {
+          setIsOpen(false)
+          onInProgress()
+          return
+        }
         const msg = body?.error || 'Failed to create payment intent'
         const ref = body?.eventId ? ` (ref ${body.eventId.slice(0, 8)})` : ''
         throw new Error(`${msg}${ref}`)

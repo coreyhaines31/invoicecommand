@@ -2,7 +2,7 @@
  * The share page must let a client retry after a declined card, and must not
  * offer to charge an invoice the owner has already marked paid.
  */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { createFakeDb } from '../helpers/fake-db'
 
 const fake = createFakeDb()
@@ -16,7 +16,13 @@ jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 jest.mock('next/server', () => ({ after: jest.fn() }))
 jest.mock('next/navigation', () => ({ notFound: jest.fn(() => { throw new Error('notFound') }) }))
 jest.mock('@/components/payment/public-payment-button', () => ({
-  PublicPaymentButton: () => <button>Pay now</button>,
+  PublicPaymentButton: ({ onInProgress, onAlreadyPaid }: { onInProgress: () => void; onAlreadyPaid: () => void }) => (
+    <>
+      <button>Pay now</button>
+      <button onClick={onInProgress}>Server says in progress</button>
+      <button onClick={onAlreadyPaid}>Server says paid</button>
+    </>
+  ),
 }))
 jest.mock('@/components/invoice/share-qr', () => ({ ShareQR: () => null }))
 jest.mock('@/app/invoice/[id]/estimate-signature', () => ({
@@ -64,5 +70,37 @@ describe('share page payment panel', () => {
     await renderSharePage({ status: 'paid', stripePaymentStatus: 'unpaid' })
     expect(screen.queryByRole('button', { name: 'Pay now' })).not.toBeInTheDocument()
     expect(screen.getByText('This invoice has been paid. Thank you!')).toBeInTheDocument()
+  })
+
+  it('offers to pay again after the client abandoned the payment form', async () => {
+    await renderSharePage({ stripePaymentStatus: 'processing' })
+    expect(screen.getByRole('button', { name: 'Pay now' })).toBeInTheDocument()
+    expect(screen.queryByText(/payment for this invoice is in progress/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Processing')).not.toBeInTheDocument()
+  })
+
+  it('shows a payment in progress, with no Pay button, once the server says so', async () => {
+    await renderSharePage({ stripePaymentStatus: 'processing' })
+    fireEvent.click(screen.getByRole('button', { name: 'Server says in progress' }))
+    expect(screen.queryByRole('button', { name: 'Pay now' })).not.toBeInTheDocument()
+    expect(screen.getByText('A payment for this invoice is being processed. This page will show it as paid once it completes, usually within a minute. If it does not, contact the sender.')).toBeInTheDocument()
+  })
+
+  it('shows the invoice as paid when the server says it already is', async () => {
+    await renderSharePage({ stripePaymentStatus: 'processing' })
+    fireEvent.click(screen.getByRole('button', { name: 'Server says paid' }))
+    expect(screen.queryByRole('button', { name: 'Pay now' })).not.toBeInTheDocument()
+    expect(screen.getByText('This invoice has been paid. Thank you!')).toBeInTheDocument()
+  })
+
+  it('offers scan-to-pay for an unpaid invoice', async () => {
+    await renderSharePage({})
+    expect(await screen.findByText('Pay on your phone')).toBeInTheDocument()
+  })
+
+  it('hides scan-to-pay while a payment form is open or a payment is processing', async () => {
+    await renderSharePage({ stripePaymentStatus: 'processing' })
+    expect(screen.getByRole('button', { name: 'Pay now' })).toBeInTheDocument()
+    expect(screen.queryByText('Pay on your phone')).not.toBeInTheDocument()
   })
 })
