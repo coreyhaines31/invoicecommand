@@ -13,6 +13,10 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
+// The page embeds the document version the signer is shown, so it must never
+// be served from a cache.
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ token: string }>
 }
