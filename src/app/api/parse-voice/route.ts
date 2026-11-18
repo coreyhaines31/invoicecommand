@@ -8,6 +8,9 @@ import { and, eq, lt, sql } from 'drizzle-orm'
 // Initialize OpenAI client conditionally
 let openai: OpenAI | null = null
 const MONTHLY_LIMIT = 10
+// A 200-line invoice with long descriptions, notes and terms is about 43 KB
+// of JSON; this leaves headroom while bounding what is sent to the model.
+const MAX_INVOICE_CHARS = 64_000
 
 function getOpenAIClient() {
   if (!openai && process.env.OPENAI_API_KEY) {
@@ -219,6 +222,13 @@ export async function POST(request: NextRequest) {
     if (sanitizedTranscript.length < 2) {
       return NextResponse.json(
         { error: 'Transcript too short' },
+        { status: 400 }
+      )
+    }
+
+    if (JSON.stringify(currentInvoice ?? {}).length > MAX_INVOICE_CHARS) {
+      return NextResponse.json(
+        { error: 'Invoice is too large for voice commands' },
         { status: 400 }
       )
     }

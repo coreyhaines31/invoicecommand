@@ -95,6 +95,29 @@ describe('POST /api/parse-voice', () => {
     expect(usageRow()?.commandCount).toBe(2)
   })
 
+  it('returns 400 for an oversized invoice without charging a use', async () => {
+    const huge = { ...invoice, notes: 'x'.repeat(70_000) }
+
+    const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: huge }))
+
+    expect(res.status).toBe(400)
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(usageRow()).toBeUndefined()
+  })
+
+  it('accepts a large but realistic invoice', async () => {
+    const items = Array.from({ length: 200 }, (_, i) => ({
+      description: `Line item ${i}: ${'detailed description of the work performed '.repeat(3)}`,
+      quantity: 12.5,
+      price: 1234.56,
+    }))
+    const large = { ...invoice, items, notes: 'n'.repeat(2_000), terms: 't'.repeat(2_000) }
+
+    const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: large }))
+
+    expect(res.status).toBe(200)
+  })
+
   it("puts today's date in the system prompt so relative dates resolve", async () => {
     jest.useFakeTimers({ now: new Date('2026-11-18T15:00:00Z'), doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask', 'setTimeout', 'clearTimeout'] })
     try {
