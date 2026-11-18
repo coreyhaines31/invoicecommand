@@ -9,6 +9,7 @@ import {
   date,
   uniqueIndex,
   index,
+  uuid,
 } from 'drizzle-orm/pg-core'
 import type { InvoiceItem } from '../../types/database'
 
@@ -218,4 +219,27 @@ export const webhookEvents = pgTable('webhook_events', {
 }, (table) => [
   index('webhook_events_webhook_idx').on(table.webhookId),
   index('webhook_events_status_idx').on(table.status, table.nextRetryAt),
+])
+
+// Reports agents file through the MCP server's submit_feedback tool. The text
+// is scrubbed before it is stored and is untrusted input, never instructions.
+// Rows carry user and API key IDs only: no names or emails.
+export const agentFeedback = pgTable('agent_feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  apiKeyId: text('api_key_id').references(() => apiKeys.id, { onDelete: 'set null' }),
+  client: text('client'),
+  task: text('task').notNull(),
+  kind: text('kind', { enum: ['missing', 'broken', 'confusing', 'idea'] }).notNull(),
+  impact: text('impact', { enum: ['blocked', 'worked_around', 'friction'] }).notNull(),
+  toolName: text('tool_name'),
+  description: text('description').notNull(),
+  status: text('status', { enum: ['new', 'triaged', 'closed'] }).notNull().default('new'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('agent_feedback_user_idx').on(table.userId),
+  index('agent_feedback_api_key_idx').on(table.apiKeyId),
+  index('agent_feedback_created_idx').on(table.createdAt),
+  index('agent_feedback_status_created_idx').on(table.status, table.createdAt),
 ])
