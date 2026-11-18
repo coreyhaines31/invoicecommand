@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { invoices } from '@/lib/db/schema'
+import { invoices, user } from '@/lib/db/schema'
 import { and, eq, gt, gte, isNull, lt, or } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
 import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
@@ -220,10 +220,16 @@ export async function POST(
 
   const updated = updatedRows[0]
 
-  if (updated.senderEmail) {
-    try {
+  // The account's auth email, not updated.senderEmail: that one is free text
+  // anyone with edit access can point anywhere.
+  try {
+    const [owner] = await db
+      .select({ email: user.email })
+      .from(user)
+      .where(eq(user.id, updated.userId))
+    if (owner?.email) {
       await sendEstimateAcceptanceEmail({
-        toEmail: updated.senderEmail,
+        toEmail: owner.email,
         senderName: updated.senderName ?? '',
         clientName: updated.clientName ?? signerName,
         invoiceNumber: updated.invoiceNumber ?? '',
@@ -232,9 +238,9 @@ export async function POST(
         signedAt,
         estimateId: updated.id,
       })
-    } catch (error) {
-      console.error('Failed to send acceptance email:', error)
     }
+  } catch (error) {
+    console.error('Failed to send acceptance email:', error)
   }
 
   return NextResponse.json({

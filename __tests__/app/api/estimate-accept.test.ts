@@ -16,6 +16,7 @@ jest.mock('@/lib/email-service', () => ({ sendEstimateAcceptanceEmail: jest.fn(a
 
 import { POST as acceptEstimate } from '@/app/api/estimates/[id]/accept/route'
 import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
+import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
 
 const ESTIMATE_ID = '33333333-3333-4333-8333-333333333333'
 const TOKEN = 'tok_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
@@ -199,6 +200,16 @@ describe('POST /api/estimates/:id/accept', () => {
     expect(limited.status).toBe(429)
     expect(limited.headers.get('Retry-After')).toBeTruthy()
     expect(fake.rows[0].signedAt).toBeNull()
+  })
+
+  it('notifies the account email, not a different sender address on the estimate', async () => {
+    seed({ senderEmail: 'someone-else@example.test' })
+    fake.tables.user = [{ id: 'user-a', email: 'owner@example.test', emailVerified: false }]
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody()), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(200)
+    expect(sendEstimateAcceptanceEmail).toHaveBeenCalledTimes(1)
+    const [[args]] = jest.mocked(sendEstimateAcceptanceEmail).mock.calls
+    expect(args.toEmail).toBe('owner@example.test')
   })
 
   it('requires the document version', async () => {
