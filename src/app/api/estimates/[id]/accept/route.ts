@@ -5,6 +5,7 @@ import { and, eq, gt, gte, isNull, lt, or } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
 import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
 import { checkIpRateLimit } from '@/lib/rate-limit'
+import { reportError } from '@/lib/error-response'
 
 type AcceptBody = {
   shareToken?: unknown
@@ -233,7 +234,7 @@ export async function POST(
         estimateId: updated.id,
       })
     } catch (error) {
-      console.error('Failed to send acceptance email:', error)
+      reportError(error, 'Failed to send acceptance email', { estimateId: updated.id })
     }
   }
 

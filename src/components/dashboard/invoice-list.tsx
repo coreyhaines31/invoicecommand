@@ -159,7 +159,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-exclude>
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />

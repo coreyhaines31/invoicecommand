@@ -69,7 +69,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
             </span>
             <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
               <Shield className="w-3 h-3" />
-              Privacy First
+              No Signup Needed
             </span>
           </div>
 
@@ -267,9 +267,9 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
                   <Shield className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Privacy First</h3>
+                  <h3 className="font-semibold mb-1">Drafts Stay in Your Browser</h3>
                   <p className="text-sm text-muted-foreground">
-                    Your data stays in your browser. No server storage or registration required.
+                    Drafts stay in your browser until you create an account. No signup needed to build and download an estimate.
                   </p>
                 </div>
               </div>
@@ -280,7 +280,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
                 <div>
                   <h3 className="font-semibold mb-1">AI Voice Input</h3>
                   <p className="text-sm text-muted-foreground">
-                    Use voice commands to create estimates hands-free with AI assistance.
+                    Sign in and speak your estimate details to fill them in. Free accounts get 10 voice commands a month.
                   </p>
                 </div>
               </div>
