@@ -94,4 +94,17 @@ describe('POST /api/parse-voice', () => {
     await POST(req({ transcript: 'Set tax to 9 percent', currentInvoice: invoice }))
     expect(usageRow()?.commandCount).toBe(2)
   })
+
+  it("puts today's date in the system prompt so relative dates resolve", async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-18T15:00:00Z'), doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask', 'setTimeout', 'clearTimeout'] })
+    try {
+      await POST(req({ transcript: 'Set due date to next Friday', currentInvoice: invoice }))
+    } finally {
+      jest.useRealTimers()
+    }
+
+    const system = mockCreate.mock.calls[0][0].messages[0].content as string
+    expect(system).toContain('Wednesday, 2026-11-18')
+    expect(system).not.toContain('2024')
+  })
 })
