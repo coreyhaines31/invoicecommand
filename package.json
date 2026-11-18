@@ -16,7 +16,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
-    "test:e2e": "e2e run"
+    "test:e2e": "e2e run",
+    "eval:voice": "node --no-warnings --env-file-if-exists=.env.local scripts/eval-voice.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
