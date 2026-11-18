@@ -21,11 +21,12 @@ const CONSENT_TEXT =
 
 interface EstimateSignatureProps {
   estimateId: string
+  shareToken: string
   defaultSignerEmail?: string
   onSigned: (data: { signedAt: string; signerName: string; signerEmail: string; signatureData: string }) => void
 }
 
-export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
+export function EstimateSignature({ estimateId, shareToken, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
   const sigRef = useRef<ReactSignatureCanvas | null>(null)
   const [signerName, setSignerName] = useState('')
   const [signerEmail, setSignerEmail] = useState(defaultSignerEmail)
@@ -67,6 +68,7 @@ export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigne
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          shareToken,
           signatureData,
           signerName: signerName.trim(),
           signerEmail: signerEmail.trim(),

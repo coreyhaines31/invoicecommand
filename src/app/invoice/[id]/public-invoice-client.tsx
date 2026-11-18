@@ -308,6 +308,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                         )}
                         <EstimateSignature
                           estimateId={invoice.id}
+                          shareToken={shareToken ?? ''}
                           defaultSignerEmail={invoice.clientEmail}
                           onSigned={(data) =>
                             setSignature({

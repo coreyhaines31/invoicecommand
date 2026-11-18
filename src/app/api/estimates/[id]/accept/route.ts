@@ -5,6 +5,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
 
 type AcceptBody = {
+  shareToken?: unknown
   signatureData?: unknown
   signerName?: unknown
   signerEmail?: unknown
@@ -56,6 +57,11 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
+  const shareToken = typeof body.shareToken === 'string' ? body.shareToken : ''
+  if (!shareToken) {
+    return NextResponse.json({ error: 'shareToken is required' }, { status: 400 })
+  }
+
   const signatureData = typeof body.signatureData === 'string' ? body.signatureData : ''
   const signerName = typeof body.signerName === 'string' ? body.signerName.trim().slice(0, MAX_NAME_LENGTH) : ''
   const signerEmail = typeof body.signerEmail === 'string' ? body.signerEmail.trim().slice(0, MAX_EMAIL_LENGTH) : ''
@@ -75,8 +81,21 @@ export async function POST(
     return NextResponse.json({ error: 'Consent acknowledgement is required' }, { status: 400 })
   }
 
-  const [estimate] = await db.select().from(invoices).where(eq(invoices.id, id))
-  if (!estimate) {
+  // Signing goes through the share link, like public payments: the share
+  // token is the access boundary, not the estimate id. Unknown, disabled and
+  // expired links all get the same response.
+  const [estimate] = await db
+    .select()
+    .from(invoices)
+    .where(and(
+      eq(invoices.shareToken, shareToken),
+      eq(invoices.shareEnabled, true),
+    ))
+  if (
+    !estimate ||
+    estimate.id !== id ||
+    (estimate.shareExpiresAt && estimate.shareExpiresAt.getTime() < Date.now())
+  ) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
   if (estimate.documentType !== 'estimate') {
@@ -119,6 +138,8 @@ export async function POST(
     })
     .where(and(
       eq(invoices.id, id),
+      eq(invoices.shareToken, shareToken),
+      eq(invoices.shareEnabled, true),
       isNull(invoices.signedAt),
       eq(invoices.documentType, 'estimate'),
       eq(invoices.collectSignature, true),
@@ -132,11 +153,13 @@ export async function POST(
         documentType: invoices.documentType,
         signedAt: invoices.signedAt,
         collectSignature: invoices.collectSignature,
+        shareToken: invoices.shareToken,
+        shareEnabled: invoices.shareEnabled,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
 
-    if (!current) {
+    if (!current || current.shareToken !== shareToken || !current.shareEnabled) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
     if (current.documentType !== 'estimate') {
