@@ -69,7 +69,12 @@ interface PublicInvoiceClientProps {
 }
 
 export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }: PublicInvoiceClientProps) {
-  const [paymentStatus, setPaymentStatus] = useState(invoice.stripePaymentStatus)
+  // A stored 'processing' only means a payment form was opened, often then
+  // abandoned. On the share link the client may pay; the payment-intent route
+  // checks Stripe and reports a payment that is really in flight.
+  const [paymentStatus, setPaymentStatus] = useState(
+    viewMode === 'public' && invoice.stripePaymentStatus === 'processing' ? 'unpaid' : invoice.stripePaymentStatus
+  )
   const [signature, setSignature] = useState({
     signedAt: invoice.signedAt,
     signerName: invoice.signerName,
@@ -366,7 +371,18 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                         invoiceNumber={invoice.invoiceNumber}
                         recipientName={invoice.senderName}
                         onSuccess={handlePaymentSuccess}
+                        onAlreadyPaid={() => setPaymentStatus('paid')}
+                        onInProgress={() => setPaymentStatus('processing')}
                       />
+                    )}
+
+                    {viewMode === 'public' && paymentStatus === 'processing' && (
+                      <Alert>
+                        <Clock className="h-4 w-4" />
+                        <AlertDescription>
+                          A payment for this invoice is in progress. Refresh in a few minutes to see its status.
+                        </AlertDescription>
+                      </Alert>
                     )}
 
                     {paymentStatus === 'paid' && (
