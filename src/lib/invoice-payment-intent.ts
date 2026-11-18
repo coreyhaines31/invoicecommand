@@ -26,6 +26,11 @@ type StartInvoicePaymentInput = {
   responseExtras?: Record<string, unknown>
 }
 
+// Estimates are not paid online. Rows from before document types count as invoices.
+export function isPayableDocument(invoice: Pick<typeof invoices.$inferSelect, 'documentType'>) {
+  return invoice.documentType !== 'estimate'
+}
+
 function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentStatus) {
   return or(isNull(column), ne(column, 'paid'))
 }

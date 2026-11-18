@@ -113,6 +113,8 @@ export function parseInvoicePayload(input: unknown, mode: ParseMode): Partial<In
   copyCurrency(source, payload)
   copyEnum(source, payload, 'style', STYLES)
   copyBoolean(source, payload, 'paymentEnabled')
+  // Estimates are not paid online, so a document saved as an estimate never keeps the flag
+  if (payload.documentType === 'estimate') payload.paymentEnabled = false
   copyNullableString(source, payload, 'convertedToInvoiceId', 128)
   copyBoolean(source, payload, 'recurring')
   copyBoolean(source, payload, 'collectSignature')

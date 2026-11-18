@@ -28,7 +28,8 @@ describe('dashboard page', () => {
       clientName: 'Client',
       total: '100',
       status: 'draft',
-      documentType: 'invoice',
+      documentType: 'estimate',
+      convertedToInvoiceId: 'inv-9',
       senderLogo: `data:image/png;base64,${'A'.repeat(270_000)}`,
       signatureData: 'data:image/png;base64,AAAA',
       createdAt: new Date('2026-11-01T10:00:00Z'),
@@ -39,7 +40,7 @@ describe('dashboard page', () => {
     const invoices = (element as { props: { invoices: Array<Record<string, unknown>> } }).props.invoices
 
     expect(invoices).toHaveLength(1)
-    expect(invoices[0]).toMatchObject({ id: 'inv-1', invoiceNumber: 'INV-0001', clientName: 'Client', documentType: 'invoice' })
+    expect(invoices[0]).toMatchObject({ id: 'inv-1', invoiceNumber: 'INV-0001', clientName: 'Client', documentType: 'estimate', convertedToInvoiceId: 'inv-9' })
     expect(invoices[0]).not.toHaveProperty('senderLogo')
     expect(invoices[0]).not.toHaveProperty('signatureData')
   })

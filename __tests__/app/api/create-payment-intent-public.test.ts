@@ -130,6 +130,21 @@ describe('POST /api/stripe/create-payment-intent-public', () => {
     expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
   })
 
+  // Issue #88: estimates are not paid online
+  it('refuses an estimate as it refuses a document without payments', async () => {
+    seed({ documentType: 'estimate' })
+    const res = await POST(request())
+    expect(res.status).toBe(404)
+    expect((await res.json()).error).toBe('Invoice not found or payments not enabled')
+    expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+  })
+
+  it('still accepts an invoice with the document type set', async () => {
+    seed({ documentType: 'invoice' })
+    const res = await POST(request())
+    expect(res.status).toBe(200)
+  })
+
   it('reuses the in-flight intent when the total is unchanged', async () => {
     seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 10000 })
     stripeMock.paymentIntents.retrieve.mockResolvedValue(storedIntent({ status: 'requires_payment_method', client_secret: 'secret_old' }))

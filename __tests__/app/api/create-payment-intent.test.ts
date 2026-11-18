@@ -104,6 +104,22 @@ describe('POST /api/stripe/create-payment-intent', () => {
     expect(invoice().updatedAt).toBe(DOCUMENT_VERSION)
   })
 
+  // Issue #88: estimates are not paid online
+  it('refuses an estimate as it refuses a missing invoice', async () => {
+    seed({ documentType: 'estimate' })
+    const res = await POST(request())
+    expect(res.status).toBe(404)
+    expect((await res.json()).error).toBe('Invoice not found')
+    expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+    expect(invoice().paymentEnabled).toBe(false)
+  })
+
+  it('creates an intent for a document typed as an invoice', async () => {
+    seed({ documentType: 'invoice' })
+    const res = await POST(request())
+    expect(res.status).toBe(200)
+  })
+
   it('does not touch another user\'s invoice', async () => {
     seed({ userId: 'user-b' })
     const res = await POST(request())

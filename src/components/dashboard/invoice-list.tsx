@@ -48,6 +48,10 @@ interface Invoice {
   status: string | null
   dueDate?: string | null
   createdAt: string | Date | null
+  documentType?: 'invoice' | 'estimate' | null
+  signedAt?: string | Date | null
+  collectSignature?: boolean | null
+  convertedToInvoiceId?: string | null
 }
 
 export type InvoiceListItem = Invoice
@@ -96,11 +100,14 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     }).format(Number.isFinite(normalizedAmount) ? normalizedAmount : 0)
   }
 
+  // Each builder switches a saved document of the other type to a fresh draft, so open the matching one
+  const builderPath = (invoice: Invoice) =>
+    invoice.documentType === 'estimate' ? '/estimate-maker' : '/'
+
   const handleEditInvoice = async (invoice: Invoice) => {
-    // Load the invoice into the store and navigate to the main page
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
-      router.push('/')
+      router.push(builderPath(invoice))
     }
   }
 
@@ -109,7 +116,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
       useInvoiceStore.getState().detachAsCopy()
-      router.push('/')
+      router.push(builderPath(invoice))
     }
   }
 
@@ -189,7 +196,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice #</TableHead>
+              <TableHead>Number</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
@@ -203,6 +210,26 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
               <TableRow key={invoice.id}>
                 <TableCell className="font-medium">
                   {invoice.invoiceNumber}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <Badge variant="outline" className="font-normal">
+                      {invoice.documentType === 'estimate' ? 'Estimate' : 'Invoice'}
+                    </Badge>
+                    {invoice.documentType === 'estimate' && invoice.signedAt && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 font-normal">
+                        Signed
+                      </Badge>
+                    )}
+                    {invoice.documentType === 'estimate' && !invoice.signedAt && invoice.collectSignature !== false && (
+                      <Badge variant="secondary" className="font-normal">
+                        Not signed
+                      </Badge>
+                    )}
+                    {invoice.documentType === 'estimate' && invoice.convertedToInvoiceId && (
+                      <Badge variant="secondary" className="font-normal">
+                        Converted
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{invoice.clientName || 'No client'}</TableCell>
                 <TableCell>{formatCurrency(invoice.total || 0)}</TableCell>

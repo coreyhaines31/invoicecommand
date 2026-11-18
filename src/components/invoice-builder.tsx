@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { InvoicePreview } from './invoice-preview'
 import { InvoiceForm } from './invoice-form'
@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Mic, FileDown, Zap, Shield } from 'lucide-react'
 import { useInvoiceInitialization } from '@/hooks/use-invoice-initialization'
+import { useInvoiceStore } from '@/stores/invoice-store'
 
 interface InvoiceBuilderProps {
   title?: string
@@ -21,6 +22,14 @@ interface InvoiceBuilderProps {
 export function InvoiceBuilder({ title, description, children }: InvoiceBuilderProps = {}) {
   // Initialize invoice numbering
   useInvoiceInitialization()
+
+  // Switch a draft left by the estimate builder back to an invoice (see updateDocumentType for the rules)
+  const updateDocumentType = useInvoiceStore((state) => state.updateDocumentType)
+
+  useEffect(() => {
+    updateDocumentType('invoice', 'mount')
+  }, [updateDocumentType])
+
   return (
     <div className="container mx-auto p-4 min-h-screen">
       {/* Navigation Bar */}

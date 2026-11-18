@@ -6,7 +6,7 @@ import { calculateApplicationFee } from '@/lib/stripe'
 import { toStripeAmount } from '@/lib/stripe-amount'
 import { checkIpRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
-import { startInvoicePayment } from '@/lib/invoice-payment-intent'
+import { isPayableDocument, startInvoicePayment } from '@/lib/invoice-payment-intent'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         eq(invoices.paymentEnabled, true),
       ))
 
-    if (!invoice) {
+    if (!invoice || !isPayableDocument(invoice)) {
       return NextResponse.json({ error: 'Invoice not found or payments not enabled' }, { status: 404 })
     }
 

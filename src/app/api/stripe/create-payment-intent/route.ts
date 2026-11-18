@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm'
 import { calculateApplicationFee } from '@/lib/stripe'
 import { toStripeAmount } from '@/lib/stripe-amount'
 import { jsonErrorResponse } from '@/lib/error-response'
-import { startInvoicePayment } from '@/lib/invoice-payment-intent'
+import { isPayableDocument, startInvoicePayment } from '@/lib/invoice-payment-intent'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +29,9 @@ export async function POST(request: NextRequest) {
       .from(invoices)
       .where(and(eq(invoices.id, invoiceId), eq(invoices.userId, session.user.id)))
 
-    if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    if (!invoice || !isPayableDocument(invoice)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
 
     const invoiceCurrency = (invoice.currency || 'USD').toLowerCase()
 

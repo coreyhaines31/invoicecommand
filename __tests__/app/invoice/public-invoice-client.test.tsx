@@ -73,6 +73,45 @@ describe('PublicInvoiceClient estimate signing', () => {
   })
 })
 
+// Issue #88: an estimate is not a bill
+describe('PublicInvoiceClient estimate labelling', () => {
+  it('labels an estimate as an estimate and shows no payment panel, even with payments enabled', () => {
+    render(
+      <PublicInvoiceClient
+        invoice={{ ...estimate, paymentEnabled: true, total: 100 }}
+        viewMode="public"
+        shareToken="tok_aaaaaaaaaaaaaaaa"
+      />
+    )
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Estimate EST-1')
+    expect(screen.queryByText(/^Invoice/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Unpaid')).not.toBeInTheDocument()
+    expect(screen.queryByText('Payment')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Awaiting signature').length).toBeGreaterThan(0)
+  })
+
+  it('shows a signed estimate as signed', () => {
+    render(
+      <PublicInvoiceClient
+        invoice={{ ...estimate, signedAt: '2026-11-02T10:00:00.000Z', signerName: 'Client' }}
+        viewMode="owner"
+      />
+    )
+    expect(screen.getAllByText('Signed').length).toBeGreaterThan(0)
+  })
+
+  it('still labels an invoice as an invoice with its payment panel', () => {
+    render(
+      <PublicInvoiceClient
+        invoice={{ ...estimate, documentType: 'invoice', invoiceNumber: 'INV-1' }}
+        viewMode="owner"
+      />
+    )
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Invoice INV-1')
+    expect(screen.getByText('Payment')).toBeInTheDocument()
+  })
+})
+
 describe('PublicInvoiceClient Download PDF', () => {
   beforeEach(() => jest.clearAllMocks())
 
