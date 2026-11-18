@@ -9,6 +9,10 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CreditCard, ExternalLink, AlertTriangle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
+import { useUser } from '@/hooks/use-user'
+import { withNextPath } from '@/lib/next-path'
+
+const SIGNUP_FOR_PAYMENTS_HREF = withNextPath('/auth/signup', '/dashboard/payments/setup')
 
 interface PaymentSettingsProps {
   onPaymentToggle: (enabled: boolean) => void
@@ -32,10 +36,17 @@ export function PaymentSettings({
 }: PaymentSettingsProps) {
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  const { user, loading: userLoading } = useUser()
+  const userId = user?.id
 
   useEffect(() => {
+    if (userLoading) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     fetchAccountStatus()
-  }, [])
+  }, [userId, userLoading])
 
   const fetchAccountStatus = async () => {
     try {
@@ -135,7 +146,17 @@ export function PaymentSettings({
         )}
 
         {/* Account Status */}
-        {!accountStatus?.hasAccount ? (
+        {!userId ? (
+          <Alert>
+            <CreditCard className="h-4 w-4" />
+            <AlertDescription>
+              Accepting online payments needs a free account.{' '}
+              <Link href={SIGNUP_FOR_PAYMENTS_HREF} className="underline font-medium">
+                Create a free account
+              </Link>
+            </AlertDescription>
+          </Alert>
+        ) : !accountStatus?.hasAccount ? (
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
