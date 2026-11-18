@@ -3,6 +3,7 @@ import {
   isSensitivePath,
   redactPath,
   scrubEvent,
+  scrubProperties,
   scrubUrl,
 } from '@/lib/analytics-redaction'
 
@@ -21,15 +22,45 @@ describe('redactPath', () => {
   })
 })
 
+describe('share PDF route paths', () => {
+  it('redacts the token in /api/share/<token>/pdf', () => {
+    expect(redactPath(`/api/share/${TOKEN}/pdf`)).toBe('/api/share/[redacted]/pdf')
+    expect(hasTokenInPath(`/api/share/${TOKEN}/pdf`)).toBe(true)
+    expect(scrubUrl(`https://invoicecommand.com/api/share/${TOKEN}/pdf`)).toBe(
+      'https://invoicecommand.com/api/share/[redacted]/pdf'
+    )
+    expect(scrubProperties({ url: `/api/share/${TOKEN}/pdf` }).url).toBe('/api/share/[redacted]/pdf')
+  })
+
+  it('leaves other api paths alone', () => {
+    expect(redactPath('/api/shared/thing')).toBe('/api/shared/thing')
+    expect(hasTokenInPath('/api/invoices')).toBe(false)
+  })
+})
+
 describe('hasTokenInPath / isSensitivePath', () => {
-  it('flags share and invoice pages only', () => {
+  it('flags share and invoice pages', () => {
     expect(hasTokenInPath(`/i/${TOKEN}`)).toBe(true)
     expect(hasTokenInPath('/invoice/123')).toBe(false)
     expect(isSensitivePath(`/i/${TOKEN}`)).toBe(true)
     expect(isSensitivePath('/invoice/7f0c1d2e')).toBe(true)
     expect(isSensitivePath('/invoice-templates/plumber')).toBe(false)
     expect(isSensitivePath('/')).toBe(false)
-    expect(isSensitivePath('/dashboard')).toBe(false)
+  })
+
+  it('flags the account pages that list clients and amounts', () => {
+    expect(isSensitivePath('/dashboard')).toBe(true)
+    expect(isSensitivePath('/dashboard/payments')).toBe(true)
+    expect(isSensitivePath('/dashboard/api-keys')).toBe(true)
+    expect(isSensitivePath('/settings')).toBe(true)
+    expect(isSensitivePath('/billing')).toBe(true)
+    expect(hasTokenInPath('/dashboard')).toBe(false)
+  })
+
+  it('does not flag lookalike public paths', () => {
+    expect(isSensitivePath('/dashboards-for-freelancers')).toBe(false)
+    expect(isSensitivePath('/billing-software')).toBe(false)
+    expect(isSensitivePath('/blog/settings')).toBe(false)
   })
 })
 
@@ -104,6 +135,9 @@ describe('scrubEvent', () => {
     for (const name of ['$autocapture', '$rageclick', '$dead_click', '$copy_autocapture']) {
       expect(scrubEvent({ event: name, properties: {} }, `/i/${TOKEN}`)).toBeNull()
       expect(scrubEvent({ event: name, properties: {} }, '/invoice/abc')).toBeNull()
+      expect(scrubEvent({ event: name, properties: {} }, '/dashboard')).toBeNull()
+      expect(scrubEvent({ event: name, properties: {} }, '/settings')).toBeNull()
+      expect(scrubEvent({ event: name, properties: {} }, '/billing')).toBeNull()
     }
   })
 

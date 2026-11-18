@@ -34,6 +34,8 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
+    // Agent worktrees are full checkouts; their tests are not this checkout's.
+    '<rootDir>/.claude/',
   ],
   transformIgnorePatterns: [
     '/node_modules/',

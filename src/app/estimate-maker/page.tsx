@@ -4,7 +4,7 @@ import { professions } from '@/data/professions-expanded';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, FileCheck, Zap, Shield, FileDown, Mic, Users } from 'lucide-react';
+import { ArrowRight, FileCheck, Zap, Shield, FileDown, Mic } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Free Estimate Maker | Create Professional Quotes & Estimates | Invoice Command',
@@ -69,16 +69,9 @@ export default function EstimateMakerPage() {
       "Multiple template styles",
       "Automatic calculations",
       "No registration required",
-      "Privacy-first design"
+      "Drafts saved in your browser"
     ],
-    "screenshot": "/og-image.png",
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "ratingCount": "1247",
-      "bestRating": "5",
-      "worstRating": "1"
-    }
+    "screenshot": "/og-image.png"
   };
 
   // Popular profession categories for quick access
@@ -138,10 +131,6 @@ export default function EstimateMakerPage() {
                 <div className="flex items-center gap-2">
                   <FileCheck className="w-4 h-4 text-primary" />
                   <span>405+ industry templates</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  <span>Trusted by 10,000+ users</span>
                 </div>
               </div>
             </div>
@@ -204,9 +193,9 @@ export default function EstimateMakerPage() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4">
                 <Shield className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Privacy First</h3>
+              <h3 className="text-xl font-semibold mb-3">Drafts Stay in Your Browser</h3>
               <p className="text-muted-foreground">
-                Your data stays in your browser. No cloud storage, no data collection, no registration required.
+                Drafts stay in your browser until you create an account. No signup needed to build and download an estimate.
               </p>
             </Card>
 
@@ -285,8 +274,8 @@ export default function EstimateMakerPage() {
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-2">Is this estimate maker really free?</h3>
                 <p className="text-muted-foreground">
-                  Yes! Our estimate maker is 100% free with no hidden costs, subscriptions, or feature limitations.
-                  You can create unlimited estimates and download them as PDFs without paying anything.
+                  Yes. Building estimates and downloading them as PDFs is free, with no subscription, and you can
+                  make as many as you like. Voice commands are capped at 10 a month on a free account.
                 </p>
               </Card>
 
@@ -310,9 +299,9 @@ export default function EstimateMakerPage() {
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-2">How does the AI voice input work?</h3>
                 <p className="text-muted-foreground">
-                  Simply click the microphone button and speak naturally. Our AI understands phrases like
-                  &quot;Add $500 for design work&quot; or &quot;Set the client name to John Smith&quot; and automatically updates your estimate.
-                  It&apos;s perfect for creating estimates hands-free or on mobile devices.
+                  Sign in, click the microphone button and say what you want, like &quot;Add $500 for design work&quot; or
+                  &quot;Set the client name to John Smith&quot;. Your words and the current estimate are sent to OpenAI to work out
+                  the change. Free accounts get 10 voice commands a month.
                 </p>
               </Card>
 
@@ -351,7 +340,7 @@ export default function EstimateMakerPage() {
               Ready to Create Your First Estimate?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Join thousands of professionals using Invoice Command to create winning estimates and get more projects approved.
+              Build an estimate in minutes and download it as a PDF.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" variant="secondary" asChild className="text-lg px-8">

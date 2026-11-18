@@ -39,6 +39,8 @@ function fillAndSubmit(buttonName: RegExp) {
   fireEvent.click(screen.getByRole('button', { name: buttonName }))
 }
 
+const CREATED = 'Account created. We sent a verification email to a@example.com. Redirecting...'
+
 beforeEach(() => {
   jest.clearAllMocks()
 })
@@ -82,13 +84,13 @@ describe('LoginForm next path', () => {
 })
 
 describe('SignupForm next path', () => {
-  it('sends the valid next path as the callback URL', async () => {
+  it('sends verification links to /auth/verified with the next path', async () => {
     mockSignUpEmail.mockResolvedValue({ error: null })
     render(<SignupForm next="/" />)
     fillAndSubmit(/create account/i)
 
-    await screen.findByText('Account created. Redirecting...')
-    expect(mockSignUpEmail).toHaveBeenCalledWith(expect.objectContaining({ callbackURL: '/' }))
+    await screen.findByText(CREATED)
+    expect(mockSignUpEmail).toHaveBeenCalledWith(expect.objectContaining({ callbackURL: '/auth/verified?next=%2F' }))
   })
 
   it('uses the dashboard when next is unsafe', async () => {
@@ -96,8 +98,10 @@ describe('SignupForm next path', () => {
     render(<SignupForm next="https://evil.com" />)
     fillAndSubmit(/create account/i)
 
-    await screen.findByText('Account created. Redirecting...')
-    expect(mockSignUpEmail).toHaveBeenCalledWith(expect.objectContaining({ callbackURL: '/dashboard' }))
+    await screen.findByText(CREATED)
+    expect(mockSignUpEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ callbackURL: '/auth/verified?next=%2Fdashboard' })
+    )
   })
 
   it('carries next onto the "Sign in instead" link', async () => {
@@ -119,7 +123,7 @@ describe('SignupForm analytics', () => {
     render(<SignupForm />)
     fillAndSubmit(/create account/i)
 
-    await screen.findByText('Account created. Redirecting...')
+    await screen.findByText(CREATED)
     expect(mockIdentifyUser).toHaveBeenCalledWith('user-123')
     expect(mockTrackUserSignup).toHaveBeenCalledWith('email')
   })
@@ -132,5 +136,25 @@ describe('SignupForm analytics', () => {
     await screen.findByText('Sign in instead')
     expect(mockIdentifyUser).not.toHaveBeenCalled()
     expect(mockTrackUserSignup).not.toHaveBeenCalled()
+  })
+})
+
+describe('SignupForm submit button', () => {
+  it('stays disabled after a successful signup until the redirect', async () => {
+    mockSignUpEmail.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null })
+    render(<SignupForm />)
+    fillAndSubmit(/create account/i)
+
+    await screen.findByText(CREATED)
+    expect(screen.getByRole('button', { name: /creat/i })).toBeDisabled()
+  })
+
+  it('re-enables after a failed signup', async () => {
+    mockSignUpEmail.mockResolvedValue({ data: null, error: { code: 'USER_ALREADY_EXISTS' } })
+    render(<SignupForm />)
+    fillAndSubmit(/create account/i)
+
+    await screen.findByText('Sign in instead')
+    expect(screen.getByRole('button', { name: /create account/i })).toBeEnabled()
   })
 })

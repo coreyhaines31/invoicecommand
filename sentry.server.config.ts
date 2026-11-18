@@ -4,16 +4,15 @@ import { scrubSentryPayload } from "@/lib/sentry-redaction";
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-  // Adjust this value in production to reduce costs
-  tracesSampleRate: 1.0,
+  // Errors go to HoneyWarden, which keeps errors only, so tracing is off.
+  tracesSampleRate: 0,
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  // Redact share tokens (/i/<token>) from request.url, headers, transaction
-  // names, spans and breadcrumbs.
+  // Redact share tokens (/i/<token>) from request.url, headers and breadcrumbs.
   beforeSend: scrubSentryPayload,
+  // Unused while tracing is off; kept so turning it back on can't leak tokens.
   beforeSendTransaction: scrubSentryPayload,
   beforeBreadcrumb: scrubSentryPayload,
 });

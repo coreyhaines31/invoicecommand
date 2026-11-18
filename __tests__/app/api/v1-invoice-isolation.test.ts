@@ -74,6 +74,11 @@ function seed() {
     status: 'draft',
     signedAt: null,
   })
+  // Both accounts are verified so these tests reach the ownership checks.
+  fake.tables.user = [
+    { id: 'user-a', emailVerified: true },
+    { id: 'user-b', emailVerified: true },
+  ]
 }
 
 beforeEach(() => {

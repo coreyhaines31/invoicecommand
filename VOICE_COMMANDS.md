@@ -1,6 +1,6 @@
 # 🎤 Voice Commands Guide for Invoice Command
 
-Invoice Command supports natural language voice commands powered by OpenAI GPT-4o-mini. Simply toggle **Voice Mode** in the invoice form and speak your commands naturally.
+Invoice Command supports natural language voice commands powered by OpenAI GPT-6 Luna through the Vercel AI Gateway. Simply toggle **Voice Mode** in the invoice form and speak your commands naturally.
 
 ## 🚀 Getting Started
 
@@ -127,7 +127,7 @@ Invoice Command supports natural language voice commands powered by OpenAI GPT-4
 - ❌ Firefox (limited support)
 
 ### **Privacy & Security**
-- Voice data is processed via OpenAI API
+- The transcript and current invoice are sent to OpenAI through the Vercel AI Gateway
 - No voice recordings are stored locally
 - Transcripts are not saved after processing
 - All invoice data remains in your browser's localStorage
@@ -160,22 +160,24 @@ Invoice Command supports natural language voice commands powered by OpenAI GPT-4
 
 ### **Processing Errors**
 1. Ensure you have an active internet connection
-2. Verify OpenAI API key is configured (for developers)
+2. Verify the AI Gateway credential is configured (for developers)
 3. Try the command again with different wording
 
 ## 🔑 For Developers
 
 To enable voice commands in your development environment:
 
-1. **Set up OpenAI API Key**:
+1. **Set up the Vercel AI Gateway**:
    ```bash
-   # Add to .env.local
-   OPENAI_API_KEY=your_openai_api_key_here
+   # Add to .env.local, or run `vercel env pull` on a linked project for an OIDC token
+   AI_GATEWAY_API_KEY=your_gateway_key_here
    ```
+   On Vercel the gateway authenticates with the deployment's OIDC token, so production needs no key.
 
 2. **Voice Processing Endpoint**:
    - Located at `/api/parse-voice`
-   - Uses GPT-4o-mini for natural language processing
+   - Uses `openai/gpt-6-luna` by default; set `VOICE_MODEL` to another gateway model ID to override
+   - `npm run eval:voice -- --model <id>` grades a model against `evals/voice/cases.json`
    - Returns structured JSON updates for invoice data
 
 3. **Error Handling**:

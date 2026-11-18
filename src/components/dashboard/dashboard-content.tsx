@@ -28,23 +28,31 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
         {/* Navigation */}
         <Navigation />
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">
               Manage your invoices and track your business
             </p>
           </div>
-          <Button asChild>
-            <Link href="/?new=1" className="inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Create New Invoice
-            </Link>
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button asChild variant="outline">
+              <Link href="/estimate-maker?new=1" className="inline-flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                New estimate
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/?new=1" className="inline-flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Create New Invoice
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" data-exclude>
           <Card className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-lg">

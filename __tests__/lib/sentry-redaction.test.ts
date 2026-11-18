@@ -19,6 +19,18 @@ describe('redactSecretsInText', () => {
     )
   })
 
+  it('redacts the token in share PDF route URLs', () => {
+    expect(redactSecretsInText(`https://invoicecommand.com/api/share/${TOKEN}/pdf`)).toBe(
+      'https://invoicecommand.com/api/share/[redacted]/pdf'
+    )
+    expect(redactSecretsInText(`/api/share/${TOKEN}/pdf`)).toBe('/api/share/[redacted]/pdf')
+    expect(redactSecretsInText(`GET /api/share/${TOKEN}/pdf`)).toBe('GET /api/share/[redacted]/pdf')
+    expect(redactSecretsInText(`fetch failed for "/api/share/${TOKEN}/pdf"`)).toBe(
+      'fetch failed for "/api/share/[redacted]/pdf"'
+    )
+    expect(redactSecretsInText('GET /api/share/[token]/pdf')).toBe('GET /api/share/[token]/pdf')
+  })
+
   it('redacts token query params', () => {
     expect(redactSecretsInText('/auth/reset-password?token=secret123&x=1')).toBe(
       '/auth/reset-password?token=REDACTED&x=1'
@@ -45,6 +57,7 @@ describe('scrubSentryPayload', () => {
       breadcrumbs: [
         { category: 'navigation', data: { from: `/i/${TOKEN}`, to: '/' } },
         { category: 'fetch', data: { url: `/i/${TOKEN}`, status_code: 200 } },
+        { category: 'fetch', data: { url: `/api/share/${TOKEN}/pdf`, status_code: 404 } },
       ],
     }
 
@@ -54,6 +67,22 @@ describe('scrubSentryPayload', () => {
     expect(JSON.stringify(out)).not.toContain(TOKEN)
     expect(out.request.url).toBe('https://invoicecommand.com/i/[redacted]')
     expect(out.breadcrumbs[1].data.status_code).toBe(200)
+  })
+
+  it('redacts an error event from the share PDF route', () => {
+    const event = {
+      exception: { values: [{ type: 'Error', value: `render failed for /api/share/${TOKEN}/pdf` }] },
+      request: {
+        url: `https://invoicecommand.com/api/share/${TOKEN}/pdf`,
+        headers: { Referer: `https://invoicecommand.com/i/${TOKEN}` },
+      },
+      transaction: `GET /api/share/${TOKEN}/pdf`,
+    }
+
+    const out = scrubSentryPayload(event)
+
+    expect(JSON.stringify(out)).not.toContain(TOKEN)
+    expect(out.request.url).toBe('https://invoicecommand.com/api/share/[redacted]/pdf')
   })
 
   it('passes null through for dropped events', () => {

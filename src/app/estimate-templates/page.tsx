@@ -178,8 +178,8 @@ export default function EstimateTemplatesPage() {
                 <div>
                   <p className="mb-4">
                     Every template is completely free to use with no registration required.
-                    Your data stays private and secure in your browser - we never store your
-                    business or client information on our servers.
+                    Drafts stay in your browser until you create an account, so you can build and
+                    download an estimate without signing up.
                   </p>
                   <p>
                     Start creating professional estimates today with our industry-specific templates
@@ -264,7 +264,7 @@ export default function EstimateTemplatesPage() {
                     <Link href="/estimate-templates/graphic-designer" className="block text-primary hover:underline">
                       Graphic Designer
                     </Link>
-                    <Link href="/estimate-templates/web-designer" className="block text-primary hover:underline">
+                    <Link href="/estimate-templates/web-design" className="block text-primary hover:underline">
                       Web Designer
                     </Link>
                     <Link href="/estimate-templates/photographer" className="block text-primary hover:underline">
@@ -287,9 +287,6 @@ export default function EstimateTemplatesPage() {
                     <Link href="/estimate-templates/plumber" className="block text-primary hover:underline">
                       Plumber
                     </Link>
-                    <Link href="/estimate-templates/carpenter" className="block text-primary hover:underline">
-                      Carpenter
-                    </Link>
                     <Link href="/estimate-templates/contractor" className="block text-primary hover:underline">
                       General Contractor
                     </Link>
@@ -307,7 +304,7 @@ export default function EstimateTemplatesPage() {
                     <Link href="/estimate-templates/marketing-consultant" className="block text-primary hover:underline">
                       Marketing Consultant
                     </Link>
-                    <Link href="/estimate-templates/accountant" className="block text-primary hover:underline">
+                    <Link href="/estimate-templates/accounting" className="block text-primary hover:underline">
                       Accountant
                     </Link>
                     <Link href="/estimate-templates/legal-consultant" className="block text-primary hover:underline">

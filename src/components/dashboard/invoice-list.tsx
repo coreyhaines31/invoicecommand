@@ -36,6 +36,8 @@ import { formatDateOnly } from '@/lib/date-only'
 import { useRouter } from 'next/navigation'
 import { SendEmailDialog } from '@/components/send-email-dialog'
 import { ShareInvoiceDialog } from '@/components/dashboard/share-invoice-dialog'
+import { downloadOwnerInvoicePdf } from '@/lib/download-pdf'
+import { toast } from 'sonner'
 
 interface Invoice {
   id: string
@@ -46,6 +48,10 @@ interface Invoice {
   status: string | null
   dueDate?: string | null
   createdAt: string | Date | null
+  documentType?: 'invoice' | 'estimate' | null
+  signedAt?: string | Date | null
+  collectSignature?: boolean | null
+  convertedToInvoiceId?: string | null
 }
 
 export type InvoiceListItem = Invoice
@@ -60,6 +66,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const { loadFromDatabase, deleteFromDatabase } = useInvoiceStore()
   const router = useRouter()
 
@@ -93,11 +100,14 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     }).format(Number.isFinite(normalizedAmount) ? normalizedAmount : 0)
   }
 
+  // Each builder switches a saved document of the other type to a fresh draft, so open the matching one
+  const builderPath = (invoice: Invoice) =>
+    invoice.documentType === 'estimate' ? '/estimate-maker' : '/'
+
   const handleEditInvoice = async (invoice: Invoice) => {
-    // Load the invoice into the store and navigate to the main page
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
-      router.push('/')
+      router.push(builderPath(invoice))
     }
   }
 
@@ -106,7 +116,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
       useInvoiceStore.getState().detachAsCopy()
-      router.push('/')
+      router.push(builderPath(invoice))
     }
   }
 
@@ -117,6 +127,21 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
         // Refresh the page to update the list
         router.refresh()
       }
+    }
+  }
+
+  const handleDownloadPdf = async (invoice: Invoice) => {
+    // The menu closes on select, so the pending state lives in a toast.
+    const toastId = `pdf-${invoice.id}`
+    setDownloadingId(invoice.id)
+    toast.loading('Generating PDF...', { id: toastId })
+    try {
+      await downloadOwnerInvoicePdf(invoice.id)
+      toast.dismiss(toastId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not download the PDF', { id: toastId })
+    } finally {
+      setDownloadingId(null)
     }
   }
 
@@ -153,7 +178,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-exclude>
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -171,7 +196,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice #</TableHead>
+              <TableHead>Number</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
@@ -185,6 +210,26 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
               <TableRow key={invoice.id}>
                 <TableCell className="font-medium">
                   {invoice.invoiceNumber}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <Badge variant="outline" className="font-normal">
+                      {invoice.documentType === 'estimate' ? 'Estimate' : 'Invoice'}
+                    </Badge>
+                    {invoice.documentType === 'estimate' && invoice.signedAt && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 font-normal">
+                        Signed
+                      </Badge>
+                    )}
+                    {invoice.documentType === 'estimate' && !invoice.signedAt && invoice.collectSignature !== false && (
+                      <Badge variant="secondary" className="font-normal">
+                        Not signed
+                      </Badge>
+                    )}
+                    {invoice.documentType === 'estimate' && invoice.convertedToInvoiceId && (
+                      <Badge variant="secondary" className="font-normal">
+                        Converted
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{invoice.clientName || 'No client'}</TableCell>
                 <TableCell>{formatCurrency(invoice.total || 0)}</TableCell>
@@ -216,9 +261,12 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDownloadPdf(invoice)}
+                        disabled={downloadingId === invoice.id}
+                      >
                         <Download className="w-4 h-4 mr-2" />
-                        Download PDF
+                        {downloadingId === invoice.id ? 'Generating PDF...' : 'Download PDF'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleSendEmail(invoice)}>
                         <Send className="w-4 h-4 mr-2" />

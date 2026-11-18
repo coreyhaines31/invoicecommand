@@ -66,22 +66,9 @@ const tierFeatures: Record<UpgradeTier, string[]> = {
     '3 professional templates',
     'Basic payment collection'
   ],
-  premium: [
-    'Unlimited voice AI',
-    'Custom brand themes',
-    'Team collaboration',
-    'Recurring invoices',
-    'Advanced analytics',
-    'Email tracking'
-  ],
-  pro: [
-    '0% transaction fees',
-    'White-label branding',
-    'Priority 24/7 support',
-    'Custom domain',
-    'API access',
-    'Dedicated account manager'
-  ]
+  // No paid plan is available yet, so there are no paid benefits to list.
+  premium: [],
+  pro: []
 }
 
 export function PaywallModal({ isOpen, onClose, trigger }: PaywallModalProps) {

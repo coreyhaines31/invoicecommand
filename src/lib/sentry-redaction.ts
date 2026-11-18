@@ -1,4 +1,4 @@
-import { hasTokenInPath, REDACTED_TOKEN_PATH } from '@/lib/analytics-redaction'
+import { hasTokenInPath, REDACTED_SHARE_API_PATH, REDACTED_TOKEN_PATH } from '@/lib/analytics-redaction'
 
 // Sentry puts URLs in many places: request.url, the Referer header, transaction
 // names, span descriptions, navigation/fetch breadcrumbs and replay recordings.
@@ -8,6 +8,8 @@ import { hasTokenInPath, REDACTED_TOKEN_PATH } from '@/lib/analytics-redaction'
 // /i/<token> at the start of a string, after whitespace/quotes, or right after
 // a URL's host. Skips the route pattern /i/[token] and already-redacted paths.
 const TOKEN_PATH_IN_TEXT_RE = /(^|[\s"'(=]|:\/\/[^/\s"']+)\/i\/(?!\[)[^/?#\s"'<>)]+/g
+// Same for the share PDF route, /api/share/<token>/pdf.
+const SHARE_API_PATH_IN_TEXT_RE = /(^|[\s"'(=]|:\/\/[^/\s"']+)\/api\/share\/(?!\[)[^/?#\s"'<>)]+/g
 
 const SENSITIVE_QUERY_PARAMS = ['token', 't', 'reset_token', 'verification_token', 'access_token', 'apiKey', 'api_key', 'key']
 const TOKEN_QUERY_IN_TEXT_RE = new RegExp(`([?&](?:${SENSITIVE_QUERY_PARAMS.join('|')})=)[^&#\\s"']+`, 'g')
@@ -15,9 +17,10 @@ const TOKEN_QUERY_IN_TEXT_RE = new RegExp(`([?&](?:${SENSITIVE_QUERY_PARAMS.join
 const MAX_DEPTH = 12
 
 export function redactSecretsInText(text: string): string {
-  if (!text.includes('/i/') && !text.includes('=')) return text
+  if (!text.includes('/i/') && !text.includes('/api/share/') && !text.includes('=')) return text
   return text
     .replace(TOKEN_PATH_IN_TEXT_RE, `$1${REDACTED_TOKEN_PATH}`)
+    .replace(SHARE_API_PATH_IN_TEXT_RE, `$1${REDACTED_SHARE_API_PATH}`)
     .replace(TOKEN_QUERY_IN_TEXT_RE, '$1REDACTED')
 }
 

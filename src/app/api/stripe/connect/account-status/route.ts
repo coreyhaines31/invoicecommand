@@ -5,6 +5,7 @@ import { userProfiles } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { stripe } from '@/lib/stripe'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,10 +56,6 @@ export async function GET(request: NextRequest) {
       email: account.email,
     })
   } catch (error) {
-    console.error('Failed to get account status:', error)
-    return NextResponse.json(
-      { error: 'Failed to get account status' },
-      { status: 500 }
-    )
+    return jsonErrorResponse(error, 'Failed to get account status')
   }
 }

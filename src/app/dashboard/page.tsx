@@ -19,8 +19,22 @@ export default async function DashboardPage() {
     redirect('/auth/login')
   }
 
+  // Only the list columns: logos and signatures are inline images and would bloat every row
   const userInvoices = await db
-    .select()
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      clientName: invoices.clientName,
+      clientEmail: invoices.clientEmail,
+      total: invoices.total,
+      status: invoices.status,
+      dueDate: invoices.dueDate,
+      createdAt: invoices.createdAt,
+      documentType: invoices.documentType,
+      signedAt: invoices.signedAt,
+      collectSignature: invoices.collectSignature,
+      convertedToInvoiceId: invoices.convertedToInvoiceId,
+    })
     .from(invoices)
     .where(eq(invoices.userId, session.user.id))
     .orderBy(desc(invoices.createdAt))

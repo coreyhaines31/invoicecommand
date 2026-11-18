@@ -3,9 +3,10 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
-import { stripe, calculateApplicationFee } from '@/lib/stripe'
+import { calculateApplicationFee } from '@/lib/stripe'
 import { toStripeAmount } from '@/lib/stripe-amount'
 import { jsonErrorResponse } from '@/lib/error-response'
+import { isPayableDocument, startInvoicePayment } from '@/lib/invoice-payment-intent'
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,9 @@ export async function POST(request: NextRequest) {
       .from(invoices)
       .where(and(eq(invoices.id, invoiceId), eq(invoices.userId, session.user.id)))
 
-    if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    if (!invoice || !isPayableDocument(invoice)) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
 
     const invoiceCurrency = (invoice.currency || 'USD').toLowerCase()
 
@@ -56,59 +59,24 @@ export async function POST(request: NextRequest) {
     const userTier = (userProfile.subscriptionTier as 'free' | 'premium' | 'pro') || 'free'
     const applicationFeeAmount = calculateApplicationFee(amount, userTier)
 
-    // Reuse an in-flight payment intent rather than creating a new one. Same
-    // reasoning as the public endpoint — see comment there for the webhook
-    // dispatch / orphan-intent failure mode.
-    if (
-      invoice.stripePaymentIntentId &&
-      invoice.stripePaymentStatus === 'processing' &&
-      invoice.paymentAmountCents === amount
-    ) {
-      const existing = await stripe.paymentIntents.retrieve(invoice.stripePaymentIntentId)
-      if (existing.status !== 'canceled' && existing.status !== 'succeeded') {
-        return NextResponse.json({
-          clientSecret: existing.client_secret,
-          paymentIntentId: existing.id,
-          applicationFeeAmount: invoice.applicationFeeCents ?? applicationFeeAmount,
-          userTier,
-          message: 'Existing payment intent reused',
-        })
-      }
-    }
-
-    const paymentIntent = await stripe.paymentIntents.create({
+    return await startInvoicePayment({
+      invoice,
       amount,
-      currency: invoiceCurrency,
-      application_fee_amount: applicationFeeAmount,
-      transfer_data: { destination: userProfile.stripeAccountId },
-      metadata: {
-        invoice_id: invoiceId,
-        user_id: session.user.id,
-        invoice_number: invoice.invoiceNumber || '',
-      },
-      description: `Payment for Invoice ${invoice.invoiceNumber || invoiceId}`,
-    }, {
-      idempotencyKey: `owner-invoice-${invoiceId}-${amount}`,
-    })
-
-    await db
-      .update(invoices)
-      .set({
-        stripePaymentIntentId: paymentIntent.id,
-        paymentEnabled: true,
-        paymentAmountCents: amount,
-        applicationFeeCents: applicationFeeAmount,
-        stripePaymentStatus: 'processing',
-        updatedAt: new Date(),
-      })
-      .where(and(eq(invoices.id, invoiceId), eq(invoices.userId, session.user.id)))
-
-    return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
       applicationFeeAmount,
-      userTier,
-      message: 'Payment intent created successfully',
+      createParams: {
+        currency: invoiceCurrency,
+        transfer_data: { destination: userProfile.stripeAccountId },
+        metadata: {
+          invoice_id: invoiceId,
+          user_id: session.user.id,
+          invoice_number: invoice.invoiceNumber || '',
+        },
+        description: `Payment for Invoice ${invoice.invoiceNumber || invoiceId}`,
+      },
+      idempotencyKeyPrefix: 'owner-invoice',
+      scope: and(eq(invoices.id, invoiceId), eq(invoices.userId, session.user.id)),
+      extraSet: { paymentEnabled: true },
+      responseExtras: { userTier },
     })
   } catch (error) {
     return jsonErrorResponse(error, 'Failed to create payment intent')

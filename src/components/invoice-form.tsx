@@ -61,9 +61,7 @@ export function InvoiceForm() {
     await downloadPDF(invoice)
   }
 
-  const handleVoiceCommand = async (transcript: string) => {
-    await processVoiceCommand(transcript)
-  }
+  const handleVoiceCommand = (transcript: string) => processVoiceCommand(transcript)
 
   const handleSaveInvoice = async () => {
     // Don't trigger the paywall during initial session load — useUserTier
@@ -122,12 +120,8 @@ export function InvoiceForm() {
       return
     }
 
-    if (sessionLoading) return
-
-    if (isAnonymous) {
-      triggerUpgrade('convert-estimate')
-      return
-    }
+    // The Convert button is only shown to signed-in users; conversion saves both documents
+    if (sessionLoading || isAnonymous) return
 
     setIsConverting(true)
     toast.loading('Converting estimate to invoice...', { id: 'converting' })
@@ -627,13 +621,15 @@ export function InvoiceForm() {
         </CardContent>
       </Card>
 
-      {/* Payment Settings */}
-      <PaymentSettings
-        paymentEnabled={paymentEnabled || false}
-        onPaymentToggle={(enabled) => updatePaymentSettings({ paymentEnabled: enabled })}
-        invoiceTotal={total}
-        currency={currency}
-      />
+      {/* Payment Settings: estimates are not paid online, so the share page shows no payment panel for them */}
+      {documentType !== 'estimate' && (
+        <PaymentSettings
+          paymentEnabled={paymentEnabled || false}
+          onPaymentToggle={(enabled) => updatePaymentSettings({ paymentEnabled: enabled })}
+          invoiceTotal={total}
+          currency={currency}
+        />
+      )}
 
       {/* Error Display */}
       {error && (
