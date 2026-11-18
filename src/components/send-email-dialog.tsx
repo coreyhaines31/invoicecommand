@@ -35,6 +35,8 @@ type VerifyState =
   | { status: 'sent'; email: string }
   | { status: 'error'; message: string }
 
+const RESEND_COOLDOWN_MS = 30_000
+
 interface SendEmailDialogProps {
   invoice: Invoice | null
   open: boolean
@@ -47,12 +49,14 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
   const [clientEmail, setClientEmail] = useState('')
   const [senderMessage, setSenderMessage] = useState('')
   const { data: session, refetch: refetchSession } = useSession()
-  // The server is the source of truth: a 403 EMAIL_NOT_VERIFIED marks the
-  // account unverified even if the cached session says otherwise.
+  // A 403 EMAIL_NOT_VERIFIED from the server counts until the session says
+  // the account is verified (for example after verifying in another tab).
   const [serverSaysUnverified, setServerSaysUnverified] = useState(false)
   const [verifyState, setVerifyState] = useState<VerifyState>({ status: 'idle' })
+  const [canResend, setCanResend] = useState(false)
   const accountEmail = session?.user?.email ?? ''
-  const needsVerification = serverSaysUnverified || session?.user?.emailVerified === false
+  const sessionVerified = session?.user?.emailVerified
+  const needsVerification = sessionVerified === false || (serverSaysUnverified && sessionVerified !== true)
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -60,8 +64,23 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
       setClientEmail(invoice.clientEmail || '')
       setSenderMessage('')
       setVerifyState({ status: 'idle' })
+      setServerSaysUnverified(false)
     }
   }, [open, invoice])
+
+  // Pick up a verification that happened since the session was loaded.
+  useEffect(() => {
+    if (open) refetchSession()
+    // Only on open: refetchSession is not guaranteed to be stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(() => {
+    if (verifyState.status !== 'sent') return
+    setCanResend(false)
+    const timer = setTimeout(() => setCanResend(true), RESEND_COOLDOWN_MS)
+    return () => clearTimeout(timer)
+  }, [verifyState])
 
   const handleSendVerification = async () => {
     if (!accountEmail) return
@@ -118,6 +137,7 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
         const body = await response.json().catch(() => ({}))
         if (response.status === 403 && body?.code === 'EMAIL_NOT_VERIFIED') {
           setServerSaysUnverified(true)
+          refetchSession()
           return
         }
         const msg = body?.error || body?.details || 'Failed to send email'
@@ -165,7 +185,20 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
                   {accountEmail && <> We will send a verification link to {accountEmail}.</>}
                 </p>
                 {verifyState.status === 'sent' ? (
-                  <p className="text-foreground font-medium">Check your inbox at {verifyState.email}.</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="text-foreground font-medium">Check your inbox at {verifyState.email}.</p>
+                    {canResend && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-muted-foreground"
+                        onClick={handleSendVerification}
+                      >
+                        Send again
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <Button
                     type="button"
