@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { agentFeedback, apiKeys, invoices, user, userProfiles, voiceUsage, webhooks } from '@/lib/db/schema'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { jsonErrorResponse } from '@/lib/error-response'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
 
 // A JSON copy of the caller's own account. Every table is read with an
 // explicit column list: password hashes and session tokens (account, session)
@@ -89,20 +89,7 @@ export async function GET(request: NextRequest) {
       .from(webhooks)
       .where(eq(webhooks.userId, userId))
 
-    const feedback = await db
-      .select({
-        id: agentFeedback.id,
-        client: agentFeedback.client,
-        task: agentFeedback.task,
-        kind: agentFeedback.kind,
-        impact: agentFeedback.impact,
-        toolName: agentFeedback.toolName,
-        description: agentFeedback.description,
-        status: agentFeedback.status,
-        createdAt: agentFeedback.createdAt,
-      })
-      .from(agentFeedback)
-      .where(eq(agentFeedback.userId, userId))
+    const feedback = await loadAgentFeedback(userId)
 
     const exportedAt = new Date()
     const body = {
@@ -128,5 +115,30 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     return jsonErrorResponse(error, 'Failed to export account data', { extra: { route: 'account/export', userId } })
+  }
+}
+
+// The agent feedback table ships with its own migration. Until that has run on
+// a database, the rest of the export must still work, so a failure here is
+// reported and the section comes back empty.
+async function loadAgentFeedback(userId: string) {
+  try {
+    return await db
+      .select({
+        id: agentFeedback.id,
+        client: agentFeedback.client,
+        task: agentFeedback.task,
+        kind: agentFeedback.kind,
+        impact: agentFeedback.impact,
+        toolName: agentFeedback.toolName,
+        description: agentFeedback.description,
+        status: agentFeedback.status,
+        createdAt: agentFeedback.createdAt,
+      })
+      .from(agentFeedback)
+      .where(eq(agentFeedback.userId, userId))
+  } catch (error) {
+    reportError(error, 'Account export could not read agent feedback', { userId })
+    return []
   }
 }
