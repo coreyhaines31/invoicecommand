@@ -152,8 +152,8 @@ export default function InvoiceTemplatesPage() {
                 <div>
                   <p className="mb-4">
                     Every template is completely free to use with no registration required.
-                    Your data stays private and secure in your browser - we never store your
-                    business or client information on our servers.
+                    Drafts stay in your browser until you create an account, so you can build and
+                    download an invoice without signing up.
                   </p>
                   <p>
                     Start creating professional invoices today with our industry-specific templates
@@ -178,7 +178,7 @@ export default function InvoiceTemplatesPage() {
                     <Link href="/invoice-templates/graphic-designer" className="block text-primary hover:underline">
                       Graphic Designer
                     </Link>
-                    <Link href="/invoice-templates/web-designer" className="block text-primary hover:underline">
+                    <Link href="/invoice-templates/web-design" className="block text-primary hover:underline">
                       Web Designer
                     </Link>
                     <Link href="/invoice-templates/photographer" className="block text-primary hover:underline">
@@ -221,7 +221,7 @@ export default function InvoiceTemplatesPage() {
                     <Link href="/invoice-templates/marketing-consultant" className="block text-primary hover:underline">
                       Marketing Consultant
                     </Link>
-                    <Link href="/invoice-templates/accountant" className="block text-primary hover:underline">
+                    <Link href="/invoice-templates/accounting" className="block text-primary hover:underline">
                       Accountant
                     </Link>
                     <Link href="/invoice-templates/legal-consultant" className="block text-primary hover:underline">

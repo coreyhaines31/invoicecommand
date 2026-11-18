@@ -119,7 +119,7 @@ export default function RootLayout({
           "AI voice commands",
           "Real-time preview",
           "PDF export",
-          "Privacy protection",
+          "Drafts saved in your browser",
           "Mobile responsive"
         ],
         "screenshot": "https://invoicecommand.com/og-image.png"
@@ -145,11 +145,6 @@ export default function RootLayout({
           "@type": "Offer",
           "price": "0",
           "priceCurrency": "USD"
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "127"
         }
       },
       {
@@ -185,7 +180,7 @@ export default function RootLayout({
             "name": "Is this invoice template generator really free?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes! Our invoice maker is completely free with no hidden costs, subscriptions, or limits. Create unlimited professional invoices without paying anything."
+              "text": "Yes. Building and downloading invoices is free, with no subscription, and you can make as many as you like. Voice commands are capped at 10 a month on a free account."
             }
           },
           {
@@ -201,7 +196,7 @@ export default function RootLayout({
             "name": "How does the AI voice feature work?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Simply click the voice button and speak naturally about your invoice details. Our AI understands commands like 'Add 5 hours of consulting at $150 per hour' and automatically populates your invoice."
+              "text": "Sign in, click the voice button and say what you want, like 'Add 5 hours of consulting at $150 per hour'. Your words and the current invoice are sent to OpenAI to work out the change. Free accounts get 10 voice commands a month."
             }
           },
           {
@@ -209,7 +204,7 @@ export default function RootLayout({
             "name": "Is my data secure and private?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Your privacy is our priority. All data is stored locally in your browser only. We never store your business or client information on our servers. You have complete control over your data."
+              "text": "Until you create an account, your draft is saved only in your browser. Once you sign in, invoices you save are stored in our database. Voice commands are processed by OpenAI, invoices you email go through our email provider, and online payments go through Stripe. We use analytics, session recording and error reporting to improve the site."
             }
           }
         ]

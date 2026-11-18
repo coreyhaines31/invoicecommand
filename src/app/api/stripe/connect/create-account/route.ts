@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { userProfiles } from '@/lib/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { stripe, STRIPE_CONNECT_CONFIG } from '@/lib/stripe'
-import { jsonErrorResponse } from '@/lib/error-response'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
 
 const ALLOWED_COUNTRIES = new Set(['US', 'CA', 'GB', 'AU', 'NZ', 'IE', 'DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI', 'PT', 'PL', 'CZ', 'HU', 'RO', 'BG', 'HR', 'SI', 'SK', 'EE', 'LV', 'LT', 'LU', 'MT', 'CY', 'GR', 'JP', 'SG', 'HK', 'MX', 'BR', 'IN'])
 const ALLOWED_BUSINESS_TYPES = new Set(['individual', 'company', 'non_profit', 'government_entity'])
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       try {
         await stripe.accounts.del(account.id)
       } catch (cleanupErr) {
-        console.error('Failed to clean up orphan Stripe account', account.id, cleanupErr)
+        reportError(cleanupErr, 'Failed to clean up orphan Stripe account', { stripeAccountId: account.id })
       }
       return NextResponse.json(
         { error: 'A Stripe account was created concurrently. Please refresh.' },

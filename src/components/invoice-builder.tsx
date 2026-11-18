@@ -54,7 +54,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
             </span>
             <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
               <Shield className="w-3 h-3" />
-              Privacy First
+              No Signup Needed
             </span>
           </div>
         </div>
@@ -161,7 +161,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
                   <div>
                     <h3 className="font-semibold">AI Voice Commands</h3>
                     <p className="text-sm text-muted-foreground">
-                      Unique voice-to-invoice feature. Simply speak your invoice details and watch them populate automatically.
+                      Sign in and speak your invoice details to fill them in. Free accounts get 10 voice commands a month.
                     </p>
                   </div>
                 </div>
@@ -179,9 +179,9 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center flex-shrink-0 mt-0.5">✓</div>
                   <div>
-                    <h3 className="font-semibold">Privacy Protected</h3>
+                    <h3 className="font-semibold">Drafts Stay in Your Browser</h3>
                     <p className="text-sm text-muted-foreground">
-                      Your data stays in your browser. No servers, no storage, no privacy concerns. Complete data control.
+                      Drafts stay in your browser until you create an account. No signup needed to build and download an invoice.
                     </p>
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
                   Is this invoice template generator really free?
                 </summary>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Yes! Our invoice maker is completely free with no hidden costs, subscriptions, or limits. Create unlimited professional invoices without paying anything.
+                  Yes. Building and downloading invoices is free, with no subscription, and you can make as many as you like. Voice commands are capped at 10 a month on a free account.
                 </p>
               </details>
               <details className="border-b border-border pb-4">
@@ -232,13 +232,13 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
                   How does the AI voice feature work?
                 </summary>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Simply click the voice button and speak naturally about your invoice details. Our AI understands commands like &quot;Add 5 hours of consulting at $150 per hour&quot; and automatically populates your invoice.
+                  Sign in, click the voice button and say what you want, like &quot;Add 5 hours of consulting at $150 per hour&quot;. Your words and the current invoice are sent to OpenAI to work out the change. Free accounts get 10 voice commands a month.
                 </p>
               </details>
               <details className="border-b border-border pb-4">
                 <summary className="font-semibold cursor-pointer hover:text-primary">Is my data secure and private?</summary>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Your privacy is our priority. All data is stored locally in your browser only. We never store your business or client information on our servers. You have complete control over your data.
+                  Until you create an account, your draft is saved only in your browser. Once you sign in, invoices you save are stored in our database. Voice commands are processed by OpenAI, invoices you email go through our email provider, and online payments go through Stripe. We use analytics, session recording and error reporting to improve the site.
                 </p>
               </details>
               <details className="border-b border-border pb-4">
@@ -247,7 +247,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
               </details>
               <details className="border-b border-border pb-4">
                 <summary className="font-semibold cursor-pointer hover:text-primary">Do I need to create an account or sign up?</summary>
-                <p className="text-sm text-muted-foreground mt-2">No registration required! Start creating professional invoices immediately without providing any personal information. Your invoices are saved locally in your browser for convenience.</p>
+                <p className="text-sm text-muted-foreground mt-2">No. You can build and download an invoice without an account, and your draft is saved in your browser. Create a free account to save invoices, add a logo and use voice commands.</p>
               </details>
             </div>
           </div>
@@ -257,7 +257,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
       {/* Footer Actions */}
       <footer className="mt-8 flex flex-col gap-4 justify-center items-center">
         <div className="text-sm text-muted-foreground text-center">
-          Your data is stored locally in your browser. No signup required.
+          Drafts stay in your browser until you create an account. No signup needed to download an invoice.
         </div>
         <nav aria-label="Legal" className="flex gap-4 text-sm text-muted-foreground">
           <Link href="/privacy" className="hover:text-primary">Privacy Policy</Link>
