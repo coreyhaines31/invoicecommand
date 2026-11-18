@@ -72,6 +72,21 @@ function request(amount = 10000) {
 
 const invoice = () => fake.rows[0]
 
+// The intent as Stripe returns it: matches what the route would create for a
+// 100.00 USD invoice of the seeded owner unless overridden.
+function storedIntent(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'pi_old',
+    status: 'requires_payment_method',
+    client_secret: 'secret_old',
+    amount: 10000,
+    currency: 'usd',
+    application_fee_amount: 50,
+    transfer_data: { destination: 'acct_owner' },
+    ...overrides,
+  }
+}
+
 beforeEach(() => {
   seed()
   jest.resetAllMocks()
@@ -121,7 +136,7 @@ describe('POST /api/stripe/create-payment-intent', () => {
 
   it('reuses the in-flight intent when the total is unchanged', async () => {
     seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 10000 })
-    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'requires_payment_method', client_secret: 'secret_old' })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue(storedIntent({ status: 'requires_payment_method', client_secret: 'secret_old' }))
     const res = await POST(request())
     expect((await res.json()).paymentIntentId).toBe('pi_old')
     expect(stripeMock.paymentIntents.cancel).not.toHaveBeenCalled()
@@ -130,7 +145,7 @@ describe('POST /api/stripe/create-payment-intent', () => {
 
   it('cancels the superseded intent before creating one for a new total', async () => {
     seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
-    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'requires_payment_method' })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue(storedIntent({ amount: 8000, status: 'requires_payment_method' }))
     const res = await POST(request())
     expect(res.status).toBe(200)
     expect(stripeMock.paymentIntents.cancel).toHaveBeenCalledWith('pi_old')
@@ -141,7 +156,7 @@ describe('POST /api/stripe/create-payment-intent', () => {
 
   it('does not create a new intent when the superseded one already succeeded', async () => {
     seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
-    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'succeeded' })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue(storedIntent({ amount: 8000, status: 'succeeded' }))
     const res = await POST(request())
     expect(res.status).toBe(409)
     expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
@@ -150,8 +165,8 @@ describe('POST /api/stripe/create-payment-intent', () => {
   it('does not create a new intent when the cancel loses a race with the payment', async () => {
     seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
     stripeMock.paymentIntents.retrieve
-      .mockResolvedValueOnce({ id: 'pi_old', status: 'requires_payment_method' })
-      .mockResolvedValueOnce({ id: 'pi_old', status: 'succeeded' })
+      .mockResolvedValueOnce(storedIntent({ amount: 8000, status: 'requires_payment_method' }))
+      .mockResolvedValueOnce(storedIntent({ amount: 8000, status: 'succeeded' }))
     stripeMock.paymentIntents.cancel.mockRejectedValue(new Error('payment_intent_unexpected_state'))
     const res = await POST(request())
     expect(res.status).toBe(409)
@@ -163,7 +178,7 @@ describe('POST /api/stripe/create-payment-intent', () => {
     'returns 409 when the superseded intent is %s and cannot be cancelled',
     async (status) => {
       seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
-      stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status })
+      stripeMock.paymentIntents.retrieve.mockResolvedValue(storedIntent({ amount: 8000, status }))
       stripeMock.paymentIntents.cancel.mockRejectedValue(new Error('payment_intent_unexpected_state'))
       const res = await POST(request())
       expect(res.status).toBe(409)
@@ -174,7 +189,7 @@ describe('POST /api/stripe/create-payment-intent', () => {
 
   it('rethrows a cancel failure in an unexpected state', async () => {
     seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
-    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'requires_payment_method' })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue(storedIntent({ amount: 8000, status: 'requires_payment_method' }))
     stripeMock.paymentIntents.cancel.mockRejectedValue(new Error('stripe down'))
     await expect(POST(request())).rejects.toThrow('stripe down')
   })
