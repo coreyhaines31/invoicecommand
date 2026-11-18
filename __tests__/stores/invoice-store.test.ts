@@ -774,6 +774,20 @@ describe('InvoiceStore', () => {
       expect(state.invoiceNumber).toBe('INV-0002')
     })
 
+    it('Save: the stored draft takes the saved invoice id, so a reload knows it is saved', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ clientName: 'Saved B' }))
+      act(() => {
+        useInvoiceStore.setState({ id: undefined, clientName: 'Saved B' })
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().saveToDatabase('user-1')
+      })
+
+      expect(useInvoiceStore.getState().id).toBe('inv-b')
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY) as string).id).toBe('inv-b')
+    })
+
     it('Edit: a stored draft of another saved invoice does not replace the loaded one', async () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Saved A draft' }))
 
