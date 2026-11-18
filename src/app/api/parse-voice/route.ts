@@ -8,6 +8,9 @@ import { and, eq, lt, sql } from 'drizzle-orm'
 // Initialize OpenAI client conditionally
 let openai: OpenAI | null = null
 const MONTHLY_LIMIT = 10
+// A 200-line invoice with long descriptions, notes and terms is about 43 KB
+// of JSON; this leaves headroom while bounding what is sent to the model.
+const MAX_INVOICE_CHARS = 64_000
 
 function getOpenAIClient() {
   if (!openai && process.env.OPENAI_API_KEY) {
@@ -116,7 +119,13 @@ interface InvoiceUpdate {
   explanation?: string
 }
 
-const SYSTEM_PROMPT = `You are an AI assistant that converts natural language voice commands into structured invoice updates for Invoice Command, a professional invoicing application.
+// Dates are the server's UTC date; the client does not send its local date.
+function buildSystemPrompt(now: Date) {
+  const today = now.toISOString().slice(0, 10)
+  const year = today.slice(0, 4)
+  const weekday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+
+  return `You are an AI assistant that converts natural language voice commands into structured invoice updates for Invoice Command, a professional invoicing application.
 
 Your job is to parse voice commands and return JSON updates that can be applied to an invoice. You must be very precise and only make changes that are clearly requested.
 
@@ -133,8 +142,9 @@ FIELD MAPPINGS:
 - Financial: taxRate (as percentage 0-100), discountRate (as percentage 0-100)
 
 DATE FORMATS:
+- Today is ${weekday}, ${today}. Resolve relative dates from today.
 - Convert natural language dates to YYYY-MM-DD format
-- "January 15th" → "2024-01-15" (current year)
+- "January 15th" → "${year}-01-15" (current year)
 - "next Friday" → calculate the date
 - "30 days from now" → calculate the date
 
@@ -171,8 +181,8 @@ Input: "Set due date to January 15th"
 Output: {
   "action": "update_field",
   "field": "dueDate",
-  "value": "2024-01-15",
-  "explanation": "Set due date to January 15, 2024"
+  "value": "${year}-01-15",
+  "explanation": "Set due date to January 15, ${year}"
 }
 
 IMPORTANT RULES:
@@ -185,6 +195,7 @@ IMPORTANT RULES:
 - Preserve existing data unless specifically asked to change it
 
 Return ONLY valid JSON with no additional text.`
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -211,6 +222,13 @@ export async function POST(request: NextRequest) {
     if (sanitizedTranscript.length < 2) {
       return NextResponse.json(
         { error: 'Transcript too short' },
+        { status: 400 }
+      )
+    }
+
+    if (JSON.stringify(currentInvoice ?? {}).length > MAX_INVOICE_CHARS) {
+      return NextResponse.json(
+        { error: 'Invoice is too large for voice commands' },
         { status: 400 }
       )
     }
@@ -254,7 +272,7 @@ Parse this voice command and return the appropriate invoice update as JSON. Be p
       messages: [
         {
           role: 'system',
-          content: SYSTEM_PROMPT
+          content: buildSystemPrompt(new Date())
         },
         {
           role: 'user',

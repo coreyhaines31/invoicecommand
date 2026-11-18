@@ -3,13 +3,20 @@ import { Suspense } from 'react'
 import { LoginForm } from '@/components/auth/login-form'
 import { Logo } from '@/components/logo'
 import Link from 'next/link'
+import { getSafeNextPath, withNextPath } from '@/lib/next-path'
 
 export const metadata: Metadata = {
   title: 'Sign In | Invoice Command',
   description: 'Sign in to your Invoice Command account to access your saved invoices and premium features.',
 }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>
+}) {
+  const next = getSafeNextPath((await searchParams).next)
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -20,7 +27,7 @@ export default function LoginPage() {
               <Logo width={24} height={24} className="text-primary" />
               <span className="text-lg font-semibold text-foreground">Invoice Command</span>
             </Link>
-            <Link href="/auth/signup" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href={withNextPath('/auth/signup', next)} className="text-sm text-muted-foreground hover:text-foreground">
               Don&apos;t have an account? Sign up
             </Link>
           </div>
@@ -41,7 +48,7 @@ export default function LoginPage() {
 
           {/* useSearchParams inside LoginForm requires a Suspense boundary */}
           <Suspense fallback={null}>
-            <LoginForm />
+            <LoginForm next={next} />
           </Suspense>
         </div>
       </div>

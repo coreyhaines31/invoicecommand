@@ -98,23 +98,8 @@ export async function incrementVoiceUsage(userId?: string): Promise<boolean> {
     return true
   }
 
-  // For authenticated users, increment via database
-  try {
-    const response = await fetch('/api/voice-usage', {
-      method: 'POST'
-    })
-
-    if (response.ok) {
-      return true
-    } else if (response.status === 429) {
-      // Usage limit exceeded
-      return false
-    }
-  } catch (error) {
-    console.error('Failed to increment voice usage:', error)
-  }
-
-  return false
+  // Authenticated users are charged once, server-side, by /api/parse-voice
+  return true
 }
 
 export async function canUseVoiceCommand(userId?: string): Promise<boolean> {

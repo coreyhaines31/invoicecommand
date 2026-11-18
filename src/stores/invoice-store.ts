@@ -4,6 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 import type { InvoiceItem } from '@/types/database'
 import { generateInvoiceNumber } from '@/lib/utils'
 import { calculateInvoiceTotals } from '@/lib/invoice-totals'
+import { toDateOnlyString } from '@/lib/date-only'
 
 // localStorage versioning for schema migrations
 const STORAGE_VERSION = 1
@@ -471,8 +472,9 @@ export const useInvoiceStore = create<InvoiceStore>()(
       },
 
       initializeDates: () => {
-        const today = new Date().toISOString().split('T')[0]
-        const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        const now = new Date()
+        const today = toDateOnlyString(now)
+        const thirtyDaysLater = toDateOnlyString(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30))
 
         set((s) => {
           // Only set dates if they're empty (avoids overwriting user data)
@@ -575,7 +577,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             expirationDate: data.expirationDate || undefined,
             notes: data.notes || '',
             status: data.status || 'draft',
-            invoiceDate: data.invoiceDate || new Date().toISOString().split('T')[0],
+            invoiceDate: data.invoiceDate || toDateOnlyString(new Date()),
             senderName: data.senderName || '',
             senderEmail: data.senderEmail || '',
             senderAddress: data.senderAddress || '',

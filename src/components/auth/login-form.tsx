@@ -11,8 +11,10 @@ import { signIn } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getAuthErrorMessage, type FriendlyAuthError } from '@/lib/auth-errors'
+import { resolveNextPath, withNextPath } from '@/lib/next-path'
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string | null }) {
+  const redirectTo = resolveNextPath(next)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -31,7 +33,7 @@ export function LoginForm() {
       const { error } = await signIn.email({
         email,
         password,
-        callbackURL: '/dashboard',
+        callbackURL: redirectTo,
       })
 
       if (error) {
@@ -39,7 +41,7 @@ export function LoginForm() {
         return
       }
 
-      router.push('/dashboard')
+      router.push(redirectTo)
       router.refresh()
     } catch {
       setError(getAuthErrorMessage(null))
@@ -95,7 +97,7 @@ export function LoginForm() {
               {error.actionHref && error.actionLabel && (
                 <>
                   {' '}
-                  <Link href={error.actionHref} className="underline font-medium">
+                  <Link href={withNextPath(error.actionHref, next)} className="underline font-medium">
                     {error.actionLabel}
                   </Link>
                 </>

@@ -129,36 +129,13 @@ describe('Voice Usage Utilities', () => {
     })
 
     describe('Authenticated Users', () => {
-      it('should call API to increment usage', async () => {
-        ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: true,
-        })
-
+      // /api/parse-voice reserves the use server-side; a second POST from the
+      // client would charge every command twice.
+      it('does not charge the server a second time', async () => {
         const result = await incrementVoiceUsage('user-123')
 
-        expect(global.fetch).toHaveBeenCalledWith('/api/voice-usage', {
-          method: 'POST',
-        })
+        expect(global.fetch).not.toHaveBeenCalled()
         expect(result).toBe(true)
-      })
-
-      it('should return false when limit exceeded (429 status)', async () => {
-        ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: false,
-          status: 429,
-        })
-
-        const result = await incrementVoiceUsage('user-123')
-
-        expect(result).toBe(false)
-      })
-
-      it('should return false on API error', async () => {
-        ;(global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'))
-
-        const result = await incrementVoiceUsage('user-123')
-
-        expect(result).toBe(false)
       })
     })
   })

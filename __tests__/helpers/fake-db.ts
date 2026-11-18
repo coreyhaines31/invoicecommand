@@ -16,6 +16,12 @@ export const drizzleOrmMock = {
   isNull: (col: Column): Predicate => (row) => row[col.key] == null,
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),
   desc: (col: Column) => col,
+  lt: (col: Column, value: number): Predicate => (row) => (row[col.key] as number) < value,
+  // Supports only the `${column} + n` increment the voice usage routes use.
+  sql: (strings: TemplateStringsArray, col: Column) => {
+    const by = Number(strings[1].replace('+', '').trim())
+    return (row: Row) => (row[col.key] as number) + by
+  },
 }
 
 const TABLE_NAME = '__tableName'
@@ -31,12 +37,13 @@ export const schemaMock = {
   invoices: fakeTable('invoices'),
   userProfiles: fakeTable('userProfiles'),
   user: fakeTable('user'),
+  voiceUsage: fakeTable('voiceUsage'),
 }
 
 // `rows` is the invoices table; other tables live in `tables`.
 export function createFakeDb() {
   const rows: Row[] = []
-  const tables: Record<string, Row[]> = { invoices: rows }
+  const tables: Record<string, Row[]> = { invoices: rows, voiceUsage: [] }
   const tableRows = (table?: Table): Row[] => {
     const name = (table?.[TABLE_NAME] as unknown as string | undefined) ?? 'invoices'
     return (tables[name] ??= [])
@@ -61,6 +68,18 @@ export function createFakeDb() {
     orderBy() { return this }
     limit(n: number) { this.max = n; return this }
     offset(n: number) { this.skip = n; return this }
+    onConflictDoNothing({ target }: { target: Column[] }) {
+      const source = this.source
+      const inserted = source[source.length - 1]
+      const conflict = source.some(
+        (r) => r !== inserted && target.every((col) => r[col.key] === inserted[col.key])
+      )
+      if (conflict) {
+        source.pop()
+        this.predicate = () => false
+      }
+      return this
+    }
     returning(projection?: Record<string, Column>) {
       if (projection) this.projection = projection
       return this
@@ -92,7 +111,11 @@ export function createFakeDb() {
         new Query({
           source: tableRows(table),
           mutate: (matches) => {
-            matches.forEach((r) => Object.assign(r, values))
+            matches.forEach((r) => {
+              for (const [key, value] of Object.entries(values)) {
+                r[key] = typeof value === 'function' ? value(r) : value
+              }
+            })
             return matches
           },
         }),
