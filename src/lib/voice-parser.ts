@@ -4,7 +4,7 @@
 import { generateText, Output, type LanguageModelUsage } from 'ai'
 import { z } from 'zod'
 
-export const DEFAULT_VOICE_MODEL = 'openai/gpt-4o-mini'
+export const DEFAULT_VOICE_MODEL = 'openai/gpt-6-luna'
 
 export function voiceModel() {
   return process.env.VOICE_MODEL || DEFAULT_VOICE_MODEL

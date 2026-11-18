@@ -135,22 +135,22 @@ describe('POST /api/parse-voice', () => {
     })
   })
 
-  it('calls the gateway model with a schema, defaulting to openai/gpt-4o-mini', async () => {
+  it('calls the gateway model with a schema, defaulting to openai/gpt-6-luna', async () => {
     await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
 
     const params = mockGenerateText.mock.calls[0][0]
-    expect(params.model).toBe('openai/gpt-4o-mini')
+    expect(params.model).toBe('openai/gpt-6-luna')
     expect(params.output.kind).toBe('object')
-    expect(params.temperature).toBe(0.1)
+    expect(params.temperature).toBeUndefined()
     expect(params.maxOutputTokens).toBeGreaterThan(0)
   })
 
   it('uses VOICE_MODEL when it is set', async () => {
-    process.env.VOICE_MODEL = 'openai/gpt-6-luna'
+    process.env.VOICE_MODEL = 'openai/gpt-4o-mini'
 
     await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
 
-    expect(mockGenerateText.mock.calls[0][0].model).toBe('openai/gpt-6-luna')
+    expect(mockGenerateText.mock.calls[0][0].model).toBe('openai/gpt-4o-mini')
   })
 
   it('returns 422 with the explanation when the model cannot tell what to change', async () => {
@@ -172,7 +172,7 @@ describe('POST /api/parse-voice', () => {
     expect(res.status).toBe(503)
     expect((await res.json()).error).toBe('Voice commands are temporarily unavailable. Try again in a few minutes.')
     expect(usageRow()?.commandCount).toBe(3)
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), 'Voice model call failed', expect.objectContaining({ model: 'openai/gpt-4o-mini' }))
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), 'Voice model call failed', expect.objectContaining({ model: 'openai/gpt-6-luna' }))
   })
 
   it('gives the use back on the first command of the month too', async () => {
