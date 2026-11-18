@@ -568,6 +568,112 @@ describe('InvoiceStore', () => {
 
       expect(generateInvoiceNumber).toHaveBeenCalledWith(undefined, 'estimate')
     })
+
+    // Issue #88: the builders call updateDocumentType on every mount
+    it('does nothing when the type already matches', async () => {
+      act(() => {
+        useInvoiceStore.setState({
+          id: 'est-1',
+          documentType: 'estimate',
+          invoiceNumber: 'EST-0007',
+          terms: 'Custom terms',
+          clientName: 'Saved estimate',
+        })
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate')
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBe('est-1')
+      expect(state.invoiceNumber).toBe('EST-0007')
+      expect(state.terms).toBe('Custom terms')
+      expect(generateInvoiceNumber).not.toHaveBeenCalled()
+    })
+
+    it('starts a fresh draft instead of converting a saved invoice', async () => {
+      act(() => {
+        useInvoiceStore.setState({
+          id: 'inv-1',
+          documentType: 'invoice',
+          invoiceNumber: 'INV-0042',
+          clientName: 'Saved client',
+          status: 'sent',
+        })
+        useInvoiceStore.getState().saveToStorage()
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate')
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.status).toBeUndefined()
+      expect(state.documentType).toBe('estimate')
+      expect(state.clientName).toBe('')
+      expect(state.terms).toContain('estimate is valid for 30 days')
+      expect(state.invoiceNumber).toBe('EST-1001')
+
+      // The stored draft no longer points at the saved invoice
+      const stored = JSON.parse(localStorage.getItem('invoicecommand-draft-v1') as string)
+      expect(stored.id).toBeUndefined()
+      expect(stored.documentType).toBe('estimate')
+    })
+
+    it('keeps an unsaved draft content and only replaces default terms and numbers', async () => {
+      act(() => {
+        useInvoiceStore.setState({
+          documentType: 'estimate',
+          invoiceNumber: 'EST-1003',
+          terms: 'This estimate is valid for 30 days from the date above.',
+          clientName: 'Draft client',
+        })
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('invoice')
+      })
+
+      let state = useInvoiceStore.getState()
+      expect(state.documentType).toBe('invoice')
+      expect(state.clientName).toBe('Draft client')
+      expect(state.terms).toBe('Payment is due within 30 days of invoice date.')
+      expect(state.invoiceNumber).toBe('INV-1001')
+
+      act(() => {
+        useInvoiceStore.setState({ invoiceNumber: '2026-17', terms: 'Net 15' })
+      })
+      jest.clearAllMocks()
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate')
+      })
+
+      state = useInvoiceStore.getState()
+      expect(state.documentType).toBe('estimate')
+      expect(state.invoiceNumber).toBe('2026-17')
+      expect(state.terms).toBe('Net 15')
+      expect(generateInvoiceNumber).not.toHaveBeenCalled()
+    })
+
+    it('stores the new type at once, so a builder reload of the stored draft keeps it', async () => {
+      act(() => {
+        useInvoiceStore.setState({ documentType: 'estimate', clientName: 'Draft client' })
+        useInvoiceStore.getState().saveToStorage()
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('invoice')
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(useInvoiceStore.getState().documentType).toBe('invoice')
+      expect(useInvoiceStore.getState().clientName).toBe('Draft client')
+    })
   })
 
   describe('resetInvoice', () => {

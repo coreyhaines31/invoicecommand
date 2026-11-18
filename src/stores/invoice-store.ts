@@ -128,6 +128,14 @@ interface InvoiceStore extends InvoiceData {
   deleteFromDatabase: (invoiceId: string, userId: string) => Promise<boolean>
 }
 
+const DEFAULT_TERMS = {
+  invoice: 'Payment is due within 30 days of invoice date.',
+  estimate: 'This estimate is valid for 30 days from the date above.',
+} as const
+
+// Matches the prefixes generateInvoiceNumber uses
+const NUMBER_PREFIX = { invoice: 'INV-', estimate: 'EST-' } as const
+
 // Default invoice data
 const defaultInvoice: InvoiceData = {
   // Document Type
@@ -174,7 +182,7 @@ const defaultInvoice: InvoiceData = {
 
   // Additional
   notes: '',
-  terms: 'Payment is due within 30 days of invoice date.',
+  terms: DEFAULT_TERMS.invoice,
 
   // Payment
   paymentEnabled: false,
@@ -262,19 +270,32 @@ export const useInvoiceStore = create<InvoiceStore>()(
         state.lastUpdated = Date.now()
       }),
 
+      // The builders call this on mount, so it must be safe to repeat:
+      // - same type: nothing changes
+      // - a saved document (has an id) is never retyped; a fresh draft of the new type starts instead
+      // - an unsaved draft keeps its content; terms and number change only while they hold the other type's defaults
       updateDocumentType: async (type) => {
+        const current = get()
+        if (current.documentType === type) return
+
+        const otherType = type === 'estimate' ? 'invoice' : 'estimate'
+        if (current.id) get().resetInvoice()
+
+        const { terms, invoiceNumber } = get()
+        const replaceTerms = !terms.trim() || terms === DEFAULT_TERMS[otherType]
+        const replaceNumber = !invoiceNumber || invoiceNumber === defaultInvoice.invoiceNumber ||
+          new RegExp(`^${NUMBER_PREFIX[otherType]}\\d+$`).test(invoiceNumber)
+
         set((state) => {
           state.documentType = type
-          if (type === 'estimate') {
-            state.terms = 'This estimate is valid for 30 days from the date above.'
-          } else {
-            state.terms = 'Payment is due within 30 days of invoice date.'
-          }
+          if (replaceTerms) state.terms = DEFAULT_TERMS[type]
           state.isDirty = true
           state.lastUpdated = Date.now()
         })
+        // Store now: a builder mount reloads the stored draft before the debounced save runs
+        get().saveToStorage()
 
-        // Regenerate document number with new type
+        if (!replaceNumber) return
         const { authClient } = await import('@/lib/auth-client')
         const session = await authClient.getSession()
         await get().initializeInvoiceNumber(session?.data?.user?.id)
