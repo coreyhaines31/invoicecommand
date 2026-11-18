@@ -346,7 +346,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
 
                     {/* Payment Button — public flow only. Requires shareToken
                         so the server can validate the share link is enabled. */}
-                    {viewMode === 'public' && shareToken && invoice.paymentEnabled && paymentStatus === 'unpaid' && (
+                    {viewMode === 'public' && shareToken && invoice.paymentEnabled && (paymentStatus === 'unpaid' || paymentStatus === 'failed') && (
                       <PublicPaymentButton
                         shareToken={shareToken}
                         amount={toStripeAmount(invoice.total, invoice.currency)}

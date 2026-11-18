@@ -51,11 +51,11 @@ function monthYear() {
 }
 
 function usageRow() {
-  return fake.rows.find((r) => r.userId === 'user-1' && r.monthYear === monthYear())
+  return fake.tables.voiceUsage.find((r) => r.userId === 'user-1' && r.monthYear === monthYear())
 }
 
 beforeEach(() => {
-  fake.rows.length = 0
+  fake.tables.voiceUsage.length = 0
   process.env.OPENAI_API_KEY = 'test-key'
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
   mockCreate.mockReset()
@@ -75,7 +75,7 @@ describe('POST /api/parse-voice', () => {
   })
 
   it('returns 429 once the monthly limit is used up', async () => {
-    fake.rows.push({ id: 'u1', userId: 'user-1', monthYear: monthYear(), commandCount: 10 })
+    fake.tables.voiceUsage.push({ id: 'u1', userId: 'user-1', monthYear: monthYear(), commandCount: 10 })
 
     const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
 

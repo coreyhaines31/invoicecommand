@@ -93,7 +93,8 @@ export default async function SharedInvoicePage({ params }: PageProps) {
     terms: invoice.terms || '',
     currency: invoice.currency || 'USD',
     paymentEnabled: invoice.paymentEnabled || false,
-    stripePaymentStatus: invoice.stripePaymentStatus || 'unpaid',
+    // An invoice the owner marked paid is paid, however it was paid.
+    stripePaymentStatus: invoice.status === 'paid' ? 'paid' : invoice.stripePaymentStatus || 'unpaid',
     style: (invoice.style as 'modern' | 'classic' | 'minimal') || 'modern',
     documentType: (invoice.documentType as 'invoice' | 'estimate') || 'invoice',
     expirationDate: invoice.expirationDate || '',

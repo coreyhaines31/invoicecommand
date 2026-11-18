@@ -1,5 +1,6 @@
 import { sendMail, invoiceFromEmail, appFromEmail, replyToEmail } from './mail'
 import type { InvoiceData } from '@/stores/invoice-store'
+import { fromStripeAmount } from './stripe-amount'
 import { formatDateOnly } from './date-only'
 
 // Providers reject an email with neither an HTML nor a text body.
@@ -359,6 +360,75 @@ View estimate: ${estimateUrl}
     })
   } catch (error) {
     console.error('Failed to send estimate acceptance email:', error)
+    throw error
+  }
+}
+
+export interface PaymentReceivedData {
+  toEmail: string
+  senderName: string
+  clientName: string
+  invoiceNumber: string
+  /** In the currency's smallest unit, as Stripe reports it. */
+  amount: number
+  currency: string
+  invoiceId: string
+}
+
+export async function sendPaymentReceivedEmail(data: PaymentReceivedData) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoicecommand.com'
+  const formattedAmount = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: data.currency.toUpperCase(),
+  }).format(fromStripeAmount(data.amount, data.currency))
+  const subject = `${sanitizeSubjectInput(data.clientName || '')} paid invoice ${sanitizeSubjectInput(data.invoiceNumber || '')}`
+  const safeSenderName = escapeHtml(data.senderName || 'there')
+  const safeClientName = escapeHtml(data.clientName)
+  const safeInvoiceNumber = escapeHtml(data.invoiceNumber)
+  const safeAmount = escapeHtml(formattedAmount)
+  const invoiceUrl = `${appUrl}/invoice/${encodeURIComponent(data.invoiceId)}`
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb;">
+  <div style="background: white; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <h1 style="color: #10b981; margin: 0 0 24px 0;">Payment received</h1>
+    <p>Hi ${safeSenderName},</p>
+    <p><strong>${safeClientName}</strong> just paid invoice <strong>${safeInvoiceNumber}</strong> online.</p>
+    <div style="background: #f3f4f6; border-radius: 6px; padding: 20px; margin: 24px 0;">
+      <p style="margin: 0;"><strong>Amount:</strong> ${safeAmount}</p>
+    </div>
+    <p>The invoice is now marked paid. The payout goes to your connected Stripe account.</p>
+    <p>
+      <a href="${invoiceUrl}" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View invoice</a>
+    </p>
+    <p style="color: #6b7280; font-size: 14px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">Sent by <a href="${appUrl}" style="color: #10b981;">Invoice Command</a></p>
+  </div>
+</body>
+</html>`
+
+  const text = `${data.clientName} paid invoice ${data.invoiceNumber}
+
+Amount: ${formattedAmount}
+
+The invoice is now marked paid. The payout goes to your connected Stripe account.
+
+View invoice: ${invoiceUrl}
+
+— Invoice Command`
+
+  try {
+    return await sendMail({
+      from: appFromEmail(),
+      to: data.toEmail,
+      subject,
+      html,
+      text,
+      replyTo: replyToEmail(),
+    })
+  } catch (error) {
+    console.error('Failed to send payment received email:', error)
     throw error
   }
 }
