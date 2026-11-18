@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Logo } from '@/components/logo'
 import { getAllPosts } from '@/lib/blog/posts'
+import { SiteFooter } from '@/components/site-footer'
 
 const SITE = 'https://invoicecommand.com'
 const BLOG_URL = `${SITE}/blog`
@@ -99,6 +100,9 @@ export default function BlogIndexPage() {
             )}
           </div>
         </main>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   )

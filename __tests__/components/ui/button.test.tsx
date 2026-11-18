@@ -406,11 +406,19 @@ describe('Button', () => {
       expect(button).toHaveClass('outline-none')
     })
 
-    it('should have transition-all class', () => {
+    it('should transition only paint and compositor properties', () => {
       const { container } = render(<Button>Button</Button>)
 
       const button = container.querySelector('[data-slot="button"]')
-      expect(button).toHaveClass('transition-all')
+      expect(button).not.toHaveClass('transition-all')
+      expect(button).toHaveClass('transition-[color,background-color,border-color,opacity,scale]')
+    })
+
+    it('should give press feedback only when motion is allowed', () => {
+      const { container } = render(<Button>Button</Button>)
+
+      const button = container.querySelector('[data-slot="button"]')
+      expect(button).toHaveClass('motion-safe:active:scale-[0.98]')
     })
   })
 

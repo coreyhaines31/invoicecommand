@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { InvoicePreview } from './invoice-preview'
 import { InvoiceForm } from './invoice-form'
 import { InvoiceStyleDropdown } from './invoice-style-dropdown'
 import { Navigation } from './navigation'
+import { SiteFooter } from './site-footer'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -51,23 +52,23 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
           </p>
 
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mb-6">
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+            <span className="motion-rise bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1" style={{ "--stagger": 0, "--rise-distance": "6px" } as CSSProperties}>
               <Mic className="w-3 h-3" />
               AI Voice Commands
             </span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+            <span className="motion-rise bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1" style={{ "--stagger": 1, "--rise-distance": "6px" } as CSSProperties}>
               <FileDown className="w-3 h-3" />
               PDF Export
             </span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+            <span className="motion-rise bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1" style={{ "--stagger": 2, "--rise-distance": "6px" } as CSSProperties}>
               <Zap className="w-3 h-3" />
               Real-time Preview
             </span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+            <span className="motion-rise bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1" style={{ "--stagger": 3, "--rise-distance": "6px" } as CSSProperties}>
               <ArrowRight className="w-3 h-3" />
               Convert to Invoice
             </span>
-            <span className="bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1">
+            <span className="motion-rise bg-primary/10 text-primary px-2 py-1 rounded inline-flex items-center gap-1" style={{ "--stagger": 4, "--rise-distance": "6px" } as CSSProperties}>
               <Shield className="w-3 h-3" />
               Privacy First
             </span>
@@ -86,7 +87,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
       {/* Main Layout: Left Panel (Form) + Right Panel (Preview) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:h-[calc(100vh-120px)]">
         {/* Left Panel - Estimate Form */}
-        <div className="order-1 lg:order-1">
+        <div className="order-1 lg:order-1 motion-rise" style={{ "--stagger": 2, "--rise-distance": "16px" } as CSSProperties}>
           <Card className="bg-card border-border shadow-lg lg:h-full">
             <div className="p-6 lg:h-full lg:flex lg:flex-col">
               <div className="flex items-center justify-between mb-4">
@@ -107,16 +108,16 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
         </div>
 
         {/* Right Panel - Estimate Preview */}
-        <div className="order-2 lg:order-2">
+        <div className="order-2 lg:order-2 motion-rise" style={{ "--stagger": 3, "--rise-distance": "16px" } as CSSProperties}>
           <Card className="lg:sticky lg:top-8 bg-card border-border shadow-lg">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
                 <h2 className="text-xl font-semibold text-foreground">
                   Estimate Preview
                 </h2>
                 <div className="flex items-center gap-4">
                   <InvoiceStyleDropdown />
-                  <div className="text-sm text-muted-foreground">
+                  <div className="hidden text-sm text-muted-foreground sm:block">
                     Live Preview
                   </div>
                 </div>
@@ -134,7 +135,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
       {children ?? (
         <section className="mt-20 space-y-12">
           {/* How It Works */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
+          <div data-reveal className="bg-card border border-border rounded-lg p-6 shadow-lg">
             <h2 className="text-2xl font-bold text-foreground mb-4">
               How to Create Professional Estimates in 3 Simple Steps
             </h2>
@@ -173,7 +174,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
           </div>
 
           {/* Why Use Estimates */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
+          <div data-reveal className="bg-card border border-border rounded-lg p-6 shadow-lg">
             <h2 className="text-2xl font-bold text-foreground mb-4">
               Why Use Estimates Before Invoicing?
             </h2>
@@ -224,7 +225,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
           </div>
 
           {/* Features */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
+          <div data-reveal className="bg-card border border-border rounded-lg p-6 shadow-lg">
             <h2 className="text-2xl font-bold text-foreground mb-4">
               Estimate Template Features
             </h2>
@@ -299,7 +300,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
           </div>
 
           {/* CTA to Invoice Templates */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
+          <div data-reveal className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
             <h2 className="text-2xl font-bold text-foreground mb-3">
               Need an Invoice Instead?
             </h2>
@@ -323,6 +324,8 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
           </div>
         </section>
       )}
+
+      <SiteFooter />
     </div>
   )
 }

@@ -6,7 +6,8 @@ import { useAnalytics } from '@/hooks/use-analytics'
 interface UsePDFDownloadReturn {
   isGenerating: boolean
   error: string | null
-  downloadPDF: (invoice: InvoiceData) => Promise<void>
+  // Resolves true once the PDF has been handed to the browser to save
+  downloadPDF: (invoice: InvoiceData) => Promise<boolean>
   clearError: () => void
 }
 
@@ -15,7 +16,7 @@ export function usePDFDownload(): UsePDFDownloadReturn {
   const [error, setError] = useState<string | null>(null)
   const { trackPdfDownload } = useAnalytics()
 
-  const downloadPDF = async (invoice: InvoiceData) => {
+  const downloadPDF = async (invoice: InvoiceData): Promise<boolean> => {
     setError(null)
     setIsGenerating(true)
 
@@ -39,11 +40,12 @@ export function usePDFDownload(): UsePDFDownloadReturn {
         currency: invoice.currency,
       })
 
-      // Success - PDF should be downloading
+      return true
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate PDF'
       setError(errorMessage)
       console.error('PDF download error:', err)
+      return false
     } finally {
       setIsGenerating(false)
     }

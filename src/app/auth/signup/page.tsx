@@ -15,12 +15,12 @@ export default function SignupPage() {
       <nav className="fixed top-0 left-0 right-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="container mx-auto p-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
               <Logo width={24} height={24} className="text-primary" />
-              <span className="text-lg font-semibold text-foreground">Invoice Command</span>
+              <span className="text-base font-semibold whitespace-nowrap text-foreground sm:text-lg">Invoice Command</span>
             </Link>
-            <Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground">
-              Already have an account? Sign in
+            <Link href="/auth/login" className="inline-flex min-h-10 items-center rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+              <span className="hidden sm:inline">Already have an account?&nbsp;</span>Sign in
             </Link>
           </div>
         </div>

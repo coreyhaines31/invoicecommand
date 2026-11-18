@@ -7,6 +7,7 @@ import {
   buildClusterVariantPath,
 } from '@/data/template-helpers'
 import { Logo } from '@/components/logo'
+import { SiteFooter } from '@/components/site-footer'
 
 const SITE = 'https://invoicecommand.com'
 const CLUSTER = purchaseOrderTemplates
@@ -148,7 +149,7 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
 
         <main className="container mx-auto p-4">
           <section className="max-w-4xl mx-auto space-y-8">
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
+            <div data-reveal className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold text-foreground mb-3">
                 Skip the download — generate online
               </h2>
@@ -158,7 +159,7 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
               </p>
               <Link
                 href="/purchase-order-generator"
-                className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition"
+                className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold transition-[background-color,scale] hover:bg-primary/90 duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 Open the PO generator
               </Link>
@@ -167,7 +168,7 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
             {variant.sections.map((section) => (
               <div
                 key={section.heading}
-                className="bg-card border border-border rounded-lg p-6"
+                data-reveal className="bg-card border border-border rounded-lg p-6"
               >
                 <h2 className="text-2xl font-bold text-foreground mb-4">
                   {section.heading}
@@ -177,7 +178,7 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
             ))}
 
             {variant.type === 'profession' && variant.sampleLineItems.length > 0 && (
-              <div className="bg-card border border-border rounded-lg p-6">
+              <div data-reveal className="bg-card border border-border rounded-lg p-6">
                 <h2 className="text-2xl font-bold text-foreground mb-4">
                   Sample line items
                 </h2>
@@ -212,14 +213,14 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
               </div>
             )}
 
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-6">
                 Frequently asked questions
               </h2>
               <div className="space-y-4">
                 {variant.faq.map((q) => (
-                  <details key={q.question} className="border-b border-border pb-4">
-                    <summary className="font-semibold cursor-pointer hover:text-primary">
+                  <details key={q.question} className="disclosure border-b border-border pb-4">
+                    <summary className="font-semibold py-1 transition-colors hover:text-primary">
                       {q.question}
                     </summary>
                     <p className="text-sm text-muted-foreground mt-2">{q.answer}</p>
@@ -228,7 +229,7 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Other purchase order templates
               </h2>
@@ -255,6 +256,9 @@ export default async function PurchaseOrderTemplateVariantPage({ params }: Props
             </div>
           </section>
         </main>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   )

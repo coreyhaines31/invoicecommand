@@ -60,22 +60,27 @@ export function InvoiceStyleDropdown() {
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Palette className="w-4 h-4" />
-        <span>Style:</span>
+        <Palette aria-hidden="true" className="w-4 h-4" />
+        <span id="invoice-style-label">Style:</span>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2 min-w-[120px] justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-labelledby="invoice-style-label invoice-style-value"
+            className="gap-2 min-w-[120px] justify-between"
+          >
             <div className="flex items-center gap-2">
-              <span>{currentStyle.name}</span>
+              <span id="invoice-style-value">{currentStyle.name}</span>
               {currentStyle.isDefault && (
                 <Badge variant="secondary" className="text-xs px-1.5 py-0">
                   Default
                 </Badge>
               )}
             </div>
-            <ChevronDown className="w-3 h-3" />
+            <ChevronDown aria-hidden="true" className="w-3 h-3" />
           </Button>
         </DropdownMenuTrigger>
 

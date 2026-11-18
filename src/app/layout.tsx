@@ -6,9 +6,10 @@ import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { EnhancedErrorBoundary } from "@/components/error-boundary-enhanced";
 import { PrivacyControls } from "@/components/privacy/privacy-controls";
 import { UpgradeTriggersProvider } from "@/hooks/use-upgrade-triggers";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { VersionBadge } from "@/components/version-badge";
 import { UserProof } from "@/components/userproof";
+import { ScrollReveal } from "@/components/scroll-reveal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -236,6 +237,7 @@ export default function RootLayout({
             <PrivacyControls />
             <Toaster />
             <VersionBadge />
+            <ScrollReveal />
           </UpgradeTriggersProvider>
         </EnhancedErrorBoundary>
         <UserProof />

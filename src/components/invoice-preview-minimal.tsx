@@ -23,15 +23,15 @@ export function InvoicePreviewMinimal() {
   }
 
   return (
-    <div className="bg-white text-black p-12 rounded-lg shadow-sm border border-border min-h-[800px] max-w-2xl mx-auto">
+    <div className="bg-white text-black p-12 rounded-lg shadow-sm border border-border min-h-[800px] max-w-2xl mx-auto tabular-nums [overflow-wrap:anywhere]">
       {/* Header - Simple */}
       <div className="mb-16">
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-light text-gray-900 mb-2">
+              <div className="text-2xl font-light text-gray-900 mb-2">
                 {invoice.documentType === 'estimate' ? 'Estimate' : 'Invoice'}
-              </h1>
+              </div>
               {invoice.documentType === 'estimate' && (
                 <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded">
                   QUOTE

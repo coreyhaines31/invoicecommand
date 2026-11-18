@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 
 export default function BillingPage() {
   return (
-    <div className="container mx-auto p-4 min-h-screen">
+    <div className="container mx-auto p-4 min-h-screen page-enter">
       <Navigation />
 
       <div className="max-w-4xl mx-auto">

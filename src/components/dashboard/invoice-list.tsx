@@ -24,12 +24,18 @@ import {
   Search,
   Copy,
   Edit,
-  Download,
   Trash2,
   FileText,
   Send,
-  Share2
+  Share2,
+  CheckCircle2,
+  PencilLine,
+  AlertCircle,
+  Plus,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import Link from 'next/link'
 import { useInvoiceStore } from '@/stores/invoice-store'
 import { useRouter } from 'next/navigation'
@@ -42,6 +48,7 @@ interface Invoice {
   clientName: string
   clientEmail?: string | null
   total: number | string
+  currency?: string | null
   status: string | null
   dueDate?: string | null
   createdAt: string | Date | null
@@ -59,6 +66,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
   const { loadFromDatabase, deleteFromDatabase } = useInvoiceStore()
   const router = useRouter()
 
@@ -67,29 +75,50 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case 'paid':
-        return 'bg-green-100 text-green-800'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'overdue':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  // Date-only values (YYYY-MM-DD) are calendar dates, so parse them as local dates.
+  // new Date('2026-11-14') is UTC midnight and shows the previous day in the Americas.
+  const toDate = (value: string | Date) => {
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-').map(Number)
+      return new Date(year, month - 1, day)
+    }
+    return new Date(value)
+  }
+
+  const formatDate = (dateString: string | Date | null | undefined) => {
+    return dateString ? toDate(dateString).toLocaleDateString() : 'Not set'
+  }
+
+  const formatCurrency = (amount: number | string, currency?: string | null) => {
+    const normalizedAmount = typeof amount === 'string' ? Number(amount) : amount
+    const value = Number.isFinite(normalizedAmount) ? normalizedAmount : 0
+    try {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(value)
+    } catch {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
     }
   }
 
-  const formatDate = (dateString: string | Date | null) => {
-    return dateString ? new Date(dateString).toLocaleDateString() : '—'
+  const isOverdue = (invoice: Invoice) => {
+    if (invoice.status === 'paid' || !invoice.dueDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return toDate(invoice.dueDate) < today
   }
 
-  const formatCurrency = (amount: number | string) => {
-    const normalizedAmount = typeof amount === 'string' ? Number(amount) : amount
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(Number.isFinite(normalizedAmount) ? normalizedAmount : 0)
+  // Status is spelled out and paired with an icon, so it never relies on color alone.
+  const getStatus = (invoice: Invoice) => {
+    if (isOverdue(invoice)) {
+      return { label: 'Overdue', icon: AlertCircle, className: 'border-destructive/30 bg-destructive/10 text-destructive' }
+    }
+    switch (invoice.status) {
+      case 'paid':
+        return { label: 'Paid', icon: CheckCircle2, className: 'border-primary/30 bg-accent text-accent-foreground' }
+      case 'sent':
+        return { label: 'Sent', icon: Send, className: 'border-border bg-secondary text-secondary-foreground' }
+      default:
+        return { label: 'Draft', icon: PencilLine, className: 'border-border bg-muted text-muted-foreground' }
+    }
   }
 
   const handleEditInvoice = async (invoice: Invoice) => {
@@ -110,14 +139,16 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     }
   }
 
-  const handleDeleteInvoice = async (invoice: Invoice) => {
-    if (confirm('Are you sure you want to delete this invoice?')) {
-      const success = await deleteFromDatabase(invoice.id, userId)
-      if (success) {
-        // Refresh the page to update the list
-        router.refresh()
-      }
+  const handleDeleteInvoice = async () => {
+    if (!invoiceToDelete) return false
+    const success = await deleteFromDatabase(invoiceToDelete.id, userId)
+    if (success) {
+      toast.success(`Deleted ${invoiceToDelete.invoiceNumber || 'invoice'}`)
+      router.refresh()
+      return true
     }
+    toast.error('Could not delete the invoice. Please try again.')
+    return false
   }
 
   const handleSendEmail = (invoice: Invoice) => {
@@ -137,15 +168,18 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
 
   if (invoices.length === 0) {
     return (
-      <div className="text-center py-12">
-        <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+      <div className="motion-rise text-center py-12">
+        <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-accent">
+          <FileText aria-hidden="true" className="w-7 h-7 text-primary" />
+        </div>
         <h3 className="text-lg font-semibold mb-2">No invoices yet</h3>
-        <p className="text-muted-foreground mb-6">
-          Create your first invoice to get started with Invoice Command
+        <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+          Invoices you save from the builder show up here, ready to send, share, or duplicate.
         </p>
         <Button asChild>
           <Link href="/">
-            Create Your First Invoice
+            <Plus aria-hidden="true" />
+            Create your first invoice
           </Link>
         </Button>
       </div>
@@ -156,9 +190,10 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
-          type="text"
+          type="search"
+          aria-label="Search invoices"
           placeholder="Search invoices by client or number..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -173,38 +208,61 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
             <TableRow>
               <TableHead>Invoice #</TableHead>
               <TableHead>Client</TableHead>
-              <TableHead>Amount</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="hidden md:table-cell">Due Date</TableHead>
+              <TableHead className="hidden lg:table-cell">Created</TableHead>
+              <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredInvoices.map((invoice) => (
               <TableRow key={invoice.id}>
-                <TableCell className="font-medium">
-                  {invoice.invoiceNumber}
-                </TableCell>
-                <TableCell>{invoice.clientName || 'No client'}</TableCell>
-                <TableCell>{formatCurrency(invoice.total || 0)}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant="secondary"
-                    className={getStatusColor(invoice.status)}
+                <TableCell className="font-medium whitespace-nowrap">
+                  {/* One click to open the invoice in the builder */}
+                  <button
+                    type="button"
+                    onClick={() => handleEditInvoice(invoice)}
+                    className="rounded-sm underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    title="Open in the builder"
                   >
-                    {invoice.status || 'draft'}
-                  </Badge>
+                    {invoice.invoiceNumber}
+                  </button>
+                </TableCell>
+                <TableCell className="max-w-[14rem]">
+                  <span className="block truncate" title={invoice.clientName || undefined}>
+                    {invoice.clientName || <span className="text-muted-foreground">No client</span>}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
+                  {formatCurrency(invoice.total || 0, invoice.currency)}
                 </TableCell>
                 <TableCell>
-                  {invoice.dueDate ? formatDate(invoice.dueDate) : '—'}
+                  {(() => {
+                    const status = getStatus(invoice)
+                    const StatusIcon = status.icon
+                    return (
+                      <Badge variant="outline" className={cn('gap-1', status.className)}>
+                        <StatusIcon aria-hidden="true" />
+                        {status.label}
+                      </Badge>
+                    )
+                  })()}
                 </TableCell>
-                <TableCell>{formatDate(invoice.createdAt)}</TableCell>
+                <TableCell className="hidden md:table-cell whitespace-nowrap">
+                  {invoice.dueDate ? formatDate(invoice.dueDate) : <span className="text-muted-foreground">Not set</span>}
+                </TableCell>
+                <TableCell className="hidden lg:table-cell whitespace-nowrap text-muted-foreground">{formatDate(invoice.createdAt)}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="max-sm:size-11"
+                        aria-label={`Actions for ${invoice.invoiceNumber || 'invoice'}`}
+                      >
+                        <MoreHorizontal aria-hidden="true" className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -216,10 +274,6 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Download className="w-4 h-4 mr-2" />
-                        Download PDF
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleSendEmail(invoice)}>
                         <Send className="w-4 h-4 mr-2" />
                         Send via Email
@@ -230,8 +284,8 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => handleDeleteInvoice(invoice)}
+                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        onClick={() => setInvoiceToDelete(invoice)}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
@@ -246,12 +300,26 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
       </div>
 
       {filteredInvoices.length === 0 && searchTerm && (
-        <div className="text-center py-8">
+        <div className="text-center py-8 space-y-3">
           <p className="text-muted-foreground">
-            No invoices found matching &ldquo;{searchTerm}&rdquo;
+            No invoices match &ldquo;{searchTerm}&rdquo;. Search works on client names and invoice numbers.
           </p>
+          <Button variant="outline" size="sm" onClick={() => setSearchTerm('')}>
+            Clear search
+          </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={invoiceToDelete !== null}
+        onOpenChange={(open) => !open && setInvoiceToDelete(null)}
+        title={`Delete ${invoiceToDelete?.invoiceNumber || 'this invoice'}?`}
+        description="This removes the invoice from your dashboard and turns off any share link for it. This cannot be undone."
+        confirmLabel="Delete invoice"
+        pendingLabel="Deleting..."
+        destructive
+        onConfirm={handleDeleteInvoice}
+      />
 
       <SendEmailDialog
         invoice={selectedInvoice}

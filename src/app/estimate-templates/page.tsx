@@ -2,7 +2,9 @@ import { Metadata } from 'next';
 import { professions } from '@/data/professions-expanded';
 import { TemplateGrid } from '@/components/template-grid';
 import { Logo } from '@/components/logo';
-import Link from 'next/link';
+import Link from 'next/link'
+import { LayoutGrid, Briefcase, FileDown, ArrowRightLeft, Lock } from 'lucide-react';
+import { SiteFooter } from '@/components/site-footer'
 
 export const metadata: Metadata = {
   title: 'Free Estimate Templates | 405+ Professional Templates by Industry | Invoice Command',
@@ -123,18 +125,18 @@ export default function EstimateTemplatesPage() {
               Find the perfect template for your business and start creating professional estimates instantly.
             </p>
             <div className="flex flex-wrap justify-center gap-2 text-sm mb-6">
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">✨ 405+ Templates</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">🎯 Industry-Specific</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">📄 Instant PDF Export</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">🔄 Convert to Invoice</span>
-              <span className="bg-primary/10 text-primary px-3 py-1 rounded-full">🔒 100% Free</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 0, "--rise-distance": "6px" } as React.CSSProperties}><LayoutGrid aria-hidden="true" className="w-3.5 h-3.5" />405+ Templates</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 1, "--rise-distance": "6px" } as React.CSSProperties}><Briefcase aria-hidden="true" className="w-3.5 h-3.5" />Industry-Specific</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 2, "--rise-distance": "6px" } as React.CSSProperties}><FileDown aria-hidden="true" className="w-3.5 h-3.5" />Instant PDF Export</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 3, "--rise-distance": "6px" } as React.CSSProperties}><ArrowRightLeft aria-hidden="true" className="w-3.5 h-3.5" />Convert to Invoice</span>
+              <span className="motion-rise inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-full" style={{ "--stagger": 4, "--rise-distance": "6px" } as React.CSSProperties}><Lock aria-hidden="true" className="w-3.5 h-3.5" />100% Free</span>
             </div>
 
             {/* CTA to estimate maker */}
             <div className="flex justify-center gap-4 mt-6">
               <Link
                 href="/estimate-maker"
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-[background-color,scale] hover:bg-primary/90 duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 Create Estimate Now
               </Link>
@@ -157,7 +159,7 @@ export default function EstimateTemplatesPage() {
         <section className="container mx-auto p-4 mt-16">
           <div className="max-w-4xl mx-auto space-y-8">
             {/* About Estimate Templates */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Professional Estimate Templates for Every Business
               </h2>
@@ -191,7 +193,7 @@ export default function EstimateTemplatesPage() {
             </div>
 
             {/* Estimates vs Invoices */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 When to Use Estimates vs Invoices
               </h2>
@@ -250,7 +252,7 @@ export default function EstimateTemplatesPage() {
             </div>
 
             {/* Popular Categories */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Popular Estimate Template Categories
               </h2>
@@ -332,13 +334,13 @@ export default function EstimateTemplatesPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/purchase-order-template"
-                  className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold hover:opacity-90 transition"
+                  className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold transition-[background-color,scale] hover:bg-primary/90 duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Browse purchase order templates
                 </Link>
                 <Link
                   href="/sales-order-template"
-                  className="inline-flex items-center px-4 py-2 bg-card border border-border text-foreground rounded-md text-sm font-semibold hover:bg-muted transition"
+                  className="inline-flex items-center px-4 py-2 bg-card border border-border text-foreground rounded-md text-sm font-semibold transition-[background-color,scale] hover:bg-muted duration-(--motion-fast) ease-emphasized motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Browse sales order templates
                 </Link>
@@ -346,37 +348,40 @@ export default function EstimateTemplatesPage() {
             </div>
 
             {/* FAQ Section */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div data-reveal className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-2xl font-bold text-foreground mb-6">Frequently Asked Questions</h2>
               <div className="space-y-4">
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">How many estimate templates are available?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">How many estimate templates are available?</summary>
                   <p className="text-sm text-muted-foreground mt-2">We offer 405+ professional estimate templates covering virtually every industry, profession, and business type. Each template is specifically designed for its target industry with relevant services and professional formatting.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">Are these estimate templates really free?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">Are these estimate templates really free?</summary>
                   <p className="text-sm text-muted-foreground mt-2">Yes! All 405+ estimate templates are completely free to use with no hidden costs, subscriptions, or registration requirements. Create unlimited professional estimates without paying anything.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">Can I convert an estimate to an invoice?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">Can I convert an estimate to an invoice?</summary>
                   <p className="text-sm text-muted-foreground mt-2">Absolutely! Once your client approves your estimate, you can convert it to an invoice with a single click. All the details from your estimate are automatically transferred to the invoice format.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">What&apos;s the difference between an estimate and a quote?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">What&apos;s the difference between an estimate and a quote?</summary>
                   <p className="text-sm text-muted-foreground mt-2">Estimates and quotes are very similar - both provide project costs before work begins. Some industries prefer &quot;estimate&quot; (construction, trades) while others use &quot;quote&quot; (creative services). Our templates work perfectly for both purposes.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">Can I customize the estimate templates?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">Can I customize the estimate templates?</summary>
                   <p className="text-sm text-muted-foreground mt-2">Yes! Each template is fully customizable. You can modify all text fields, add your branding, adjust line items, set validity periods, and include custom notes or terms. The templates adapt to your specific business needs.</p>
                 </details>
-                <details className="border-b border-border pb-4">
-                  <summary className="font-semibold cursor-pointer hover:text-primary">What file format can I download my estimates in?</summary>
+                <details className="disclosure border-b border-border pb-4">
+                  <summary className="font-semibold py-1 transition-colors hover:text-primary">What file format can I download my estimates in?</summary>
                   <p className="text-sm text-muted-foreground mt-2">You can download your completed estimates as high-quality PDF files that are ready to email to clients or print. The PDFs maintain professional formatting and are compatible with all devices and software.</p>
                 </details>
               </div>
             </div>
           </div>
         </section>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   );

@@ -117,17 +117,22 @@ export function PrivacyControls() {
     return null
   }
 
-  // Privacy consent banner - compact bottom-right style
+  // Privacy consent banner: full width above the fold edge on phones, compact bottom-right on larger screens
   if (showBanner) {
     return (
-      <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-background/95 backdrop-blur border border-border rounded-lg shadow-lg p-4">
+      <div
+        role="region"
+        aria-labelledby="privacy-banner-title"
+        className="motion-rise fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 rounded-lg border border-border bg-background/95 p-4 shadow-lg backdrop-blur sm:inset-x-auto sm:right-4 sm:bottom-4 sm:max-w-sm"
+        style={{ '--rise-distance': '16px', animationDelay: '600ms' } as React.CSSProperties}
+      >
         <div className="space-y-3">
           <div>
-            <h3 className="font-semibold text-foreground text-sm mb-1">
-              Privacy Settings
-            </h3>
+            <h2 id="privacy-banner-title" className="font-semibold text-foreground text-sm mb-1">
+              Privacy settings
+            </h2>
             <p className="text-xs text-muted-foreground">
-              We use analytics to improve your experience.
+              We use analytics to improve Invoice Command. Essential only turns off analytics and session recording.
             </p>
           </div>
           <div className="flex gap-2">
@@ -135,16 +140,16 @@ export function PrivacyControls() {
               variant="outline"
               size="sm"
               onClick={handleConsentEssential}
-              className="flex-1 text-xs h-8"
+              className="flex-1 text-xs h-10 sm:h-9"
             >
-              Essential
+              Essential only
             </Button>
             <Button
               size="sm"
               onClick={handleConsentAll}
-              className="flex-1 text-xs h-8"
+              className="flex-1 text-xs h-10 sm:h-9"
             >
-              Accept All
+              Accept all
             </Button>
           </div>
         </div>

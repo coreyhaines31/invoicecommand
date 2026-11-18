@@ -145,11 +145,13 @@ export function LogoUpload({ currentLogo, onLogoChange, disabled = false }: Logo
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 after:absolute after:-inset-2.5 after:content-['']"
                     onClick={handleRemove}
                     disabled={disabled}
+                    aria-label="Remove logo"
+                    title="Remove logo"
                   >
-                    <X className="h-3 w-3" />
+                    <X aria-hidden="true" className="h-3 w-3" />
                   </Button>
                 )}
               </div>

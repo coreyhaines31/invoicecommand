@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { ResetPasswordForm } from '@/components/auth/reset-password-form'
 import { Logo } from '@/components/logo'
 import Link from 'next/link'
+import { AuthFormSkeleton } from '@/components/auth/auth-form-skeleton'
 
 export const metadata: Metadata = {
   title: 'Reset Password | Invoice Command',
@@ -16,11 +17,11 @@ export default function ResetPasswordPage() {
       <nav className="border-b border-border">
         <div className="container mx-auto p-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
               <Logo width={24} height={24} className="text-primary" />
-              <span className="text-lg font-semibold text-foreground">Invoice Command</span>
+              <span className="text-base font-semibold whitespace-nowrap text-foreground sm:text-lg">Invoice Command</span>
             </Link>
-            <Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/auth/login" className="inline-flex min-h-10 items-center rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
               Back to sign in
             </Link>
           </div>
@@ -35,7 +36,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {/* useSearchParams must be inside a Suspense boundary in App Router */}
-          <Suspense fallback={null}>
+          <Suspense fallback={<AuthFormSkeleton fields={2} />}>
             <ResetPasswordForm />
           </Suspense>
         </div>

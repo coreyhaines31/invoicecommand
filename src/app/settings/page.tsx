@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function SettingsPage() {
   return (
-    <div className="container mx-auto p-4 min-h-screen">
+    <div className="container mx-auto p-4 min-h-screen page-enter">
       <Navigation />
 
       <div className="max-w-4xl mx-auto">

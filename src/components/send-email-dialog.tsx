@@ -22,6 +22,7 @@ interface Invoice {
   clientName: string
   clientEmail?: string | null
   total: number | string
+  currency?: string | null
   status: string | null
   dueDate?: string | null
 }
@@ -37,20 +38,32 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
   const [isLoading, setIsLoading] = useState(false)
   const [clientEmail, setClientEmail] = useState('')
   const [senderMessage, setSenderMessage] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open && invoice) {
       setClientEmail(invoice.clientEmail || '')
       setSenderMessage('')
+      setEmailError(null)
     }
   }, [open, invoice])
 
-  const handleSendEmail = async () => {
-    if (!invoice || !clientEmail.trim()) {
-      toast.error('Client email is required')
+  const handleSendEmail = async (event?: React.FormEvent) => {
+    event?.preventDefault()
+    if (!invoice) return
+    const email = clientEmail.trim()
+    if (!email) {
+      setEmailError('Enter the email address to send this invoice to.')
+      document.getElementById('client-email')?.focus()
       return
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('That email address looks incomplete. Check it and try again.')
+      document.getElementById('client-email')?.focus()
+      return
+    }
+    setEmailError(null)
 
     setIsLoading(true)
 
@@ -88,17 +101,20 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
 
   if (!invoice) return null
 
-  const formattedTotal = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(typeof invoice.total === 'string' ? Number(invoice.total || 0) : (invoice.total || 0))
+  const totalValue = typeof invoice.total === 'string' ? Number(invoice.total || 0) : (invoice.total || 0)
+  let formattedTotal: string
+  try {
+    formattedTotal = new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'USD' }).format(totalValue)
+  } catch {
+    formattedTotal = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalValue)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5" />
+            <Mail aria-hidden="true" className="w-5 h-5" />
             Send Invoice via Email
           </DialogTitle>
           <DialogDescription>
@@ -106,34 +122,50 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <form id="send-invoice-form" onSubmit={handleSendEmail} noValidate className="space-y-4">
           {/* Invoice Summary */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Invoice:</span>
-              <span className="text-sm">{invoice.invoiceNumber}</span>
+          <dl className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="font-medium shrink-0">Invoice</dt>
+              <dd className="min-w-0 truncate">{invoice.invoiceNumber}</dd>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Client:</span>
-              <span className="text-sm">{invoice.clientName}</span>
+            <div className="flex justify-between gap-4">
+              <dt className="font-medium shrink-0">Client</dt>
+              <dd className="min-w-0 truncate" title={invoice.clientName || undefined}>
+                {invoice.clientName || 'No client name'}
+              </dd>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Amount:</span>
-              <span className="text-sm font-semibold">{formattedTotal}</span>
+            <div className="flex justify-between gap-4">
+              <dt className="font-medium shrink-0">Amount</dt>
+              <dd className="font-semibold tabular-nums">{formattedTotal}</dd>
             </div>
-          </div>
+          </dl>
 
           {/* Client Email */}
           <div className="space-y-2">
-            <Label htmlFor="client-email">Client Email *</Label>
+            <Label htmlFor="client-email">
+              Client Email <span aria-hidden="true" className="text-destructive">*</span>
+            </Label>
             <Input
               id="client-email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
               placeholder="client@example.com"
               value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
+              onChange={(e) => {
+                setClientEmail(e.target.value)
+                if (emailError) setEmailError(null)
+              }}
               required
+              aria-invalid={emailError ? true : undefined}
+              aria-describedby={emailError ? 'client-email-error' : undefined}
             />
+            {emailError && (
+              <p id="client-email-error" role="alert" className="text-sm text-destructive">
+                {emailError}
+              </p>
+            )}
           </div>
 
           {/* Custom Message */}
@@ -145,26 +177,27 @@ export function SendEmailDialog({ invoice, open, onOpenChange, onEmailSent }: Se
               value={senderMessage}
               onChange={(e) => setSenderMessage(e.target.value)}
               rows={3}
+              aria-describedby="sender-message-help"
             />
-            <p className="text-xs text-muted-foreground">
-              This message will be included in the email along with the invoice details.
+            <p id="sender-message-help" className="text-xs text-muted-foreground">
+              Appears in the email below the invoice details. The PDF is attached for you.
             </p>
           </div>
-        </div>
+        </form>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSendEmail} disabled={isLoading || !clientEmail.trim()}>
+          <Button type="submit" form="send-invoice-form" disabled={isLoading}>
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 aria-hidden="true" className="w-4 h-4 mr-2 animate-spin" />
                 Sending...
               </>
             ) : (
               <>
-                <Send className="w-4 h-4 mr-2" />
+                <Send aria-hidden="true" className="w-4 h-4 mr-2" />
                 Send Invoice
               </>
             )}

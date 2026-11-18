@@ -87,10 +87,12 @@ describe('usePDFDownload', () => {
 
       const { result } = renderHook(() => usePDFDownload())
 
+      let downloaded: boolean | undefined
       await act(async () => {
-        await result.current.downloadPDF(mockInvoice)
+        downloaded = await result.current.downloadPDF(mockInvoice)
       })
 
+      expect(downloaded).toBe(true)
       expect(validateInvoiceForPDF).toHaveBeenCalledWith(mockInvoice)
       expect(downloadInvoicePDF).toHaveBeenCalledWith(mockInvoice)
       expect(result.current.isGenerating).toBe(false)
@@ -163,10 +165,12 @@ describe('usePDFDownload', () => {
 
       const { result } = renderHook(() => usePDFDownload())
 
+      let downloaded: boolean | undefined
       await act(async () => {
-        await result.current.downloadPDF(mockInvoice)
+        downloaded = await result.current.downloadPDF(mockInvoice)
       })
 
+      expect(downloaded).toBe(false)
       expect(result.current.error).toBe('PDF generation failed')
       expect(result.current.isGenerating).toBe(false)
       expect(consoleError).toHaveBeenCalled()

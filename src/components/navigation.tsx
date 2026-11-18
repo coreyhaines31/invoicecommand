@@ -37,12 +37,15 @@ export function Navigation() {
     return (
       <nav className="mb-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:gap-3"
+          >
             <Logo width={24} height={24} className="text-primary" />
-            <span className="text-lg font-semibold text-foreground">Invoice Command</span>
-          </div>
+            <span className="text-base font-semibold whitespace-nowrap text-foreground sm:text-lg">Invoice Command</span>
+          </Link>
           <div className="flex items-center gap-4">
-            <div className="w-32 h-9 bg-muted rounded animate-pulse" />
+            <div className="w-24 sm:w-32 h-9 bg-muted rounded animate-pulse" />
           </div>
         </div>
       </nav>
@@ -52,16 +55,19 @@ export function Navigation() {
   return (
     <>
     <nav className="mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:gap-3"
+        >
           <Logo width={24} height={24} className="text-primary" />
-          <span className="text-lg font-semibold text-foreground">Invoice Command</span>
-        </div>
+          <span className="text-base font-semibold whitespace-nowrap text-foreground sm:text-lg">Invoice Command</span>
+        </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           {user ? (
             <>
-              <Link href="/dashboard" className="hidden sm:inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium">
+              <Link href="/dashboard" className="hidden sm:inline-flex items-center gap-2 rounded-md text-primary hover:text-primary/80 font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
                 <ArrowRight className="w-4 h-4" />
@@ -79,7 +85,7 @@ export function Navigation() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex flex-col space-y-1 p-2">
-                    <p className="text-sm font-medium leading-none">{user.email}</p>
+                    <p className="truncate text-sm font-medium leading-none" title={user.email}>{user.email}</p>
                     <p className="text-xs leading-none text-muted-foreground">Free Plan</p>
                   </div>
                   <DropdownMenuSeparator />
@@ -126,9 +132,9 @@ export function Navigation() {
             </>
           ) : (
             <>
-              <Link href="/invoice-templates" className="hidden md:inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium">
+              <Link href="/invoice-templates" className="group/browse hidden md:inline-flex items-center gap-2 rounded-md text-primary hover:text-primary/80 font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
                 Browse 405+ Templates
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 transition-transform duration-(--motion-fast) ease-emphasized group-hover/browse:translate-x-0.5" />
               </Link>
 
               <Button
@@ -143,15 +149,16 @@ export function Navigation() {
 
               <Link
                 href="/auth/login"
-                className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+                className="inline-flex h-9 items-center rounded-md px-1 text-muted-foreground hover:text-foreground font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 Login
               </Link>
 
               <Button asChild>
                 <Link href="/auth/signup" className="inline-flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Create Free Account
+                  <User className="hidden w-4 h-4 sm:block" />
+                  <span className="sm:hidden">Sign up</span>
+                  <span className="hidden sm:inline">Create Free Account</span>
                 </Link>
               </Button>
             </>

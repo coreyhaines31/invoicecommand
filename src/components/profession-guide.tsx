@@ -130,8 +130,8 @@ function Faqs({ faqs }: { faqs: ProfessionFaq[] }) {
   return (
     <div className="space-y-4">
       {faqs.map((faq) => (
-        <details key={faq.question} className="border-b border-border pb-4">
-          <summary className="font-semibold cursor-pointer hover:text-primary">{faq.question}</summary>
+        <details key={faq.question} className="disclosure border-b border-border pb-4">
+          <summary className="font-semibold py-1 transition-colors hover:text-primary">{faq.question}</summary>
           <p className="text-sm text-muted-foreground mt-2">{faq.answer}</p>
         </details>
       ))}
@@ -146,62 +146,62 @@ export function ProfessionGuide({ kind, slug, name, content, related }: Professi
     <section className="mt-20 space-y-12">
       {kind === 'invoice' ? (
         <>
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-4">How {name} pricing works</h2>
             <p className="text-muted-foreground mb-6 max-w-3xl">{content.pricingModel}</p>
             <RatesTable rates={content.rates} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-4">Sample {name} invoice</h2>
             <SampleTable sample={content.sampleInvoice} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-6">What to include on your {name} invoice</h2>
             <Checklist items={content.invoiceChecklist} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-4">Payment terms</h2>
             <p className="text-muted-foreground max-w-3xl">{content.paymentTerms}</p>
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-6">Billing tips</h2>
             <Tips tips={content.tips} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-6">{name} invoice FAQ</h2>
             <Faqs faqs={content.faqs} />
           </div>
         </>
       ) : (
         <>
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-6">What to include in your {name} quote</h2>
             <Checklist items={content.estimate.scopeChecklist} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-4">{name} rates to quote from</h2>
             <RatesTable rates={content.rates} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-6">Pricing your quotes</h2>
             <Tips tips={content.estimate.pricingTips} />
           </div>
 
-          <div className={sectionClass}>
+          <div data-reveal className={sectionClass}>
             <h2 className="text-2xl font-bold text-foreground mb-6">{name} estimate FAQ</h2>
             <Faqs faqs={content.estimate.faqs} />
           </div>
         </>
       )}
 
-      <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8">
+      <div data-reveal className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-8">
         <h2 className="text-2xl font-bold text-foreground mb-3">
           {kind === 'invoice' ? 'Quoting a job first?' : 'Job done and ready to bill?'}
         </h2>
@@ -210,10 +210,10 @@ export function ProfessionGuide({ kind, slug, name, content, related }: Professi
             ? `Send a ${name} estimate for approval, then turn it into an invoice when the work is done.`
             : `Use the ${name} invoice template to bill the client, or convert this estimate once it's approved.`}
         </p>
-        <Button asChild size="lg">
+        <Button asChild size="lg" className="group/cta">
           <Link href={`/${otherKind}-templates/${slug}`}>
             {name} {otherKind} template
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-(--motion-fast) ease-emphasized group-hover/cta:translate-x-0.5" />
           </Link>
         </Button>
 
@@ -225,7 +225,7 @@ export function ProfessionGuide({ kind, slug, name, content, related }: Professi
                 <li key={profession.slug}>
                   <Link
                     href={`/${kind}-templates/${profession.slug}`}
-                    className="text-sm bg-background border border-border px-3 py-1 rounded hover:text-primary"
+                    className="inline-flex min-h-9 items-center text-sm bg-background border border-border px-3 py-1 rounded transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   >
                     {profession.name}
                   </Link>

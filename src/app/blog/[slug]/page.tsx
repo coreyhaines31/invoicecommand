@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { Logo } from '@/components/logo'
 import { getAllPostSlugs, getPostBySlug } from '@/lib/blog/posts'
+import { SiteFooter } from '@/components/site-footer'
 
 const SITE = 'https://invoicecommand.com'
 
@@ -123,6 +124,9 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
           </div>
         </article>
+        <div className="container mx-auto px-4">
+          <SiteFooter />
+        </div>
       </div>
     </>
   )
