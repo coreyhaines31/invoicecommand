@@ -1,9 +1,7 @@
 /**
  * @jest-environment node
  */
-// Pin a zone west of UTC before any Date use, so the result doesn't depend on
-// the machine's TZ. Node re-reads process.env.TZ when it is assigned.
-process.env.TZ = 'America/Los_Angeles'
+// Runs in America/Los_Angeles on every machine: see jest.global-setup.js.
 
 import { formatDateOnly, toDateOnlyString } from '@/lib/date-only'
 
