@@ -26,7 +26,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
   const updateDocumentType = useInvoiceStore((state) => state.updateDocumentType)
 
   useEffect(() => {
-    updateDocumentType('invoice')
+    updateDocumentType('invoice', 'mount')
   }, [updateDocumentType])
 
   return (

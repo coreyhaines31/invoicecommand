@@ -29,7 +29,7 @@ export function EstimateBuilder({ title, description, children }: EstimateBuilde
 
   useEffect(() => {
     // Set to estimate mode when component mounts
-    updateDocumentType('estimate')
+    updateDocumentType('estimate', 'mount')
   }, [updateDocumentType])
 
   return (

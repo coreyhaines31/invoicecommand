@@ -592,41 +592,101 @@ describe('InvoiceStore', () => {
       expect(generateInvoiceNumber).not.toHaveBeenCalled()
     })
 
-    it('starts a fresh draft instead of converting a saved invoice', async () => {
+    const savedInvoice = {
+      id: 'inv-1',
+      documentType: 'invoice' as const,
+      invoiceNumber: 'INV-0042',
+      clientName: 'Saved client',
+      terms: 'Payment is due within 30 days of invoice date.',
+      status: 'sent' as const,
+    }
+
+    function loadSaved(isDirty: boolean) {
       act(() => {
-        useInvoiceStore.setState({
-          id: 'inv-1',
-          documentType: 'invoice',
-          invoiceNumber: 'INV-0042',
-          clientName: 'Saved client',
-          status: 'sent',
-        })
+        useInvoiceStore.setState({ ...savedInvoice, isDirty })
         useInvoiceStore.getState().saveToStorage()
       })
+    }
+
+    function expectUnsavedEstimateCopy() {
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.status).toBeUndefined()
+      expect(state.documentType).toBe('estimate')
+      expect(state.clientName).toBe('Saved client')
+      expect(state.terms).toContain('estimate is valid for 30 days')
+      expect(state.invoiceNumber).toBe('EST-1001')
+      const stored = JSON.parse(localStorage.getItem('invoicecommand-draft-v1') as string)
+      expect(stored.id).toBeUndefined()
+      expect(stored.clientName).toBe('Saved client')
+    }
+
+    it('toggle: turns a loaded saved invoice into an unsaved estimate copy, keeping its content', async () => {
+      const fetchSpy = jest.fn()
+      const originalFetch = global.fetch
+      global.fetch = fetchSpy as unknown as typeof fetch
+      loadSaved(false)
 
       await act(async () => {
         await useInvoiceStore.getState().updateDocumentType('estimate')
       })
 
-      const state = useInvoiceStore.getState()
-      expect(state.id).toBeUndefined()
-      expect(state.status).toBeUndefined()
-      expect(state.documentType).toBe('estimate')
-      expect(state.clientName).toBe('')
-      expect(state.terms).toContain('estimate is valid for 30 days')
-      expect(state.invoiceNumber).toBe('EST-1001')
-
-      // The stored draft no longer points at the saved invoice
-      const stored = JSON.parse(localStorage.getItem('invoicecommand-draft-v1') as string)
-      expect(stored.id).toBeUndefined()
-      expect(stored.documentType).toBe('estimate')
+      expectUnsavedEstimateCopy()
+      // The saved invoice itself is never written
+      expect(fetchSpy).not.toHaveBeenCalled()
+      global.fetch = originalFetch
     })
 
-    it('keeps an unsaved draft content and only replaces default terms and numbers', async () => {
+    it('mount: a clean saved invoice gives way to a fresh estimate draft', async () => {
+      loadSaved(false)
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate', 'mount')
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.documentType).toBe('estimate')
+      expect(state.clientName).toBe('')
+      expect(state.invoiceNumber).toBe('EST-1001')
+      expect(JSON.parse(localStorage.getItem('invoicecommand-draft-v1') as string).id).toBeUndefined()
+    })
+
+    it('mount: a saved invoice with unsaved edits becomes an unsaved estimate copy, not a blank draft', async () => {
+      loadSaved(true)
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate', 'mount')
+      })
+
+      expectUnsavedEstimateCopy()
+    })
+
+    it('unsaved edits stay marked after the draft is stored and reloaded', () => {
+      loadSaved(false)
+      act(() => {
+        useInvoiceStore.getState().updateClient('clientName', 'Edited client')
+      })
+      // The same store-to-browser save the debounce runs
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'))
+      })
+      expect(useInvoiceStore.getState().isDirty).toBe(true)
+
+      act(() => {
+        useInvoiceStore.setState({ isDirty: false, clientName: '' })
+        useInvoiceStore.getState().loadFromStorage()
+      })
+      expect(useInvoiceStore.getState().clientName).toBe('Edited client')
+      expect(useInvoiceStore.getState().isDirty).toBe(true)
+    })
+
+    it('keeps an unsaved draft content and only replaces default terms and generated numbers', async () => {
       act(() => {
         useInvoiceStore.setState({
           documentType: 'estimate',
           invoiceNumber: 'EST-1003',
+          generatedNumber: 'EST-1003',
           terms: 'This estimate is valid for 30 days from the date above.',
           clientName: 'Draft client',
         })
@@ -656,6 +716,48 @@ describe('InvoiceStore', () => {
       expect(state.invoiceNumber).toBe('2026-17')
       expect(state.terms).toBe('Net 15')
       expect(generateInvoiceNumber).not.toHaveBeenCalled()
+    })
+
+    it('keeps a number that only looks generated', async () => {
+      act(() => {
+        useInvoiceStore.setState({ documentType: 'estimate', invoiceNumber: 'EST-0042', generatedNumber: 'EST-1003' })
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('invoice')
+      })
+
+      expect(useInvoiceStore.getState().invoiceNumber).toBe('EST-0042')
+      expect(generateInvoiceNumber).not.toHaveBeenCalled()
+    })
+
+    it('generates at most one number when the mount hook and the type switch both ask', async () => {
+      await act(async () => {
+        await Promise.all([
+          useInvoiceStore.getState().updateDocumentType('estimate', 'mount'),
+          useInvoiceStore.getState().initializeInvoiceNumber(),
+          useInvoiceStore.getState().initializeInvoiceNumber(),
+        ])
+      })
+      await act(async () => {
+        await useInvoiceStore.getState().initializeInvoiceNumber()
+      })
+
+      expect(generateInvoiceNumber).toHaveBeenCalledTimes(1)
+      expect(useInvoiceStore.getState().invoiceNumber).toBe('EST-1001')
+    })
+
+    it('keeps a number typed while one was being generated', async () => {
+      ;(generateInvoiceNumber as jest.Mock).mockImplementationOnce(async () => {
+        useInvoiceStore.getState().updateInvoiceDetails('invoiceNumber', 'TYPED-1')
+        return 'INV-1001'
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().initializeInvoiceNumber()
+      })
+
+      expect(useInvoiceStore.getState().invoiceNumber).toBe('TYPED-1')
     })
 
     it('stores the new type at once, so a builder reload of the stored draft keeps it', async () => {

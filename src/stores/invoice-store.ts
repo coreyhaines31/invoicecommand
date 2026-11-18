@@ -79,6 +79,7 @@ export interface InvoiceData {
   status?: 'draft' | 'sent' | 'paid'
   style: 'modern' | 'classic' | 'minimal' // Invoice style template
   convertedToInvoiceId?: string // For estimates: ID of invoice created from this estimate
+  generatedNumber?: string // The number this app last generated for this draft (kept in the browser only)
 
   // E-signature (estimates)
   collectSignature?: boolean
@@ -101,7 +102,8 @@ interface InvoiceStore extends InvoiceData {
   updateEsignatureSettings: (settings: Partial<Pick<InvoiceData, 'collectSignature' | 'signatureRequired'>>) => void
 
   // Document Type Management
-  updateDocumentType: (type: 'invoice' | 'estimate') => Promise<void>
+  // 'toggle' is the user switching type in the form; 'mount' is a builder page opening
+  updateDocumentType: (type: 'invoice' | 'estimate', mode?: 'toggle' | 'mount') => Promise<void>
   convertEstimateToInvoice: () => Promise<string | null>
 
   // Line Items
@@ -133,8 +135,8 @@ const DEFAULT_TERMS = {
   estimate: 'This estimate is valid for 30 days from the date above.',
 } as const
 
-// Matches the prefixes generateInvoiceNumber uses
-const NUMBER_PREFIX = { invoice: 'INV-', estimate: 'EST-' } as const
+// One number generation per document type at a time, shared by every caller
+const numbering: Partial<Record<InvoiceData['documentType'], Promise<void>>> = {}
 
 // Default invoice data
 const defaultInvoice: InvoiceData = {
@@ -204,7 +206,8 @@ const defaultInvoice: InvoiceData = {
   id: undefined,
   status: undefined,
   style: 'modern',
-  convertedToInvoiceId: undefined
+  convertedToInvoiceId: undefined,
+  generatedNumber: undefined,
 }
 
 export const useInvoiceStore = create<InvoiceStore>()(
@@ -270,25 +273,31 @@ export const useInvoiceStore = create<InvoiceStore>()(
         state.lastUpdated = Date.now()
       }),
 
-      // The builders call this on mount, so it must be safe to repeat:
+      // Safe to repeat, and never blanks the user's work:
       // - same type: nothing changes
-      // - a saved document (has an id) is never retyped; a fresh draft of the new type starts instead
-      // - an unsaved draft keeps its content; terms and number change only while they hold the other type's defaults
-      updateDocumentType: async (type) => {
+      // - a saved document (has an id) is never retyped. It becomes an unsaved copy of the new
+      //   type with its content kept, except when a builder opens on a saved document with no
+      //   unsaved edits: then a fresh draft of the new type starts.
+      // - terms and number change only while they hold the defaults this app filled in
+      updateDocumentType: async (type, mode = 'toggle') => {
         const current = get()
         if (current.documentType === type) return
 
         const otherType = type === 'estimate' ? 'invoice' : 'estimate'
-        if (current.id) get().resetInvoice()
+        if (current.id) {
+          if (mode === 'mount' && !current.isDirty) get().resetInvoice()
+          else get().detachAsCopy()
+        }
 
-        const { terms, invoiceNumber } = get()
+        const { terms, invoiceNumber, generatedNumber } = get()
         const replaceTerms = !terms.trim() || terms === DEFAULT_TERMS[otherType]
         const replaceNumber = !invoiceNumber || invoiceNumber === defaultInvoice.invoiceNumber ||
-          new RegExp(`^${NUMBER_PREFIX[otherType]}\\d+$`).test(invoiceNumber)
+          invoiceNumber === generatedNumber
 
         set((state) => {
           state.documentType = type
           if (replaceTerms) state.terms = DEFAULT_TERMS[type]
+          if (replaceNumber) state.invoiceNumber = ''
           state.isDirty = true
           state.lastUpdated = Date.now()
         })
@@ -401,14 +410,29 @@ export const useInvoiceStore = create<InvoiceStore>()(
         Object.assign(state, calculateInvoiceTotals(state))
       }),
 
-      initializeInvoiceNumber: async (userId?: string) => {
-        const state = get()
-        const invoiceNumber = await generateInvoiceNumber(userId, state.documentType)
-        set((state) => {
-          state.invoiceNumber = invoiceNumber
-          state.isDirty = true
-          state.lastUpdated = Date.now()
-        })
+      // Fills in a number only while the draft has none (empty or the '1001' placeholder).
+      // Callers share one generation per type, and a number typed meanwhile is kept.
+      initializeInvoiceNumber: (userId?: string) => {
+        const { documentType, invoiceNumber } = get()
+        const needsNumber = (n: string) => !n || n === defaultInvoice.invoiceNumber
+        if (!needsNumber(invoiceNumber)) return Promise.resolve()
+
+        numbering[documentType] ??= (async () => {
+          try {
+            const generated = await generateInvoiceNumber(userId, documentType)
+            const latest = get()
+            if (latest.documentType !== documentType || !needsNumber(latest.invoiceNumber)) return
+            set((state) => {
+              state.invoiceNumber = generated
+              state.generatedNumber = generated
+              state.isDirty = true
+              state.lastUpdated = Date.now()
+            })
+          } finally {
+            delete numbering[documentType]
+          }
+        })()
+        return numbering[documentType]
       },
 
       loadFromStorage: () => {
@@ -486,6 +510,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
               status: state.status,
               style: state.style,
               convertedToInvoiceId: state.convertedToInvoiceId,
+              generatedNumber: state.generatedNumber,
+              isDirty: state.isDirty,
               collectSignature: state.collectSignature ?? true,
               signatureRequired: state.signatureRequired ?? false,
             }
@@ -660,6 +686,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             signatureData: data.signatureData || null,
             signerName: data.signerName || null,
             signerEmail: data.signerEmail || null,
+            generatedNumber: undefined,
             isDirty: false,
             lastUpdated: Date.now(),
           }))
@@ -686,12 +713,13 @@ export const useInvoiceStore = create<InvoiceStore>()(
   )
 )
 
-// Debounced save function - waits 300ms after last change before saving
+// Debounced save function - waits 300ms after last change before saving.
+// isDirty stays set: it means "changed since last saved to the dashboard", which
+// updateDocumentType relies on to never discard edits to a saved document.
 function saveIfDirty() {
   const state = useInvoiceStore.getState()
   if (state.isDirty) {
     state.saveToStorage()
-    useInvoiceStore.setState({ isDirty: false })
   }
 }
 
