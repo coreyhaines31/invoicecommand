@@ -787,5 +787,34 @@ describe('InvoiceStore', () => {
       expect(useInvoiceStore.getState().id).toBe('inv-b')
       expect(useInvoiceStore.getState().clientName).toBe('Saved B')
     })
+
+    it('Reset: clears the saved invoice identity and the stored draft', async () => {
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.setState({ status: 'sent', signedAt: '2026-01-01', signerName: 'Signer' })
+        useInvoiceStore.getState().saveToStorage()
+      })
+
+      act(() => {
+        useInvoiceStore.getState().resetInvoice()
+      })
+
+      let state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.status).toBeUndefined()
+      expect(state.signedAt).toBeNull()
+      expect(state.signerName).toBeNull()
+      expect(state.clientName).toBe('')
+
+      // A later builder mount (or a reload) must not bring the saved invoice back
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+      state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.clientName).toBe('')
+    })
   })
 })

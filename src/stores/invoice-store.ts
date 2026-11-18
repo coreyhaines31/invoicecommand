@@ -181,11 +181,17 @@ const defaultInvoice: InvoiceData = {
   // E-signature
   collectSignature: true,
   signatureRequired: false,
+  signedAt: null,
+  signatureData: null,
+  signerName: null,
+  signerEmail: null,
 
   // Meta
   currency: 'USD',
   isDirty: false,
   lastUpdated: 0, // Set client-side to avoid hydration mismatch
+  id: undefined,
+  status: undefined,
   style: 'modern',
   convertedToInvoiceId: undefined
 }
@@ -468,6 +474,9 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       resetInvoice: () => {
         set(() => ({ ...defaultInvoice }))
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEY)
+        }
         get().initializeDates()
       },
 
