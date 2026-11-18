@@ -160,7 +160,11 @@ describe('sending requires a verified account email', () => {
     setVerified(false)
     const res = await v1Request()
     expect(res.status).toBe(403)
-    expect((await res.json()).code).toBe('EMAIL_NOT_VERIFIED')
+    const body = await res.json()
+    expect(body.code).toBe('EMAIL_NOT_VERIFIED')
+    expect(body.error).toBe(
+      'Verify your account email: sign in at invoicecommand.com, open Send via Email on any invoice and request a verification link.'
+    )
     expect(sendInvoiceEmail).not.toHaveBeenCalled()
     expect(fake.rows[0].status).toBe('draft')
   })

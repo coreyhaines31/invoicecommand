@@ -9,7 +9,7 @@ import { dbInvoiceToInvoiceData, isUuid } from '@/lib/api-utils'
 import { checkInvoiceSendRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
 import { renderInvoicePdf } from '@/lib/invoice-pdf-server'
-import { requireVerifiedEmail } from '@/lib/email-verification'
+import { EMAIL_NOT_VERIFIED_API_MESSAGE, requireVerifiedEmail } from '@/lib/email-verification'
 
 const MAX_SENDER_MESSAGE_LENGTH = 5000
 
@@ -24,7 +24,7 @@ export async function POST(
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
-  const notVerified = await requireVerifiedEmail(authResult.userId)
+  const notVerified = await requireVerifiedEmail(authResult.userId, EMAIL_NOT_VERIFIED_API_MESSAGE)
   if (notVerified) return notVerified
 
   // Cap per-user invoice-sending to bound Resend credit burn.
