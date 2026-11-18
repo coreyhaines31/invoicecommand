@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { voiceUsage } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 const MONTHLY_LIMIT = 10
 
@@ -25,7 +26,6 @@ export async function GET(request: NextRequest) {
     const used = row?.commandCount ?? 0
     return NextResponse.json({ used, limit: MONTHLY_LIMIT, canUse: used < MONTHLY_LIMIT })
   } catch (error) {
-    console.error('Voice usage GET error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return jsonErrorResponse(error, 'Internal server error')
   }
 }
