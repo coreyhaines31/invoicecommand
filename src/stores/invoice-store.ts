@@ -9,6 +9,7 @@ import { toDateOnlyString } from '@/lib/date-only'
 // localStorage versioning for schema migrations
 const STORAGE_VERSION = 1
 const STORAGE_KEY = `invoicecommand-draft-v${STORAGE_VERSION}`
+const LEGACY_STORAGE_KEY = 'invoicecommand-draft'
 
 // Debounce utility
 function debounce<T extends (...args: Parameters<T>) => void>(
@@ -118,6 +119,7 @@ interface InvoiceStore extends InvoiceData {
   loadFromStorage: () => void
   saveToStorage: () => void
   resetInvoice: () => void
+  detachAsCopy: () => void
   initializeDates: () => void
 
   // Database operations
@@ -182,11 +184,17 @@ const defaultInvoice: InvoiceData = {
   // E-signature
   collectSignature: true,
   signatureRequired: false,
+  signedAt: null,
+  signatureData: null,
+  signerName: null,
+  signerEmail: null,
 
   // Meta
   currency: 'USD',
   isDirty: false,
   lastUpdated: 0, // Set client-side to avoid hydration mismatch
+  id: undefined,
+  status: undefined,
   style: 'modern',
   convertedToInvoiceId: undefined
 }
@@ -275,6 +283,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
       convertEstimateToInvoice: async () => {
         const state = get()
         const originalState = { ...state }
+        let estimateId = state.id
 
         try {
           if (state.documentType !== 'estimate') {
@@ -289,7 +298,6 @@ export const useInvoiceStore = create<InvoiceStore>()(
             throw new Error('User must be logged in to convert estimate to invoice')
           }
 
-          let estimateId = state.id
           if (!estimateId) {
             const savedId = await get().saveToDatabase(user.id)
             if (!savedId) throw new Error('Failed to save estimate to database before conversion')
@@ -328,7 +336,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
           return newInvoiceId
         } catch (error) {
-          set(() => originalState)
+          // Keep the estimate's id if it was saved during this attempt
+          set(() => ({ ...originalState, id: estimateId }))
           console.error('Estimate to invoice conversion failed:', error instanceof Error ? error.message : error)
           return null
         }
@@ -389,13 +398,13 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
             // Migrate from old storage key if new one doesn't exist
             if (!stored) {
-              const oldStored = localStorage.getItem('invoicecommand-draft')
+              const oldStored = localStorage.getItem(LEGACY_STORAGE_KEY)
               if (oldStored) {
                 stored = oldStored
                 // Migrate to new key
                 localStorage.setItem(STORAGE_KEY, oldStored)
                 // Clean up old key
-                localStorage.removeItem('invoicecommand-draft')
+                localStorage.removeItem(LEGACY_STORAGE_KEY)
               }
             }
 
@@ -468,7 +477,28 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       resetInvoice: () => {
         set(() => ({ ...defaultInvoice }))
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEY)
+          localStorage.removeItem(LEGACY_STORAGE_KEY)
+        }
         get().initializeDates()
+      },
+
+      // Turns the loaded invoice into an unsaved copy (Duplicate) and stores it for the builder mount
+      detachAsCopy: () => {
+        set(() => ({
+          id: defaultInvoice.id,
+          invoiceNumber: '',
+          status: defaultInvoice.status,
+          convertedToInvoiceId: defaultInvoice.convertedToInvoiceId,
+          signedAt: defaultInvoice.signedAt,
+          signatureData: defaultInvoice.signatureData,
+          signerName: defaultInvoice.signerName,
+          signerEmail: defaultInvoice.signerEmail,
+          stripePaymentIntentId: defaultInvoice.stripePaymentIntentId,
+          stripePaymentStatus: defaultInvoice.stripePaymentStatus,
+        }))
+        get().saveToStorage()
       },
 
       initializeDates: () => {
@@ -609,6 +639,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
             isDirty: false,
             lastUpdated: Date.now(),
           }))
+          // The builder reloads the stored draft on mount, so store the loaded invoice now
+          get().saveToStorage()
 
           return true
         } catch (error) {

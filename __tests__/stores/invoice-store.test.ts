@@ -709,5 +709,180 @@ describe('InvoiceStore', () => {
       expect(result.current.id).toBe('estimate-1')
       expect(global.fetch).toHaveBeenCalledTimes(1)
     })
+
+    it('keeps the saved estimate id on rollback when the store held an explicit undefined id', async () => {
+      const { authClient } = jest.requireMock('@/lib/auth-client')
+      authClient.getSession.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
+      const { generateInvoiceNumber } = jest.requireMock('@/lib/utils')
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'estimate-1' }),
+      }) as unknown as typeof fetch
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate')
+      })
+      act(() => {
+        useInvoiceStore.setState({ id: undefined })
+      })
+      generateInvoiceNumber.mockResolvedValueOnce(null)
+
+      await act(async () => {
+        await useInvoiceStore.getState().convertEstimateToInvoice()
+      })
+
+      expect(useInvoiceStore.getState().id).toBe('estimate-1')
+    })
+  })
+
+  // Issue #77: the builder calls loadFromStorage() on every mount, so the store
+  // and localStorage must agree on which document is being edited.
+  describe('document identity across navigation', () => {
+    const STORAGE_KEY = 'invoicecommand-draft-v1'
+    const originalFetch = global.fetch
+    const savedB = {
+      id: 'inv-b',
+      clientName: 'Saved B',
+      invoiceNumber: 'INV-0002',
+      items: [{ description: 'B item', quantity: 1, price: 50 }],
+    }
+
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => savedB,
+      }) as unknown as typeof fetch
+    })
+
+    afterEach(() => {
+      global.fetch = originalFetch
+    })
+
+    it('Edit: the builder mount after loadFromDatabase shows the loaded invoice, not an anonymous draft', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ clientName: 'Stale draft', invoiceNumber: 'INV-0001' }))
+
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBe('inv-b')
+      expect(state.clientName).toBe('Saved B')
+      expect(state.invoiceNumber).toBe('INV-0002')
+    })
+
+    it('Edit: a stored draft of another saved invoice does not replace the loaded one', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Saved A draft' }))
+
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(useInvoiceStore.getState().id).toBe('inv-b')
+      expect(useInvoiceStore.getState().clientName).toBe('Saved B')
+    })
+
+    it('Duplicate: the copy has no id after the builder mounts', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Saved A draft' }))
+
+      // The sequence handleDuplicateInvoice in src/components/dashboard/invoice-list.tsx runs
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().detachAsCopy()
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+      expect(useInvoiceStore.getState().invoiceNumber).toBe('')
+      expect(useInvoiceStore.getState().clientName).toBe('Saved B')
+    })
+
+    it('Duplicate: a paid, signed invoice becomes a clean unsaved copy', async () => {
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.setState({
+          status: 'paid',
+          convertedToInvoiceId: 'inv-c',
+          signedAt: '2026-01-01',
+          signatureData: 'data:image/png;base64,abc',
+          signerName: 'Signer',
+          signerEmail: 'signer@example.com',
+          stripePaymentIntentId: 'pi_123',
+          stripePaymentStatus: 'paid',
+        })
+        useInvoiceStore.getState().detachAsCopy()
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.status).toBeUndefined()
+      expect(state.convertedToInvoiceId).toBeUndefined()
+      expect(state.signedAt).toBeNull()
+      expect(state.signatureData).toBeNull()
+      expect(state.signerName).toBeNull()
+      expect(state.signerEmail).toBeNull()
+      expect(state.stripePaymentIntentId).toBeUndefined()
+      expect(state.stripePaymentStatus).toBe('unpaid')
+      expect(state.clientName).toBe('Saved B')
+    })
+
+    it('Reset: a legacy unversioned draft is not migrated back afterwards', () => {
+      localStorage.setItem('invoicecommand-draft', JSON.stringify({ id: 'inv-old', clientName: 'Legacy draft' }))
+
+      act(() => {
+        useInvoiceStore.getState().resetInvoice()
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(localStorage.getItem('invoicecommand-draft')).toBeNull()
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+      expect(useInvoiceStore.getState().clientName).toBe('')
+    })
+
+    it('Reset: clears the saved invoice identity and the stored draft', async () => {
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.setState({ status: 'sent', signedAt: '2026-01-01', signerName: 'Signer' })
+        useInvoiceStore.getState().saveToStorage()
+      })
+
+      act(() => {
+        useInvoiceStore.getState().resetInvoice()
+      })
+
+      let state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.status).toBeUndefined()
+      expect(state.signedAt).toBeNull()
+      expect(state.signerName).toBeNull()
+      expect(state.clientName).toBe('')
+
+      // A later builder mount (or a reload) must not bring the saved invoice back
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+      state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.clientName).toBe('')
+    })
   })
 })

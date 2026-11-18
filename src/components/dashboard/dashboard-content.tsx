@@ -36,7 +36,7 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
             </p>
           </div>
           <Button asChild>
-            <Link href="/" className="inline-flex items-center gap-2">
+            <Link href="/?new=1" className="inline-flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Create New Invoice
             </Link>
