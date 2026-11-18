@@ -49,6 +49,7 @@ interface Invoice {
   documentType?: 'invoice' | 'estimate' | null
   signedAt?: string | Date | null
   collectSignature?: boolean | null
+  convertedToInvoiceId?: string | null
 }
 
 export type InvoiceListItem = Invoice
@@ -203,6 +204,11 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                     {invoice.documentType === 'estimate' && !invoice.signedAt && invoice.collectSignature !== false && (
                       <Badge variant="secondary" className="font-normal">
                         Not signed
+                      </Badge>
+                    )}
+                    {invoice.documentType === 'estimate' && invoice.convertedToInvoiceId && (
+                      <Badge variant="secondary" className="font-normal">
+                        Converted
                       </Badge>
                     )}
                   </div>

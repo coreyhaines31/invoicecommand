@@ -17,6 +17,7 @@ const rows: InvoiceListItem[] = [
   { ...base, id: 'inv-1', invoiceNumber: 'INV-0001', documentType: 'invoice' },
   { ...base, id: 'est-1', invoiceNumber: 'EST-0001', documentType: 'estimate', signedAt: null },
   { ...base, id: 'est-2', invoiceNumber: 'EST-0002', documentType: 'estimate', signedAt: '2026-11-02T10:00:00.000Z' },
+  { ...base, id: 'est-3', invoiceNumber: 'EST-0003', documentType: 'estimate', signedAt: '2026-11-02T10:00:00.000Z', convertedToInvoiceId: 'inv-9' },
 ]
 
 function rowFor(number: string) {
@@ -35,5 +36,12 @@ describe('InvoiceList type indicator', () => {
 
     expect(within(rowFor('EST-0002')).getByText('Estimate')).toBeInTheDocument()
     expect(within(rowFor('EST-0002')).getByText('Signed')).toBeInTheDocument()
+  })
+
+  it('marks an estimate that was converted to an invoice', () => {
+    render(<InvoiceList invoices={rows} userId="user-1" />)
+
+    expect(within(rowFor('EST-0003')).getByText('Converted')).toBeInTheDocument()
+    expect(within(rowFor('EST-0002')).queryByText('Converted')).not.toBeInTheDocument()
   })
 })
