@@ -299,7 +299,7 @@ const openApiSpec = {
     '/invoices/{id}/send': {
       post: {
         summary: 'Send invoice',
-        description: 'Send an invoice to the client via email. The server renders the PDF attachment from the stored invoice.',
+        description: 'Send an invoice to the client via email. The server renders the PDF attachment from the stored invoice. The account email must be verified.',
         operationId: 'sendInvoice',
         tags: ['Invoices'],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
@@ -323,6 +323,7 @@ const openApiSpec = {
             content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, emailId: { type: 'string' }, message: { type: 'string' } } } } },
           },
           '400': { description: 'Invalid request' },
+          '403': { description: 'Missing scope, or the account email is not verified (code EMAIL_NOT_VERIFIED)' },
           '404': { description: 'Invoice not found' },
         },
       },

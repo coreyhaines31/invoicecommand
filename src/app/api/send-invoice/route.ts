@@ -9,6 +9,7 @@ import { renderInvoicePdf } from '@/lib/invoice-pdf-server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { buildShareUrl, generateShareToken } from '@/lib/share-link'
 import { jsonErrorResponse } from '@/lib/error-response'
+import { requireVerifiedEmail } from '@/lib/email-verification'
 
 const MAX_SENDER_MESSAGE_LENGTH = 5000
 
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const notVerified = await requireVerifiedEmail(session.user.id)
+    if (notVerified) return notVerified
 
     // Cap per-user invoice-sending to bound Resend credit burn and reputation.
     const rl = checkRateLimit(session.user.id, { bucket: 'send-invoice', max: 20, windowMs: 60 * 60 * 1000 })
