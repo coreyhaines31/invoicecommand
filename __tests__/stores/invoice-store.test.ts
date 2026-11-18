@@ -996,6 +996,40 @@ describe('InvoiceStore', () => {
       expect(JSON.parse(localStorage.getItem(STORAGE_KEY) as string).id).toBe('inv-b')
     })
 
+    // isDirty means "changed since last saved to the dashboard" and is kept in the stored draft
+    it('Save: clears the unsaved-edits mark in memory and in the stored draft', async () => {
+      act(() => {
+        useInvoiceStore.setState({ id: undefined, clientName: 'Saved B' })
+        useInvoiceStore.getState().updateClient('clientName', 'Edited B')
+        useInvoiceStore.getState().saveToStorage()
+      })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY) as string).isDirty).toBe(true)
+
+      await act(async () => {
+        await useInvoiceStore.getState().saveToDatabase('user-1')
+      })
+
+      expect(useInvoiceStore.getState().isDirty).toBe(false)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY) as string).isDirty).toBe(false)
+    })
+
+    it('Edit: a loaded invoice has no unsaved-edits mark, in memory or in the stored draft', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Edited A', isDirty: true }))
+      act(() => {
+        useInvoiceStore.setState({ isDirty: true })
+      })
+
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(useInvoiceStore.getState().isDirty).toBe(false)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY) as string).isDirty).toBe(false)
+    })
+
     it('Edit: a stored draft of another saved invoice does not replace the loaded one', async () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Saved A draft' }))
 
