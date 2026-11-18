@@ -43,6 +43,11 @@ export default async function SignupPage({
             <p className="text-sm text-muted-foreground">
               Enter your email below to create your account
             </p>
+            {next === '/' && (
+              <p className="text-sm text-foreground mt-3">
+                Your invoice draft is kept in this browser and will be there after you sign up.
+              </p>
+            )}
           </div>
 
           <SignupForm next={next} />
