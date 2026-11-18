@@ -580,6 +580,9 @@ export const useInvoiceStore = create<InvoiceStore>()(
             state.id = data.id
             state.isDirty = false
           })
+          // Record the id in the stored draft too, so a reload still knows
+          // this draft is a saved invoice.
+          get().saveToStorage()
 
           return data.id
         } catch (error) {
