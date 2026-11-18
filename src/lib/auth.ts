@@ -54,6 +54,13 @@ export const auth = betterAuth({
       }
     },
   },
+  // Better Auth rate limits in production by default, in memory per
+  // instance. Its built-in rule for resends is 3 per minute; tighten that.
+  rateLimit: {
+    customRules: {
+      '/send-verification-email': { window: 60 * 60, max: 3 },
+    },
+  },
   trustedOrigins: [
     process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005',
     'https://invoicecommand.com',

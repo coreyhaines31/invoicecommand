@@ -20,6 +20,7 @@ type VerificationOptions = {
   sendVerificationEmail: (data: { user: { email: string }; url: string }, request?: Request) => Promise<void>
 }
 type AuthOptions = {
+  rateLimit?: { enabled?: boolean; customRules?: Record<string, { window: number; max: number }> }
   emailAndPassword: { requireEmailVerification: boolean }
   emailVerification: VerificationOptions
 }
@@ -42,6 +43,11 @@ describe('email verification config', () => {
     // A verification link must not hand the clicker a session.
     expect(verification.autoSignInAfterVerification).toBe(false)
     expect(verification.expiresIn).toBe(60 * 60 * 24)
+  })
+
+  it('limits verification email resends to 3 an hour', () => {
+    expect(options.rateLimit?.enabled).not.toBe(false)
+    expect(options.rateLimit?.customRules?.['/send-verification-email']).toEqual({ window: 60 * 60, max: 3 })
   })
 
   it('relays the verification URL to the email template', async () => {
