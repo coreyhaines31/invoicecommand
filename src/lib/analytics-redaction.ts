@@ -17,9 +17,15 @@ const SENSITIVE_QUERY_PARAMS = new Set([
   'key',
 ])
 
-// Pages that render a token in their URL or show invoice content. Session
-// replay and autocapture stay off here.
-const SENSITIVE_PATH_RES = [/^\/i(\/|$)/, /^\/invoice(\/|$)/]
+// Pages that render a token in their URL or show invoice content, client names
+// or amounts. Session replay and autocapture stay off here.
+const SENSITIVE_PATH_RES = [
+  /^\/i(\/|$)/,
+  /^\/invoice(\/|$)/,
+  /^\/dashboard(\/|$)/,
+  /^\/settings(\/|$)/,
+  /^\/billing(\/|$)/,
+]
 
 // Element-level events record clicked text and hrefs, i.e. invoice content.
 const ELEMENT_EVENTS = new Set(['$autocapture', '$rageclick', '$dead_click', '$copy_autocapture'])
