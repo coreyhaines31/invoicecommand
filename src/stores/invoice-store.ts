@@ -117,6 +117,7 @@ interface InvoiceStore extends InvoiceData {
   loadFromStorage: () => void
   saveToStorage: () => void
   resetInvoice: () => void
+  detachAsCopy: () => void
   initializeDates: () => void
 
   // Database operations
@@ -478,6 +479,15 @@ export const useInvoiceStore = create<InvoiceStore>()(
           localStorage.removeItem(STORAGE_KEY)
         }
         get().initializeDates()
+      },
+
+      // Turns the loaded invoice into an unsaved copy (Duplicate) and stores it for the builder mount
+      detachAsCopy: () => {
+        set((state) => {
+          state.id = undefined
+          state.invoiceNumber = ''
+        })
+        get().saveToStorage()
       },
 
       initializeDates: () => {

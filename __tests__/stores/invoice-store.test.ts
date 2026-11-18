@@ -788,6 +788,25 @@ describe('InvoiceStore', () => {
       expect(useInvoiceStore.getState().clientName).toBe('Saved B')
     })
 
+    it('Duplicate: the copy has no id after the builder mounts', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Saved A draft' }))
+
+      // The sequence handleDuplicateInvoice in src/components/dashboard/invoice-list.tsx runs
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().detachAsCopy()
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+      expect(useInvoiceStore.getState().invoiceNumber).toBe('')
+      expect(useInvoiceStore.getState().clientName).toBe('Saved B')
+    })
+
     it('Reset: clears the saved invoice identity and the stored draft', async () => {
       await act(async () => {
         await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')

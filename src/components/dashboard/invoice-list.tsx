@@ -104,8 +104,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     // Load the invoice and reset the ID to create a copy
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
-      // Reset the invoice ID and number to create a new invoice
-      useInvoiceStore.setState({ id: undefined, invoiceNumber: '' })
+      useInvoiceStore.getState().detachAsCopy()
       router.push('/')
     }
   }
