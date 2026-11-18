@@ -106,6 +106,28 @@ describe('payment_intent.succeeded', () => {
     expect(triggerWebhooks).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['amount', { amount: 100, amount_received: 100 }],
+    ['currency', { currency: 'eur' }],
+  ])('does not mark paid when the intent %s does not match the invoice', async (_, intent) => {
+    const res = await POST(event('payment_intent.succeeded', { id: 'pi_odd', ...intent }))
+    expect(res.status).toBe(200)
+    expect(invoice().status).toBe('sent')
+    expect(invoice().stripePaymentStatus).toBe('processing')
+    expect(triggerWebhooks).not.toHaveBeenCalled()
+    expect(sendPaymentReceivedEmail).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
+      invoiceId: INVOICE_ID,
+      paymentIntentId: 'pi_odd',
+    })
+  })
+
+  it('checks the current intent against the amount stored when it was created', async () => {
+    seed({ total: '150.00', paymentAmountCents: 12050 })
+    await POST(event('payment_intent.succeeded', {}))
+    expect(invoice().status).toBe('paid')
+  })
+
   it('leaves the invoice untouched when the same event is delivered again', async () => {
     await POST(event('payment_intent.succeeded', {}))
     const afterFirst = { ...invoice() }

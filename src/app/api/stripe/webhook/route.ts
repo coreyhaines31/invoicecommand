@@ -8,6 +8,7 @@ import { headers } from 'next/headers'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { sendPaymentReceivedEmail } from '@/lib/email-service'
 import { jsonErrorResponse, reportError } from '@/lib/error-response'
+import { toStripeAmount } from '@/lib/stripe-amount'
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +74,33 @@ function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentS
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   const invoiceId = paymentIntent.metadata?.invoice_id
   if (!invoiceId) return
+
+  // Metadata alone doesn't prove this intent pays this invoice: the currency
+  // and amount must match what the invoice is owed.
+  const [owed] = await db
+    .select({
+      total: invoices.total,
+      currency: invoices.currency,
+      stripePaymentIntentId: invoices.stripePaymentIntentId,
+      paymentAmountCents: invoices.paymentAmountCents,
+    })
+    .from(invoices)
+    .where(eq(invoices.id, invoiceId))
+  if (!owed) return
+
+  const currency = (owed.currency || 'USD').toLowerCase()
+  const expectedAmount =
+    owed.stripePaymentIntentId === paymentIntent.id && owed.paymentAmountCents != null
+      ? owed.paymentAmountCents
+      : toStripeAmount(Number(owed.total), currency)
+  const receivedAmount = paymentIntent.amount_received || paymentIntent.amount
+  if (paymentIntent.currency !== currency || receivedAmount !== expectedAmount) {
+    reportError(new Error('Stripe payment does not match the invoice'), 'Ignoring mismatched payment_intent.succeeded', {
+      invoiceId,
+      paymentIntentId: paymentIntent.id,
+    })
+    return
+  }
 
   const paid = {
     status: 'paid' as const,
