@@ -52,13 +52,22 @@ const mockInvoiceStore = {
 }
 
 jest.mock('@/stores/invoice-store', () => ({
-  useInvoiceStore: () => mockInvoiceStore,
+  // A render gets a snapshot, as with Zustand; getState() reads the live store.
+  useInvoiceStore: Object.assign(() => ({ ...mockInvoiceStore }), { getState: () => mockInvoiceStore }),
 }))
+
+const initialItems = mockInvoiceStore.items
 
 describe('useVoiceCommands', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     global.fetch = jest.fn()
+    // Like the real store, addItem appends a row; the hook's render snapshot
+    // of `items` does not change.
+    mockInvoiceStore.items = [...initialItems]
+    mockAddItem.mockImplementation(() => {
+      mockInvoiceStore.items = [...mockInvoiceStore.items, { description: '', quantity: 1, price: 0 }]
+    })
   })
 
   afterEach(() => {
@@ -238,9 +247,11 @@ describe('useVoiceCommands', () => {
       })
 
       expect(mockAddItem).toHaveBeenCalled()
-      expect(mockUpdateItem).toHaveBeenCalledWith(1, 'description', 'New Service')
-      expect(mockUpdateItem).toHaveBeenCalledWith(1, 'quantity', 3)
-      expect(mockUpdateItem).toHaveBeenCalledWith(1, 'price', 75)
+      // Two rows exist, so the new row is index 2; index 1 would overwrite "Service 2"
+      expect(mockUpdateItem).toHaveBeenCalledWith(2, 'description', 'New Service')
+      expect(mockUpdateItem).toHaveBeenCalledWith(2, 'quantity', 3)
+      expect(mockUpdateItem).toHaveBeenCalledWith(2, 'price', 75)
+      expect(mockUpdateItem).not.toHaveBeenCalledWith(1, expect.anything(), expect.anything())
       expect(result.current.lastResult?.success).toBe(true)
     })
 
@@ -597,9 +608,9 @@ describe('useVoiceCommands', () => {
       })
 
       expect(mockAddItem).toHaveBeenCalled()
-      expect(mockUpdateItem).toHaveBeenCalledWith(1, 'description', 'Partial Service')
-      expect(mockUpdateItem).toHaveBeenCalledWith(1, 'quantity', 1)
-      expect(mockUpdateItem).toHaveBeenCalledWith(1, 'price', 0)
+      expect(mockUpdateItem).toHaveBeenCalledWith(2, 'description', 'Partial Service')
+      expect(mockUpdateItem).toHaveBeenCalledWith(2, 'quantity', 1)
+      expect(mockUpdateItem).toHaveBeenCalledWith(2, 'price', 0)
     })
 
     it('should handle updating item with partial data', async () => {
