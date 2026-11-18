@@ -709,6 +709,30 @@ describe('InvoiceStore', () => {
       expect(result.current.id).toBe('estimate-1')
       expect(global.fetch).toHaveBeenCalledTimes(1)
     })
+
+    it('keeps the saved estimate id on rollback when the store held an explicit undefined id', async () => {
+      const { authClient } = jest.requireMock('@/lib/auth-client')
+      authClient.getSession.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
+      const { generateInvoiceNumber } = jest.requireMock('@/lib/utils')
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'estimate-1' }),
+      }) as unknown as typeof fetch
+
+      await act(async () => {
+        await useInvoiceStore.getState().updateDocumentType('estimate')
+      })
+      act(() => {
+        useInvoiceStore.setState({ id: undefined })
+      })
+      generateInvoiceNumber.mockResolvedValueOnce(null)
+
+      await act(async () => {
+        await useInvoiceStore.getState().convertEstimateToInvoice()
+      })
+
+      expect(useInvoiceStore.getState().id).toBe('estimate-1')
+    })
   })
 
   // Issue #77: the builder calls loadFromStorage() on every mount, so the store

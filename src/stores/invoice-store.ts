@@ -274,6 +274,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
       convertEstimateToInvoice: async () => {
         const state = get()
         const originalState = { ...state }
+        let estimateId = state.id
 
         try {
           if (state.documentType !== 'estimate') {
@@ -288,7 +289,6 @@ export const useInvoiceStore = create<InvoiceStore>()(
             throw new Error('User must be logged in to convert estimate to invoice')
           }
 
-          let estimateId = state.id
           if (!estimateId) {
             const savedId = await get().saveToDatabase(user.id)
             if (!savedId) throw new Error('Failed to save estimate to database before conversion')
@@ -327,7 +327,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
           return newInvoiceId
         } catch (error) {
-          set(() => originalState)
+          // Keep the estimate's id if it was saved during this attempt
+          set(() => ({ ...originalState, id: estimateId }))
           console.error('Estimate to invoice conversion failed:', error instanceof Error ? error.message : error)
           return null
         }
