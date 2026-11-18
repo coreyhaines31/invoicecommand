@@ -23,6 +23,7 @@ import { Plus, Trash2, Download, Loader2, AlertCircle, Share2, Copy, Save, Arrow
 import { PaymentSettings } from '@/components/payment/payment-settings'
 import { toast } from 'sonner'
 import { validateExpirationDate } from '@/lib/utils'
+import { ShareInvoiceDialog } from '@/components/dashboard/share-invoice-dialog'
 
 export function InvoiceForm() {
   const invoice = useInvoiceStore()
@@ -33,6 +34,7 @@ export function InvoiceForm() {
   const { user } = useUser()
   const [isConverting, setIsConverting] = React.useState(false)
   const [isSaving, setIsSaving] = React.useState(false)
+  const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [expirationDateError, setExpirationDateError] = React.useState<string | null>(null)
 
   // Initialize invoice number based on user authentication status
@@ -89,27 +91,13 @@ export function InvoiceForm() {
     }
   }
 
-  const handleShareInvoice = async () => {
+  const handleShareInvoice = () => {
     if (!invoice.id) {
       toast.error('Please save the invoice first before sharing')
       return
     }
 
-    const shareUrl = `${window.location.origin}/invoice/${invoice.id}`
-
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      toast.success(`${documentType === 'estimate' ? 'Estimate' : 'Invoice'} link copied to clipboard!`)
-    } catch (error) {
-      // Fallback for browsers that don't support clipboard API
-      const textArea = document.createElement('textarea')
-      textArea.value = shareUrl
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-      toast.success(`${documentType === 'estimate' ? 'Estimate' : 'Invoice'} link copied to clipboard!`)
-    }
+    setShareDialogOpen(true)
   }
 
   const handleExpirationDateChange = (value: string) => {
@@ -724,6 +712,12 @@ export function InvoiceForm() {
               Share {documentType === 'estimate' ? 'Estimate' : 'Invoice'} Link
             </Button>
           )}
+          <ShareInvoiceDialog
+            invoiceId={invoice.id ?? null}
+            invoiceNumber={invoiceNumber}
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+          />
         </div>
 
         {/* PDF Generation Info */}
