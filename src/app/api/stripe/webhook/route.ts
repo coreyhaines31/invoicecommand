@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
 import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
+import { triggerWebhooks } from '@/lib/webhook-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,6 +83,17 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       .update(invoices)
       .set(paid)
       .where(and(eq(invoices.id, invoiceId), notPaid(invoices.stripePaymentStatus)))
+    return
+  }
+
+  const [invoice] = transitioned
+
+  // The invoice is already marked paid, so a Stripe retry would not get here
+  // again: report failures instead of failing the delivery.
+  try {
+    await triggerWebhooks(invoice.userId, 'invoice.paid', { invoice })
+  } catch (error) {
+    console.error('Failed to queue invoice.paid webhook:', error)
   }
 }
 

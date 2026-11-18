@@ -19,8 +19,10 @@ jest.mock('@/lib/stripe', () => ({
 jest.mock('next/headers', () => ({
   headers: async () => new Headers({ 'stripe-signature': 't=1,v1=test' }),
 }))
+jest.mock('@/lib/webhook-service', () => ({ triggerWebhooks: jest.fn() }))
 
 import { POST } from '@/app/api/stripe/webhook/route'
+import { triggerWebhooks } from '@/lib/webhook-service'
 
 const INVOICE_ID = '33333333-3333-4333-8333-333333333333'
 
@@ -86,6 +88,29 @@ describe('payment_intent.succeeded', () => {
     const res = await POST(event('payment_intent.succeeded', {}))
     expect(res.status).toBe(200)
     expect(invoice()).toEqual(afterFirst)
+  })
+
+  it('fires invoice.paid once when the same event is delivered twice', async () => {
+    await POST(event('payment_intent.succeeded', {}))
+    await POST(event('payment_intent.succeeded', {}))
+    expect(triggerWebhooks).toHaveBeenCalledTimes(1)
+    expect(triggerWebhooks).toHaveBeenCalledWith('user-a', 'invoice.paid', {
+      invoice: expect.objectContaining({ id: INVOICE_ID, status: 'paid' }),
+    })
+  })
+
+  it('does not fire invoice.paid for an invoice that was already paid', async () => {
+    seed({ status: 'paid' })
+    await POST(event('payment_intent.succeeded', {}))
+    expect(triggerWebhooks).not.toHaveBeenCalled()
+  })
+
+  it('still acknowledges the event when queueing the user webhook fails', async () => {
+    jest.mocked(triggerWebhooks).mockRejectedValueOnce(new Error('db down'))
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const res = await POST(event('payment_intent.succeeded', {}))
+    expect(res.status).toBe(200)
+    expect(invoice().status).toBe('paid')
   })
 
   it('finds the invoice by metadata even when the stored intent id has moved on', async () => {
