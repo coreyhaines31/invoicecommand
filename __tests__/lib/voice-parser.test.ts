@@ -1,57 +1,71 @@
 /**
  * @jest-environment node
  *
- * The model client is a stub: these tests check the request shape, never call a model.
+ * The AI SDK is mocked: these tests check the request shape, never call a model.
  */
-import type OpenAI from 'openai'
-import { VOICE_MODEL, buildSystemPrompt, dropNulls, requestVoiceUpdate } from '@/lib/voice-parser'
+const mockGenerateText = jest.fn()
 
-function stubClient(content: string) {
-  const create = jest.fn().mockResolvedValue({
-    choices: [{ message: { content }, finish_reason: 'stop' }],
-    usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-  })
-  return { client: { chat: { completions: { create } } } as unknown as OpenAI, create }
-}
+jest.mock('ai', () => ({
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
+  Output: { object: (options: unknown) => ({ kind: 'object', options }) },
+}))
+
+import { DEFAULT_VOICE_MODEL, buildSystemPrompt, dropNulls, requestVoiceUpdate, voiceUpdateSchema } from '@/lib/voice-parser'
 
 const now = new Date('2026-11-18T12:00:00Z')
 
+beforeEach(() => {
+  delete process.env.VOICE_MODEL
+  mockGenerateText.mockReset()
+  mockGenerateText.mockResolvedValue({
+    output: { action: 'update_field', field: 'taxRate', value: 8, itemIndex: null, item: null, explanation: 'Set tax' },
+    usage: { inputTokens: 10, outputTokens: 5 },
+  })
+})
+
 describe('requestVoiceUpdate', () => {
-  it('defaults to gpt-4o-mini with the original call', async () => {
-    const { client, create } = stubClient('{"action":"update_field"}')
+  it('calls gpt-4o-mini with its original temperature and token cap', async () => {
+    const reply = await requestVoiceUpdate({ transcript: 'Set tax to 8 percent', currentInvoice: {}, now, model: 'openai/gpt-4o-mini' })
 
-    const reply = await requestVoiceUpdate(client, { transcript: 'Set tax to 8 percent', currentInvoice: {}, now })
-
-    const params = create.mock.calls[0][0]
-    expect(VOICE_MODEL).toBe('gpt-4o-mini')
-    expect(params.model).toBe('gpt-4o-mini')
+    const params = mockGenerateText.mock.calls[0][0]
+    expect(params.model).toBe('openai/gpt-4o-mini')
     expect(params.temperature).toBe(0.1)
-    expect(params.max_tokens).toBe(500)
-    expect(params.response_format).toBeUndefined()
-    expect(params.messages[0].content).toContain('Return ONLY valid JSON')
-    expect(reply.content).toBe('{"action":"update_field"}')
+    expect(params.maxOutputTokens).toBe(500)
+    expect(params.output.options.schema).toBe(voiceUpdateSchema)
+    expect(reply.update).toEqual({ action: 'update_field', field: 'taxRate', value: 8, explanation: 'Set tax' })
   })
 
-  it('sends newer models a JSON schema, max_completion_tokens and no temperature', async () => {
-    const { client, create } = stubClient('{}')
+  it('gives reasoning models low effort, room for reasoning tokens and no temperature', async () => {
+    await requestVoiceUpdate({ transcript: 'Set tax to 8 percent', currentInvoice: {}, now, model: 'openai/gpt-6-luna' })
 
-    await requestVoiceUpdate(client, { transcript: 'Set tax to 8 percent', currentInvoice: {}, now, model: 'gpt-6-luna' })
-
-    const params = create.mock.calls[0][0]
-    expect(params.model).toBe('gpt-6-luna')
+    const params = mockGenerateText.mock.calls[0][0]
     expect(params.temperature).toBeUndefined()
-    expect(params.max_tokens).toBeUndefined()
-    expect(params.max_completion_tokens).toBeGreaterThan(0)
-    expect(params.response_format.type).toBe('json_schema')
-    expect(params.response_format.json_schema.strict).toBe(true)
-    expect(params.messages[0].content).not.toContain('Return ONLY valid JSON')
+    expect(params.reasoning).toBe('low')
+    expect(params.maxOutputTokens).toBe(2000)
+  })
+
+  it('uses VOICE_MODEL over the default', async () => {
+    process.env.VOICE_MODEL = 'openai/some-other-model'
+
+    await requestVoiceUpdate({ transcript: 'Set tax to 8 percent', currentInvoice: {}, now })
+
+    expect(mockGenerateText.mock.calls[0][0].model).toBe('openai/some-other-model')
+    expect(DEFAULT_VOICE_MODEL).not.toBe('openai/some-other-model')
+  })
+})
+
+describe('voiceUpdateSchema', () => {
+  it('rejects actions and fields the client does not know', () => {
+    const base = { action: 'update_field', field: 'taxRate', value: 8, itemIndex: null, item: null, explanation: 'x' }
+    expect(voiceUpdateSchema.safeParse(base).success).toBe(true)
+    expect(voiceUpdateSchema.safeParse({ ...base, action: 'delete_invoice' }).success).toBe(false)
+    expect(voiceUpdateSchema.safeParse({ ...base, field: 'paid' }).success).toBe(false)
   })
 })
 
 describe('buildSystemPrompt', () => {
-  it('describes the error action only when a schema enforces the shape', () => {
-    expect(buildSystemPrompt(now, { structured: true })).toContain('return the "error" action')
-    expect(buildSystemPrompt(now)).not.toContain('"error" action')
+  it('names the error action for unclear commands', () => {
+    expect(buildSystemPrompt(now)).toContain('return the "error" action')
   })
 })
 

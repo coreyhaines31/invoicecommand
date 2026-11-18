@@ -1,50 +1,49 @@
-// Prompt and model call for /api/parse-voice. Shared with scripts/eval-voice.mjs,
-// which imports this file directly with Node's type stripping, so keep it free
-// of path aliases and runtime imports.
-import type OpenAI from 'openai'
+// Prompt and model call for /api/parse-voice, through the Vercel AI Gateway.
+// Shared with scripts/eval-voice.mjs, which imports this file directly with
+// Node's type stripping, so keep it free of path aliases.
+import { generateText, Output, type LanguageModelUsage } from 'ai'
+import { z } from 'zod'
 
-export const VOICE_MODEL = 'gpt-4o-mini'
+export const DEFAULT_VOICE_MODEL = 'openai/gpt-4o-mini'
 
-// gpt-4o models get the original call: prose asks for JSON, with temperature
-// and max_tokens. Newer models are reasoning models: they get a JSON schema,
-// max_completion_tokens (which also counts reasoning tokens) and no temperature.
-export function usesStructuredOutput(model: string) {
-  return !model.startsWith('gpt-4o')
+export function voiceModel() {
+  return process.env.VOICE_MODEL || DEFAULT_VOICE_MODEL
+}
+
+// gpt-4o models are not reasoning models: keep the original temperature and
+// token cap. Newer OpenAI models reason, which counts against the output cap,
+// and their docs do not list temperature support.
+function modelSettings(model: string) {
+  return model.includes('gpt-4o')
+    ? { temperature: 0.1, maxOutputTokens: 500 }
+    : { reasoning: 'low' as const, maxOutputTokens: 2000 }
 }
 
 const FIELDS = [
   'senderName', 'senderEmail', 'senderAddress', 'senderCity', 'senderState', 'senderZip', 'senderPhone',
   'clientName', 'clientEmail', 'clientAddress', 'clientCity', 'clientState', 'clientZip',
   'invoiceNumber', 'invoiceDate', 'dueDate', 'notes', 'terms', 'taxRate', 'discountRate',
-]
+] as const
 
-// Mirrors the update shape the client applies. Strict mode needs every key
-// present, so optional keys are nullable and nulls are dropped afterwards.
-export const VOICE_UPDATE_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['action', 'field', 'value', 'itemIndex', 'item', 'explanation'],
-  properties: {
-    action: { type: 'string', enum: ['update_field', 'add_item', 'update_item', 'remove_item', 'error'] },
-    field: { type: ['string', 'null'], enum: [...FIELDS, null] },
-    value: { type: ['string', 'number', 'null'] },
-    itemIndex: { type: ['integer', 'null'] },
-    item: {
-      type: ['object', 'null'],
-      additionalProperties: false,
-      required: ['description', 'quantity', 'price'],
-      properties: {
-        description: { type: ['string', 'null'] },
-        quantity: { type: ['number', 'null'] },
-        price: { type: ['number', 'null'] },
-      },
-    },
-    explanation: { type: 'string' },
-  },
-}
+// Mirrors the update shape the client applies. Structured output needs every
+// key present, so optional keys are nullable and nulls are dropped afterwards.
+export const voiceUpdateSchema = z.object({
+  action: z.enum(['update_field', 'add_item', 'update_item', 'remove_item', 'error']),
+  field: z.enum(FIELDS).nullable(),
+  value: z.union([z.string(), z.number()]).nullable(),
+  itemIndex: z.number().int().nullable(),
+  item: z
+    .object({
+      description: z.string().nullable(),
+      quantity: z.number().nullable(),
+      price: z.number().nullable(),
+    })
+    .nullable(),
+  explanation: z.string(),
+})
 
 // Dates are the server's UTC date; the client does not send its local date.
-export function buildSystemPrompt(now: Date, { structured = false } = {}) {
+export function buildSystemPrompt(now: Date) {
   const today = now.toISOString().slice(0, 10)
   const year = today.slice(0, 4)
   const weekday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
@@ -114,9 +113,9 @@ IMPORTANT RULES:
 - For tax/discount rates, use percentage values (8.5 for 8.5%)
 - For dates, convert to YYYY-MM-DD format
 - For line items, extract quantity and price if mentioned
-- If the command is unclear or ambiguous, ${structured ? 'return the "error" action with an explanation of what is unclear' : 'return an error'}
+- If the command is unclear or ambiguous, return the "error" action with an explanation of what is unclear
 - Only make changes that are explicitly requested
-- Preserve existing data unless specifically asked to change it${structured ? '' : '\n\nReturn ONLY valid JSON with no additional text.'}`
+- Preserve existing data unless specifically asked to change it`
 }
 
 export function buildUserPrompt(transcript: string, currentInvoice: unknown) {
@@ -135,49 +134,33 @@ type VoiceRequest = {
   model?: string
 }
 
+export type VoiceUpdate = Record<string, unknown> & { action: string; explanation?: string }
+
 export type VoiceReply = {
-  content: string | null
-  finishReason: string | null
-  usage: OpenAI.CompletionUsage | null
+  update: VoiceUpdate
+  usage: LanguageModelUsage
 }
 
-export async function requestVoiceUpdate(
-  client: OpenAI,
-  { transcript, currentInvoice, now, model = VOICE_MODEL }: VoiceRequest
-): Promise<VoiceReply> {
-  const structured = usesStructuredOutput(model)
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: 'system', content: buildSystemPrompt(now, { structured }) },
-    { role: 'user', content: buildUserPrompt(transcript, currentInvoice) },
-  ]
+// Throws NoObjectGeneratedError when the reply does not match the schema;
+// any other throw is a provider, gateway or network failure.
+export async function requestVoiceUpdate({
+  transcript,
+  currentInvoice,
+  now,
+  model = voiceModel(),
+}: VoiceRequest): Promise<VoiceReply> {
+  const { output, usage } = await generateText({
+    model,
+    system: buildSystemPrompt(now),
+    prompt: buildUserPrompt(transcript, currentInvoice),
+    output: Output.object({ schema: voiceUpdateSchema }),
+    timeout: 20_000,
+    ...modelSettings(model),
+  })
 
-  const completion = structured
-    ? await client.chat.completions.create({
-        model,
-        messages,
-        response_format: {
-          type: 'json_schema',
-          json_schema: { name: 'invoice_update', strict: true, schema: VOICE_UPDATE_SCHEMA },
-        },
-        reasoning_effort: 'low',
-        max_completion_tokens: 2000,
-      })
-    : await client.chat.completions.create({
-        model,
-        messages,
-        temperature: 0.1,
-        max_tokens: 500,
-      })
-
-  const choice = completion.choices[0]
-  return {
-    content: choice?.message?.content ?? null,
-    finishReason: choice?.finish_reason ?? null,
-    usage: completion.usage ?? null,
-  }
+  return { update: dropNulls(output) as VoiceUpdate, usage }
 }
 
-// Structured replies carry every key, with null for the ones that do not apply.
 // The client checks `!== undefined`, so drop the nulls to keep its contract.
 export function dropNulls(update: Record<string, unknown>) {
   const out: Record<string, unknown> = {}

@@ -1,34 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { NoObjectGeneratedError } from 'ai'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { voiceUsage } from '@/lib/db/schema'
 import { and, eq, lt, sql } from 'drizzle-orm'
-import { requestVoiceUpdate } from '@/lib/voice-parser'
+import { jsonErrorResponse } from '@/lib/error-response'
+import { requestVoiceUpdate, voiceModel, type VoiceUpdate } from '@/lib/voice-parser'
 
-// Initialize OpenAI client conditionally
-let openai: OpenAI | null = null
 const MONTHLY_LIMIT = 10
 // A 200-line invoice with long descriptions, notes and terms is about 43 KB
 // of JSON; this leaves headroom while bounding what is sent to the model.
 const MAX_INVOICE_CHARS = 64_000
-
-function getOpenAIClient() {
-  if (!openai && process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    })
-  }
-  return openai
-}
 
 function currentMonthYear() {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-async function consumeVoiceUsage(userId: string): Promise<boolean> {
-  const monthYear = currentMonthYear()
+async function consumeVoiceUsage(userId: string, monthYear: string): Promise<boolean> {
   const now = new Date()
 
   const [updated] = await db
@@ -76,6 +65,7 @@ async function consumeVoiceUsage(userId: string): Promise<boolean> {
   return !!retry
 }
 
+
 interface VoiceParseRequest {
   transcript: string
   currentInvoice: {
@@ -105,19 +95,6 @@ interface VoiceParseRequest {
     notes: string
     terms: string
   }
-}
-
-interface InvoiceUpdate {
-  field?: string
-  value?: string | number | boolean
-  action?: 'add_item' | 'update_item' | 'remove_item' | 'update_field'
-  itemIndex?: number
-  item?: {
-    description: string
-    quantity: number
-    price: number
-  }
-  explanation?: string
 }
 
 export async function POST(request: NextRequest) {
@@ -156,84 +133,48 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
-        { status: 500 }
-      )
-    }
-
-    // Atomic-increment-first: reserve a slot BEFORE calling OpenAI. Two concurrent
-    // requests cannot both pass the check-then-increment race that the previous
-    // SELECT-then-UPDATE allowed. Failed OpenAI calls still count against the cap,
-    // which is the lesser-bad tradeoff vs letting a parallel attacker exceed it.
-    const reserved = await consumeVoiceUsage(session.user.id)
+    // Atomic-increment-first: reserve a slot BEFORE calling the model. Two
+    // concurrent requests cannot both pass the check-then-increment race that a
+    // SELECT-then-UPDATE allows, and reserving after the call would let parallel
+    // requests run the model past the cap.
+    const monthYear = currentMonthYear()
+    const reserved = await consumeVoiceUsage(session.user.id, monthYear)
     if (!reserved) {
       return NextResponse.json({ error: 'Voice command limit reached for this month' }, { status: 429 })
     }
 
-    // Get OpenAI client
-    const client = getOpenAIClient()
-    if (!client) {
-      return NextResponse.json(
-        { error: 'OpenAI client not available' },
-        { status: 500 }
-      )
-    }
-
-    const { content: response } = await requestVoiceUpdate(client, {
-      transcript: sanitizedTranscript,
-      currentInvoice,
-      now: new Date(),
-    })
-
-    if (!response) {
-      return NextResponse.json(
-        { error: 'No response from AI' },
-        { status: 500 }
-      )
-    }
-
-    // Try to parse the JSON response
-    let parsedUpdate: InvoiceUpdate
+    let update: VoiceUpdate
     try {
-      parsedUpdate = JSON.parse(response)
-    } catch {
-      console.error('Failed to parse AI response:', response)
-      return NextResponse.json(
-        { error: 'Invalid response format from AI' },
-        { status: 500 }
-      )
+      ;({ update } = await requestVoiceUpdate({
+        transcript: sanitizedTranscript,
+        currentInvoice,
+        now: new Date(),
+      }))
+    } catch (error) {
+      // The model answered, but not in the update shape: the use stays spent.
+      if (NoObjectGeneratedError.isInstance(error)) {
+        return jsonErrorResponse(error, 'Invalid response format from AI', { extra: { model: voiceModel() } })
+      }
+
+      throw error
     }
 
-    // Validate the response structure
-    if (!parsedUpdate.action) {
+    // The model could not tell what to change. The client shows `error`.
+    if (update.action === 'error') {
       return NextResponse.json(
-        { error: 'AI response missing required action field' },
-        { status: 500 }
+        { error: update.explanation || 'Could not understand that command' },
+        { status: 422 }
       )
     }
 
     // Return the structured update (usage already reserved above)
     return NextResponse.json({
       success: true,
-      update: parsedUpdate,
+      update,
       originalTranscript: sanitizedTranscript
     })
 
   } catch (error) {
-    console.error('Voice parsing error:', error)
-
-    if (error instanceof Error && error.message.includes('API key')) {
-      return NextResponse.json(
-        { error: 'OpenAI API configuration error' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to process voice command' },
-      { status: 500 }
-    )
+    return jsonErrorResponse(error, 'Failed to process voice command')
   }
 }

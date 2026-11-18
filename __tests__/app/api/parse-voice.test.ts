@@ -2,27 +2,38 @@
  * @jest-environment node
  *
  * /api/parse-voice is the only place a voice command is charged against the
- * monthly quota. The OpenAI client is mocked: these tests never call a model.
+ * monthly quota. The AI SDK is mocked: these tests never call a model.
  */
 import { NextRequest } from 'next/server'
 import { createFakeDb } from '../../helpers/fake-db'
 import { auth } from '@/lib/auth'
 
 const fake = createFakeDb()
-const mockCreate = jest.fn()
+const mockGenerateText = jest.fn()
 
 jest.mock('drizzle-orm', () => jest.requireActual('../../helpers/fake-db').drizzleOrmMock)
 jest.mock('@/lib/db/schema', () => jest.requireActual('../../helpers/fake-db').schemaMock)
 jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 jest.mock('@/lib/auth', () => ({ auth: { api: { getSession: jest.fn() } } }))
-jest.mock('openai', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({ chat: { completions: { create: mockCreate } } })),
+jest.mock('@/lib/error-response', () => ({
+  jsonErrorResponse: jest.fn((_error: unknown, message: string) => Response.json({ error: message }, { status: 500 })),
+  reportError: jest.fn(),
 }))
+jest.mock('ai', () => {
+  class NoObjectGeneratedError extends Error {
+    static isInstance(error: unknown) { return error instanceof NoObjectGeneratedError }
+  }
+  return {
+    generateText: (...args: unknown[]) => mockGenerateText(...args),
+    Output: { object: (options: unknown) => ({ kind: 'object', options }) },
+    NoObjectGeneratedError,
+  }
+})
 
 import { POST } from '@/app/api/parse-voice/route'
 
 const getSession = auth.api.getSession as unknown as jest.Mock
+const { NoObjectGeneratedError } = jest.requireMock('ai') as { NoObjectGeneratedError: new (message: string) => Error }
 
 const invoice = {
   senderName: 'Sender',
@@ -35,6 +46,15 @@ const invoice = {
   discountRate: 0,
   notes: '',
   terms: '',
+}
+
+const usage = { inputTokens: 1000, outputTokens: 50 }
+
+function modelReturns(output: Record<string, unknown>) {
+  mockGenerateText.mockResolvedValue({
+    output: { action: 'update_field', field: null, value: null, itemIndex: null, item: null, explanation: '', ...output },
+    usage,
+  })
 }
 
 function req(body: unknown) {
@@ -56,12 +76,10 @@ function usageRow() {
 
 beforeEach(() => {
   fake.tables.voiceUsage.length = 0
-  process.env.OPENAI_API_KEY = 'test-key'
+  delete process.env.VOICE_MODEL
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
-  mockCreate.mockReset()
-  mockCreate.mockResolvedValue({
-    choices: [{ message: { content: JSON.stringify({ action: 'update_field', field: 'taxRate', value: 8, explanation: 'Set tax' }) } }],
-  })
+  mockGenerateText.mockReset()
+  modelReturns({ field: 'taxRate', value: 8, explanation: 'Set tax' })
 })
 
 describe('POST /api/parse-voice', () => {
@@ -71,7 +89,7 @@ describe('POST /api/parse-voice', () => {
     const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
 
     expect(res.status).toBe(401)
-    expect(mockCreate).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
   })
 
   it('returns 429 once the monthly limit is used up', async () => {
@@ -80,7 +98,7 @@ describe('POST /api/parse-voice', () => {
     const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
 
     expect(res.status).toBe(429)
-    expect(mockCreate).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
     expect(usageRow()?.commandCount).toBe(10)
   })
 
@@ -95,13 +113,63 @@ describe('POST /api/parse-voice', () => {
     expect(usageRow()?.commandCount).toBe(2)
   })
 
+  it('returns the update without the null keys structured output fills in', async () => {
+    modelReturns({ action: 'update_item', itemIndex: 0, item: { description: null, quantity: 6, price: null }, explanation: 'Set quantity to 6' })
+
+    const res = await POST(req({ transcript: 'Change the quantity to 6', currentInvoice: invoice }))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      success: true,
+      update: { action: 'update_item', itemIndex: 0, item: { quantity: 6 }, explanation: 'Set quantity to 6' },
+      originalTranscript: 'Change the quantity to 6',
+    })
+  })
+
+  it('calls the gateway model with a schema, defaulting to openai/gpt-4o-mini', async () => {
+    await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
+
+    const params = mockGenerateText.mock.calls[0][0]
+    expect(params.model).toBe('openai/gpt-4o-mini')
+    expect(params.output.kind).toBe('object')
+    expect(params.temperature).toBe(0.1)
+    expect(params.maxOutputTokens).toBeGreaterThan(0)
+  })
+
+  it('uses VOICE_MODEL when it is set', async () => {
+    process.env.VOICE_MODEL = 'openai/gpt-6-luna'
+
+    await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
+
+    expect(mockGenerateText.mock.calls[0][0].model).toBe('openai/gpt-6-luna')
+  })
+
+  it('returns 422 with the explanation when the model cannot tell what to change', async () => {
+    modelReturns({ action: 'error', explanation: 'Which item should change?' })
+
+    const res = await POST(req({ transcript: 'Update the price', currentInvoice: invoice }))
+
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toBe('Which item should change?')
+    expect(usageRow()?.commandCount).toBe(1)
+  })
+
+  it('keeps the use spent when the model answers in the wrong shape', async () => {
+    mockGenerateText.mockRejectedValue(new NoObjectGeneratedError('No object generated'))
+
+    const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
+
+    expect(res.status).toBe(500)
+    expect(usageRow()?.commandCount).toBe(1)
+  })
+
   it('returns 400 for an oversized invoice without charging a use', async () => {
     const huge = { ...invoice, notes: 'x'.repeat(70_000) }
 
     const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: huge }))
 
     expect(res.status).toBe(400)
-    expect(mockCreate).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
     expect(usageRow()).toBeUndefined()
   })
 
@@ -126,7 +194,7 @@ describe('POST /api/parse-voice', () => {
       jest.useRealTimers()
     }
 
-    const system = mockCreate.mock.calls[0][0].messages[0].content as string
+    const system = mockGenerateText.mock.calls[0][0].system as string
     expect(system).toContain('Wednesday, 2026-11-18')
     expect(system).not.toContain('2024')
   })
