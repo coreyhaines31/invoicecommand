@@ -3,7 +3,8 @@
  */
 type Options = {
   user: { deleteUser: { enabled: boolean; beforeDelete: (user: { id: string }) => Promise<void> } }
-  hooks: { before: (ctx: { path: string; body?: unknown }) => Promise<void> }
+  hooks: { before: (ctx: { path: string; body?: unknown; query?: unknown }) => Promise<void> }
+  rateLimit: { customRules: Record<string, { window: number; max: number }> }
 }
 
 jest.mock('better-auth', () => ({ betterAuth: (options: unknown) => options }))
@@ -11,8 +12,8 @@ jest.mock('better-auth/adapters/drizzle', () => ({ drizzleAdapter: () => ({}) })
 jest.mock('better-auth/api', () => ({
   createAuthMiddleware: (fn: unknown) => fn,
   APIError: class APIError extends Error {
-    constructor(public status: string, public body: { message: string; code: string }) {
-      super(body.message)
+    constructor(public status: string, public body?: { message: string; code: string }) {
+      super(body?.message ?? status)
     }
   },
 }))
@@ -36,6 +37,23 @@ describe('Better Auth delete-user config', () => {
   it('rejects a delete request without a password', async () => {
     await expect(options.hooks.before({ path: '/delete-user', body: {} })).rejects.toThrow(/password/i)
     await expect(options.hooks.before({ path: '/delete-user', body: { password: '' } })).rejects.toThrow(/password/i)
+  })
+
+  it('rejects token-based deletion outright', async () => {
+    await expect(options.hooks.before({ path: '/delete-user/callback', query: { token: 't' } })).rejects.toThrow()
+    await expect(
+      options.hooks.before({ path: '/delete-user/callback', body: { password: 'hunter22' }, query: { token: 't' } })
+    ).rejects.toThrow()
+  })
+
+  it('rejects a token in the delete request body', async () => {
+    await expect(
+      options.hooks.before({ path: '/delete-user', body: { password: 'hunter22', token: 't' } })
+    ).rejects.toThrow()
+  })
+
+  it('throttles delete attempts to 5 per 10 minutes', () => {
+    expect(options.rateLimit.customRules['/delete-user']).toEqual({ window: 600, max: 5 })
   })
 
   it('lets a delete request with a password and other routes through', async () => {
