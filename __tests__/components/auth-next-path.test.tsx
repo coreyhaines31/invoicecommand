@@ -16,6 +16,12 @@ jest.mock('@/lib/auth-client', () => ({
   signUp: { email: (args: unknown) => mockSignUpEmail(args) },
 }))
 
+const mockTrackUserSignup = jest.fn()
+const mockIdentifyUser = jest.fn()
+jest.mock('@/hooks/use-analytics', () => ({
+  useAnalytics: () => ({ trackUserSignup: mockTrackUserSignup, identifyUser: mockIdentifyUser }),
+}))
+
 jest.mock('next/link', () => {
   function MockLink({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
     return (
@@ -101,5 +107,30 @@ describe('SignupForm next path', () => {
 
     const link = await screen.findByText('Sign in instead')
     expect(link.closest('a')).toHaveAttribute('href', '/auth/login?next=%2Fdashboard%2Fpayments%2Fsetup')
+  })
+})
+
+describe('SignupForm analytics', () => {
+  it('identifies the new user by id only and fires the signup event', async () => {
+    mockSignUpEmail.mockResolvedValue({
+      data: { user: { id: 'user-123', email: 'a@example.com', name: 'a' } },
+      error: null,
+    })
+    render(<SignupForm />)
+    fillAndSubmit(/create account/i)
+
+    await screen.findByText('Account created. Redirecting...')
+    expect(mockIdentifyUser).toHaveBeenCalledWith('user-123')
+    expect(mockTrackUserSignup).toHaveBeenCalledWith('email')
+  })
+
+  it('sends nothing when signup fails', async () => {
+    mockSignUpEmail.mockResolvedValue({ data: null, error: { code: 'USER_ALREADY_EXISTS' } })
+    render(<SignupForm />)
+    fillAndSubmit(/create account/i)
+
+    await screen.findByText('Sign in instead')
+    expect(mockIdentifyUser).not.toHaveBeenCalled()
+    expect(mockTrackUserSignup).not.toHaveBeenCalled()
   })
 })
