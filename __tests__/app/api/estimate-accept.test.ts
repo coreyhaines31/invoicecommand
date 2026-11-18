@@ -13,10 +13,12 @@ jest.mock('drizzle-orm', () => jest.requireActual('../../helpers/fake-db').drizz
 jest.mock('@/lib/db/schema', () => jest.requireActual('../../helpers/fake-db').schemaMock)
 jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 jest.mock('@/lib/email-service', () => ({ sendEstimateAcceptanceEmail: jest.fn(async () => undefined) }))
+jest.mock('@/lib/error-response', () => ({ reportError: jest.fn() }))
 
 import { POST as acceptEstimate } from '@/app/api/estimates/[id]/accept/route'
-import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
+import { reportError } from '@/lib/error-response'
+import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
 
 const ESTIMATE_ID = '33333333-3333-4333-8333-333333333333'
 const TOKEN = 'tok_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
@@ -67,6 +69,7 @@ function seed(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date(RENDERED_AT),
     ...overrides,
   })
+  fake.tables.user = [{ id: 'user-a', email: 'owner@example.test', emailVerified: true }]
 }
 
 beforeEach(() => {
@@ -204,7 +207,7 @@ describe('POST /api/estimates/:id/accept', () => {
 
   it('notifies the account email, not a different sender address on the estimate', async () => {
     seed({ senderEmail: 'someone-else@example.test' })
-    fake.tables.user = [{ id: 'user-a', email: 'owner@example.test', emailVerified: false }]
+    fake.tables.user[0].emailVerified = false
     const res = await acceptEstimate(req(ESTIMATE_ID, validBody()), ctx(ESTIMATE_ID))
     expect(res.status).toBe(200)
     expect(sendEstimateAcceptanceEmail).toHaveBeenCalledTimes(1)
@@ -216,5 +219,17 @@ describe('POST /api/estimates/:id/accept', () => {
     const res = await acceptEstimate(req(ESTIMATE_ID, validBody({ documentVersion: undefined })), ctx(ESTIMATE_ID))
     expect(res.status).toBe(400)
     expect(fake.rows[0].signedAt).toBeNull()
+  })
+
+  it('still signs when the acceptance email fails, and reports the failure', async () => {
+    seed({ senderEmail: 'owner@example.test' })
+    const failure = new Error('mail provider down')
+    jest.mocked(sendEstimateAcceptanceEmail).mockRejectedValueOnce(failure)
+
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody()), ctx(ESTIMATE_ID))
+
+    expect(res.status).toBe(200)
+    expect(fake.rows[0].signedAt).toBeInstanceOf(Date)
+    expect(reportError).toHaveBeenCalledWith(failure, 'Failed to send acceptance email', { estimateId: ESTIMATE_ID })
   })
 })

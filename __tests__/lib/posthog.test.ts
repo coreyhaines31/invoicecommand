@@ -104,6 +104,14 @@ describe('initPostHog', () => {
     window.history.pushState({}, '', '/')
   })
 
+  it('starts with recording off when the first page is the dashboard', () => {
+    window.history.pushState({}, '', '/dashboard')
+
+    expect(initOptions()).toMatchObject({ disable_session_recording: true })
+
+    window.history.pushState({}, '', '/')
+  })
+
   it('masks the builder preview in recordings', () => {
     expect(initOptions()?.session_recording?.maskTextSelector).toContain('[data-exclude]')
   })
@@ -130,8 +138,16 @@ describe('syncSessionRecordingForPath', () => {
     expect(mockedPostHog.stopSessionRecording).toHaveBeenCalledTimes(1)
     expect(mockedPostHog.startSessionRecording).not.toHaveBeenCalled()
 
-    syncSessionRecordingForPath('/dashboard')
+    syncSessionRecordingForPath('/pricing')
     expect(mockedPostHog.startSessionRecording).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops recording on the dashboard, settings and billing pages', () => {
+    syncSessionRecordingForPath('/dashboard')
+    syncSessionRecordingForPath('/settings')
+    syncSessionRecordingForPath('/billing')
+    expect(mockedPostHog.stopSessionRecording).toHaveBeenCalledTimes(1)
+    expect(mockedPostHog.startSessionRecording).not.toHaveBeenCalled()
   })
 
   it('does not touch recording on public pages', () => {
