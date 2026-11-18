@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# agent worktrees and scan output
+.claude/worktrees/
+.deepsec/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
