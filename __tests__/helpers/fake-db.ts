@@ -9,6 +9,9 @@ type Column = { key: string }
 
 export const drizzleOrmMock = {
   eq: (col: Column, value: unknown): Predicate => (row) => row[col.key] === value,
+  // SQL semantics: NULL <> 'x' is not true, so a NULL column never matches.
+  ne: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && row[col.key] !== value,
+  or: (...preds: Predicate[]): Predicate => (row) => preds.some((p) => p(row)),
   and: (...preds: Predicate[]): Predicate => (row) => preds.every((p) => p(row)),
   isNull: (col: Column): Predicate => (row) => row[col.key] == null,
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),

@@ -3,7 +3,7 @@ import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 
 export async function POST(request: NextRequest) {
@@ -50,12 +50,39 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Matches rows where the column is NULL or anything other than 'paid'.
+function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentStatus) {
+  return or(isNull(column), ne(column, 'paid'))
+}
+
+// Stripe delivers events at least once and in any order, so the handlers are
+// idempotent by state. The conditional UPDATE lets only one delivery win the
+// transition to paid, even when two arrive at the same time.
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  if (!paymentIntent.metadata?.invoice_id) return
-  await db
+  const invoiceId = paymentIntent.metadata?.invoice_id
+  if (!invoiceId) return
+
+  const paid = {
+    status: 'paid' as const,
+    stripePaymentStatus: 'paid' as const,
+    stripePaymentIntentId: paymentIntent.id,
+    updatedAt: new Date(),
+  }
+
+  const transitioned = await db
     .update(invoices)
-    .set({ stripePaymentStatus: 'paid', updatedAt: new Date() })
-    .where(eq(invoices.stripePaymentIntentId, paymentIntent.id))
+    .set(paid)
+    .where(and(eq(invoices.id, invoiceId), notPaid(invoices.status)))
+    .returning()
+
+  if (transitioned.length === 0) {
+    // Already paid (a redelivery, or the owner marked it paid by hand): record
+    // the Stripe payment but don't repeat any side effects.
+    await db
+      .update(invoices)
+      .set(paid)
+      .where(and(eq(invoices.id, invoiceId), notPaid(invoices.stripePaymentStatus)))
+  }
 }
 
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
