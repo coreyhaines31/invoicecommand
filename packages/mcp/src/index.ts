@@ -6,7 +6,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { ApiClient, INVOICE_ID_PATTERN, type Invoice } from './lib/api-client.js'
-import { isPlaceholder, scrubFeedbackText } from './lib/feedback.js'
+import { FEEDBACK_POINTER, isPlaceholder, isUnexpectedError, scrubFeedbackText } from './lib/feedback.js'
 
 const VERSION = '1.2.0'
 const API_KEY = process.env.INVOICE_COMMAND_API_KEY
@@ -29,11 +29,13 @@ function text(body: string, isError = false): CallToolResult {
   return { content: [{ type: 'text', text: body }], ...(isError ? { isError: true } : {}) }
 }
 
-async function run(fn: () => Promise<CallToolResult>): Promise<CallToolResult> {
+async function run(fn: () => Promise<CallToolResult>, { feedbackPointer = true } = {}): Promise<CallToolResult> {
   try {
     return await fn()
   } catch (error) {
-    return text(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, true)
+    const message = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    const pointer = feedbackPointer && isUnexpectedError(error) ? `\n\n${FEEDBACK_POINTER}` : ''
+    return text(message + pointer, true)
   }
 }
 
@@ -250,7 +252,8 @@ server.registerTool(
           ...(clientName ? { client: clientName.slice(0, 100) } : {}),
         })
         return text(`Feedback sent to the Invoice Command maintainers (ID: ${id}). Thanks. Carry on with the task.`)
-      }
+      },
+      { feedbackPointer: false }
     )
 )
 
