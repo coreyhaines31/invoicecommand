@@ -23,12 +23,13 @@ jest.mock('@/lib/webhook-service', () => ({ triggerWebhooks: jest.fn() }))
 jest.mock('@/lib/email-service', () => ({ sendPaymentReceivedEmail: jest.fn(async () => ({ id: 'email-1' })) }))
 jest.mock('@/lib/error-response', () => ({
   jsonErrorResponse: jest.fn((_error: unknown, message: string) => Response.json({ error: message }, { status: 500 })),
+  reportError: jest.fn(),
 }))
 
 import { POST } from '@/app/api/stripe/webhook/route'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { sendPaymentReceivedEmail } from '@/lib/email-service'
-import { jsonErrorResponse } from '@/lib/error-response'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
 
 const INVOICE_ID = '33333333-3333-4333-8333-333333333333'
 
@@ -127,21 +128,23 @@ describe('payment_intent.succeeded', () => {
     expect(sendPaymentReceivedEmail).not.toHaveBeenCalled()
   })
 
-  it('still acknowledges the event when the owner email fails', async () => {
-    jest.mocked(sendPaymentReceivedEmail).mockRejectedValueOnce(new Error('mail down'))
-    jest.spyOn(console, 'error').mockImplementation(() => {})
+  it('reports a failed owner email to Sentry and still acknowledges the event', async () => {
+    const error = new Error('mail down')
+    jest.mocked(sendPaymentReceivedEmail).mockRejectedValueOnce(error)
     const res = await POST(event('payment_intent.succeeded', {}))
     expect(res.status).toBe(200)
     expect(invoice().status).toBe('paid')
     expect(triggerWebhooks).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(error, expect.any(String), { invoiceId: INVOICE_ID })
   })
 
-  it('still acknowledges the event when queueing the user webhook fails', async () => {
-    jest.mocked(triggerWebhooks).mockRejectedValueOnce(new Error('db down'))
-    jest.spyOn(console, 'error').mockImplementation(() => {})
+  it('reports a failed user webhook enqueue to Sentry and still acknowledges the event', async () => {
+    const error = new Error('db down')
+    jest.mocked(triggerWebhooks).mockRejectedValueOnce(error)
     const res = await POST(event('payment_intent.succeeded', {}))
     expect(res.status).toBe(200)
     expect(invoice().status).toBe('paid')
+    expect(reportError).toHaveBeenCalledWith(error, expect.any(String), { invoiceId: INVOICE_ID })
   })
 
   it('finds the invoice by metadata even when the stored intent id has moved on', async () => {

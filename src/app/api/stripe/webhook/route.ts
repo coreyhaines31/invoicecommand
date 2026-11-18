@@ -7,7 +7,7 @@ import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { sendPaymentReceivedEmail } from '@/lib/email-service'
-import { jsonErrorResponse } from '@/lib/error-response'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,7 +93,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   try {
     await triggerWebhooks(invoice.userId, 'invoice.paid', { invoice })
   } catch (error) {
-    console.error('Failed to queue invoice.paid webhook:', error)
+    reportError(error, 'Failed to queue invoice.paid webhook', { invoiceId: invoice.id })
   }
 
   if (invoice.senderEmail) {
@@ -108,7 +108,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
         invoiceId: invoice.id,
       })
     } catch (error) {
-      console.error('Failed to send payment received email:', error)
+      reportError(error, 'Failed to send payment received email', { invoiceId: invoice.id })
     }
   }
 }
