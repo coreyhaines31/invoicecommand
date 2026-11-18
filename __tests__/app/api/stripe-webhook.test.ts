@@ -20,9 +20,11 @@ jest.mock('next/headers', () => ({
   headers: async () => new Headers({ 'stripe-signature': 't=1,v1=test' }),
 }))
 jest.mock('@/lib/webhook-service', () => ({ triggerWebhooks: jest.fn() }))
+jest.mock('@/lib/email-service', () => ({ sendPaymentReceivedEmail: jest.fn(async () => ({ id: 'email-1' })) }))
 
 import { POST } from '@/app/api/stripe/webhook/route'
 import { triggerWebhooks } from '@/lib/webhook-service'
+import { sendPaymentReceivedEmail } from '@/lib/email-service'
 
 const INVOICE_ID = '33333333-3333-4333-8333-333333333333'
 
@@ -99,10 +101,35 @@ describe('payment_intent.succeeded', () => {
     })
   })
 
-  it('does not fire invoice.paid for an invoice that was already paid', async () => {
+  it('emails the owner once when the same event is delivered twice', async () => {
+    await POST(event('payment_intent.succeeded', {}))
+    await POST(event('payment_intent.succeeded', {}))
+    expect(sendPaymentReceivedEmail).toHaveBeenCalledTimes(1)
+    expect(sendPaymentReceivedEmail).toHaveBeenCalledWith({
+      toEmail: 'owner@example.test',
+      senderName: 'Owner',
+      clientName: 'Client & Co',
+      invoiceNumber: 'INV-100',
+      amount: 12050,
+      currency: 'usd',
+      invoiceId: INVOICE_ID,
+    })
+  })
+
+  it('does not fire invoice.paid or email for an invoice that was already paid', async () => {
     seed({ status: 'paid' })
     await POST(event('payment_intent.succeeded', {}))
     expect(triggerWebhooks).not.toHaveBeenCalled()
+    expect(sendPaymentReceivedEmail).not.toHaveBeenCalled()
+  })
+
+  it('still acknowledges the event when the owner email fails', async () => {
+    jest.mocked(sendPaymentReceivedEmail).mockRejectedValueOnce(new Error('mail down'))
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const res = await POST(event('payment_intent.succeeded', {}))
+    expect(res.status).toBe(200)
+    expect(invoice().status).toBe('paid')
+    expect(triggerWebhooks).toHaveBeenCalledTimes(1)
   })
 
   it('still acknowledges the event when queueing the user webhook fails', async () => {

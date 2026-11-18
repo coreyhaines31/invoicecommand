@@ -6,6 +6,7 @@ import { invoices, userProfiles } from '@/lib/db/schema'
 import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { triggerWebhooks } from '@/lib/webhook-service'
+import { sendPaymentReceivedEmail } from '@/lib/email-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,6 +95,22 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     await triggerWebhooks(invoice.userId, 'invoice.paid', { invoice })
   } catch (error) {
     console.error('Failed to queue invoice.paid webhook:', error)
+  }
+
+  if (invoice.senderEmail) {
+    try {
+      await sendPaymentReceivedEmail({
+        toEmail: invoice.senderEmail,
+        senderName: invoice.senderName ?? '',
+        clientName: invoice.clientName,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: paymentIntent.amount_received || paymentIntent.amount,
+        currency: paymentIntent.currency,
+        invoiceId: invoice.id,
+      })
+    } catch (error) {
+      console.error('Failed to send payment received email:', error)
+    }
   }
 }
 
