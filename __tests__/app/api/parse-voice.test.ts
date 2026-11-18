@@ -11,7 +11,14 @@ import { auth } from '@/lib/auth'
 const fake = createFakeDb()
 const mockGenerateText = jest.fn()
 
-jest.mock('drizzle-orm', () => jest.requireActual('../../helpers/fake-db').drizzleOrmMock)
+// The shared fake handles `${col} + n`; the release also needs `${col} - n`.
+jest.mock('drizzle-orm', () => ({
+  ...jest.requireActual('../../helpers/fake-db').drizzleOrmMock,
+  sql: (strings: TemplateStringsArray, col: { key: string }) => {
+    const by = Number(strings[1].replace(/\s/g, ''))
+    return (row: Record<string, number>) => row[col.key] + by
+  },
+}))
 jest.mock('@/lib/db/schema', () => jest.requireActual('../../helpers/fake-db').schemaMock)
 jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 jest.mock('@/lib/auth', () => ({ auth: { api: { getSession: jest.fn() } } }))
@@ -31,6 +38,7 @@ jest.mock('ai', () => {
 })
 
 import { POST } from '@/app/api/parse-voice/route'
+import { reportError } from '@/lib/error-response'
 
 const getSession = auth.api.getSession as unknown as jest.Mock
 const { NoObjectGeneratedError } = jest.requireMock('ai') as { NoObjectGeneratedError: new (message: string) => Error }
@@ -79,6 +87,7 @@ beforeEach(() => {
   delete process.env.VOICE_MODEL
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
   mockGenerateText.mockReset()
+  ;(reportError as jest.Mock).mockClear()
   modelReturns({ field: 'taxRate', value: 8, explanation: 'Set tax' })
 })
 
@@ -152,6 +161,27 @@ describe('POST /api/parse-voice', () => {
     expect(res.status).toBe(422)
     expect((await res.json()).error).toBe('Which item should change?')
     expect(usageRow()?.commandCount).toBe(1)
+  })
+
+  it('returns 503 and gives the use back when the provider fails', async () => {
+    fake.tables.voiceUsage.push({ id: 'u1', userId: 'user-1', monthYear: monthYear(), commandCount: 3 })
+    mockGenerateText.mockRejectedValue(Object.assign(new Error('Insufficient funds'), { statusCode: 402 }))
+
+    const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
+
+    expect(res.status).toBe(503)
+    expect((await res.json()).error).toBe('Voice commands are temporarily unavailable. Try again in a few minutes.')
+    expect(usageRow()?.commandCount).toBe(3)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), 'Voice model call failed', expect.objectContaining({ model: 'openai/gpt-4o-mini' }))
+  })
+
+  it('gives the use back on the first command of the month too', async () => {
+    mockGenerateText.mockRejectedValue(new Error('timeout'))
+
+    const res = await POST(req({ transcript: 'Set tax to 8 percent', currentInvoice: invoice }))
+
+    expect(res.status).toBe(503)
+    expect(usageRow()?.commandCount).toBe(0)
   })
 
   it('keeps the use spent when the model answers in the wrong shape', async () => {

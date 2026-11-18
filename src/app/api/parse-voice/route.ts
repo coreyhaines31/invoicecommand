@@ -3,8 +3,8 @@ import { NoObjectGeneratedError } from 'ai'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { voiceUsage } from '@/lib/db/schema'
-import { and, eq, lt, sql } from 'drizzle-orm'
-import { jsonErrorResponse } from '@/lib/error-response'
+import { and, eq, gt, lt, sql } from 'drizzle-orm'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
 import { requestVoiceUpdate, voiceModel, type VoiceUpdate } from '@/lib/voice-parser'
 
 const MONTHLY_LIMIT = 10
@@ -65,6 +65,21 @@ async function consumeVoiceUsage(userId: string, monthYear: string): Promise<boo
   return !!retry
 }
 
+// Gives back a use reserved by consumeVoiceUsage when the model call failed
+// for a reason that is not the user's. A single conditional UPDATE, so it is
+// as safe under concurrent requests as the reservation itself.
+async function releaseVoiceUsage(userId: string, monthYear: string) {
+  await db
+    .update(voiceUsage)
+    .set({ commandCount: sql`${voiceUsage.commandCount} - 1`, updatedAt: new Date() })
+    .where(
+      and(
+        eq(voiceUsage.userId, userId),
+        eq(voiceUsage.monthYear, monthYear),
+        gt(voiceUsage.commandCount, 0)
+      )
+    )
+}
 
 interface VoiceParseRequest {
   transcript: string
@@ -136,7 +151,7 @@ export async function POST(request: NextRequest) {
     // Atomic-increment-first: reserve a slot BEFORE calling the model. Two
     // concurrent requests cannot both pass the check-then-increment race that a
     // SELECT-then-UPDATE allows, and reserving after the call would let parallel
-    // requests run the model past the cap.
+    // requests run the model past the cap. A provider failure releases the slot.
     const monthYear = currentMonthYear()
     const reserved = await consumeVoiceUsage(session.user.id, monthYear)
     if (!reserved) {
@@ -156,7 +171,17 @@ export async function POST(request: NextRequest) {
         return jsonErrorResponse(error, 'Invalid response format from AI', { extra: { model: voiceModel() } })
       }
 
-      throw error
+      // Rate limit, no credit, gateway error or timeout: not the user's doing.
+      reportError(error, 'Voice model call failed', { model: voiceModel() })
+      try {
+        await releaseVoiceUsage(session.user.id, monthYear)
+      } catch (releaseError) {
+        reportError(releaseError, 'Failed to release voice usage', { userId: session.user.id })
+      }
+      return NextResponse.json(
+        { error: 'Voice commands are temporarily unavailable. Try again in a few minutes.' },
+        { status: 503 }
+      )
     }
 
     // The model could not tell what to change. The client shows `error`.
