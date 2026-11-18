@@ -141,8 +141,9 @@ export function useVoiceCommands(): UseVoiceCommandsReturn {
       case 'add_item':
         if (update.item) {
           addItem()
-          // Update the newly added item (it will be the last one)
-          const itemIndex = invoice.items.length - 1
+          // `invoice` is this render's snapshot and does not include the new
+          // row yet, so read the live store to find it
+          const itemIndex = useInvoiceStore.getState().items.length - 1
           updateItem(itemIndex, 'description', update.item.description || '')
           updateItem(itemIndex, 'quantity', update.item.quantity || 1)
           updateItem(itemIndex, 'price', update.item.price || 0)

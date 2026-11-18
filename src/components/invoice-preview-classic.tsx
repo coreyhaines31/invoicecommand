@@ -1,6 +1,7 @@
 'use client'
 
 import { useInvoiceStore } from '@/stores/invoice-store'
+import { formatDateOnly } from '@/lib/date-only'
 
 export function InvoicePreviewClassic() {
   const invoice = useInvoiceStore()
@@ -13,13 +14,12 @@ export function InvoicePreviewClassic() {
   }
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return ''
     // Use user's locale for date formatting
-    return new Intl.DateTimeFormat(undefined, {
+    return formatDateOnly(dateString, undefined, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(new Date(dateString))
+    })
   }
 
   return (

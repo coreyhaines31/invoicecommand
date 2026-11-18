@@ -42,7 +42,8 @@ const UPGRADE_TRIGGERS: Record<string, PaywallTrigger> = {
       'Increase voice commands to 10/month'
     ],
     ctaText: 'Create Free Account',
-    ctaAction: () => window.location.href = '/auth/signup'
+    // The draft stays in localStorage, so send the new user back to the builder.
+    ctaAction: () => window.location.href = '/auth/signup?next=%2F'
   },
 
   'logo-upload': {
