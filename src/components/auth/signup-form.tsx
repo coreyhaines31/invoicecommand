@@ -32,7 +32,8 @@ export function SignupForm({ next }: { next?: string | null }) {
         email,
         password,
         name: email.split('@')[0],
-        callbackURL: redirectTo,
+        // Where the verification email's link lands after Better Auth verifies it.
+        callbackURL: withNextPath('/auth/verified', redirectTo),
       })
 
       if (error) {
@@ -44,7 +45,7 @@ export function SignupForm({ next }: { next?: string | null }) {
       if (data?.user?.id) identifyUser(data.user.id)
       trackUserSignup('email')
 
-      setMessage('Account created. Redirecting...')
+      setMessage(`Account created. We sent a verification email to ${email}. Redirecting...`)
       setTimeout(() => { window.location.href = redirectTo }, 1000)
     } catch {
       setError(getAuthErrorMessage(null))
