@@ -10,7 +10,9 @@ type Column = { key: string }
 export const drizzleOrmMock = {
   eq: (col: Column, value: unknown): Predicate => (row) => row[col.key] === value,
   and: (...preds: Predicate[]): Predicate => (row) => preds.every((p) => p(row)),
+  or: (...preds: Predicate[]): Predicate => (row) => preds.some((p) => p(row)),
   isNull: (col: Column): Predicate => (row) => row[col.key] == null,
+  gt: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) > Number(value),
   gte: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) >= Number(value),
   lt: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) < Number(value),
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),

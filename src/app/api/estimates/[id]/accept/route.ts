@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
-import { and, eq, gte, isNull, lt } from 'drizzle-orm'
+import { and, eq, gt, gte, isNull, lt, or } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
 import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
 import { checkIpRateLimit } from '@/lib/rate-limit'
@@ -175,6 +175,7 @@ export async function POST(
       eq(invoices.id, id),
       eq(invoices.shareToken, shareToken),
       eq(invoices.shareEnabled, true),
+      or(isNull(invoices.shareExpiresAt), gt(invoices.shareExpiresAt, signedAt)),
       isNull(invoices.signedAt),
       eq(invoices.documentType, 'estimate'),
       eq(invoices.collectSignature, true),
@@ -191,12 +192,18 @@ export async function POST(
         collectSignature: invoices.collectSignature,
         shareToken: invoices.shareToken,
         shareEnabled: invoices.shareEnabled,
+        shareExpiresAt: invoices.shareExpiresAt,
         updatedAt: invoices.updatedAt,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
 
-    if (!current || current.shareToken !== shareToken || !current.shareEnabled) {
+    if (
+      !current ||
+      current.shareToken !== shareToken ||
+      !current.shareEnabled ||
+      (current.shareExpiresAt && current.shareExpiresAt.getTime() <= signedAt.getTime())
+    ) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
     if (current.documentType !== 'estimate') {

@@ -115,6 +115,26 @@ describe('POST /api/estimates/:id/accept', () => {
     await expectNotFound(validBody())
   })
 
+  it('does not sign when the link expires between the read and the write', async () => {
+    seed({ shareExpiresAt: new Date(Date.now() + 60_000) })
+    const realSelect = fake.db.select
+    const spy = jest.spyOn(fake.db, 'select').mockImplementationOnce((...args) => {
+      const query = realSelect(...args)
+      const then = query.then.bind(query)
+      query.then = ((onFulfilled, onRejected) =>
+        then((rows) => {
+          fake.rows[0].shareExpiresAt = new Date(Date.now() - 1)
+          return rows
+        }).then(onFulfilled, onRejected)) as typeof query.then
+      return query
+    })
+    try {
+      await expectNotFound(validBody())
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('is not found when the token belongs to a different document than the path', async () => {
     await expectNotFound(validBody(), '44444444-4444-4444-8444-444444444444')
   })
