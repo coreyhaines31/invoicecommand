@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, gt, gte, isNull, lt, or } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
+import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
+import { checkIpRateLimit } from '@/lib/rate-limit'
 
 type AcceptBody = {
+  shareToken?: unknown
+  documentVersion?: unknown
   signatureData?: unknown
   signerName?: unknown
   signerEmail?: unknown
-  consentText?: unknown
+  consentAccepted?: unknown
 }
 
 const MAX_SIGNATURE_BYTES = 250_000
 const MAX_NAME_LENGTH = 200
 const MAX_EMAIL_LENGTH = 320
-const MAX_CONSENT_LENGTH = 2000
 const MAX_USER_AGENT_LENGTH = 500
 const PNG_PREFIX = 'data:image/png;base64,'
 
@@ -43,10 +46,32 @@ function validatePngDataUrl(value: string): { ok: true; bytes: number } | { ok: 
   return { ok: true, bytes: decodedBytes }
 }
 
+// Postgres stores updated_at to the microsecond, but the version the page
+// rendered went through a JS Date and keeps only milliseconds. Match the whole
+// millisecond instead of testing equality.
+function matchesDocumentVersion(version: Date | null) {
+  if (!version) return isNull(invoices.updatedAt)
+  return and(
+    gte(invoices.updatedAt, version),
+    lt(invoices.updatedAt, new Date(version.getTime() + 1)),
+  )
+}
+
+const DOCUMENT_CHANGED_ERROR =
+  'This estimate was updated after you opened it. Please reload the page and review the updated estimate before signing.'
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rl = checkIpRateLimit(request, { bucket: 'estimate-accept', max: 10, windowMs: 10 * 60 * 1000 })
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many signing attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': rl.retryAfter.toString() } }
+    )
+  }
+
   const { id } = await params
 
   let body: AcceptBody
@@ -56,10 +81,25 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
+  const shareToken = typeof body.shareToken === 'string' ? body.shareToken : ''
+  if (!shareToken) {
+    return NextResponse.json({ error: 'shareToken is required' }, { status: 400 })
+  }
+
+  // The version is the estimate's updated_at as the share page rendered it
+  // ('' when the row has none).
+  if (typeof body.documentVersion !== 'string') {
+    return NextResponse.json({ error: 'documentVersion is required' }, { status: 400 })
+  }
+  const documentVersion = body.documentVersion
+  const renderedVersion = documentVersion ? new Date(documentVersion) : null
+  if (renderedVersion && Number.isNaN(renderedVersion.getTime())) {
+    return NextResponse.json({ error: 'Invalid documentVersion' }, { status: 400 })
+  }
+
   const signatureData = typeof body.signatureData === 'string' ? body.signatureData : ''
   const signerName = typeof body.signerName === 'string' ? body.signerName.trim().slice(0, MAX_NAME_LENGTH) : ''
   const signerEmail = typeof body.signerEmail === 'string' ? body.signerEmail.trim().slice(0, MAX_EMAIL_LENGTH) : ''
-  const consentText = typeof body.consentText === 'string' ? body.consentText.trim().slice(0, MAX_CONSENT_LENGTH) : ''
 
   const sigCheck = validatePngDataUrl(signatureData)
   if (!sigCheck.ok) {
@@ -71,12 +111,25 @@ export async function POST(
   if (!signerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
     return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
   }
-  if (!consentText) {
+  if (body.consentAccepted !== true) {
     return NextResponse.json({ error: 'Consent acknowledgement is required' }, { status: 400 })
   }
 
-  const [estimate] = await db.select().from(invoices).where(eq(invoices.id, id))
-  if (!estimate) {
+  // Signing goes through the share link, like public payments: the share
+  // token is the access boundary, not the estimate id. Unknown, disabled and
+  // expired links all get the same response.
+  const [estimate] = await db
+    .select()
+    .from(invoices)
+    .where(and(
+      eq(invoices.shareToken, shareToken),
+      eq(invoices.shareEnabled, true),
+    ))
+  if (
+    !estimate ||
+    estimate.id !== id ||
+    (estimate.shareExpiresAt && estimate.shareExpiresAt.getTime() < Date.now())
+  ) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
   if (estimate.documentType !== 'estimate') {
@@ -102,9 +155,10 @@ export async function POST(
   const signedAt = new Date()
 
   // Atomic write-once: only update if signed_at is still NULL AND the
-  // document is still an estimate with signature collection enabled.
-  // This closes the TOCTOU window where the owner toggles collection off
-  // or converts to an invoice between the pre-check and the write.
+  // document is still an estimate with signature collection enabled AND it
+  // is still the version the signer was shown. This closes the TOCTOU window
+  // where the owner toggles collection off, converts to an invoice, or edits
+  // the estimate between page load and the write.
   const updatedRows = await db
     .update(invoices)
     .set({
@@ -114,14 +168,18 @@ export async function POST(
       signerEmail,
       signedIp,
       signedUserAgent,
-      consentText,
+      consentText: ESTIMATE_CONSENT_TEXT,
       updatedAt: signedAt,
     })
     .where(and(
       eq(invoices.id, id),
+      eq(invoices.shareToken, shareToken),
+      eq(invoices.shareEnabled, true),
+      or(isNull(invoices.shareExpiresAt), gt(invoices.shareExpiresAt, signedAt)),
       isNull(invoices.signedAt),
       eq(invoices.documentType, 'estimate'),
       eq(invoices.collectSignature, true),
+      matchesDocumentVersion(renderedVersion),
     ))
     .returning()
 
@@ -132,11 +190,20 @@ export async function POST(
         documentType: invoices.documentType,
         signedAt: invoices.signedAt,
         collectSignature: invoices.collectSignature,
+        shareToken: invoices.shareToken,
+        shareEnabled: invoices.shareEnabled,
+        shareExpiresAt: invoices.shareExpiresAt,
+        updatedAt: invoices.updatedAt,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
 
-    if (!current) {
+    if (
+      !current ||
+      current.shareToken !== shareToken ||
+      !current.shareEnabled ||
+      (current.shareExpiresAt && current.shareExpiresAt.getTime() <= signedAt.getTime())
+    ) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
     if (current.documentType !== 'estimate') {
@@ -144,6 +211,9 @@ export async function POST(
     }
     if (current.collectSignature === false) {
       return NextResponse.json({ error: 'Signature collection is disabled for this estimate' }, { status: 400 })
+    }
+    if (!current.signedAt && serializeDocumentVersion(current.updatedAt) !== documentVersion) {
+      return NextResponse.json({ error: DOCUMENT_CHANGED_ERROR, code: 'document_changed' }, { status: 409 })
     }
     return NextResponse.json({ error: 'This estimate has already been accepted' }, { status: 409 })
   }
