@@ -151,6 +151,18 @@ describe('POST /api/estimates/:id/accept', () => {
     expect(fake.rows[0].signedAt).toBeNull()
   })
 
+  it('rate limits repeated attempts from one client', async () => {
+    const ip = '192.0.2.50'
+    const wrong = validBody({ shareToken: 'tok_cccccccccccccccccccccccccccccc' })
+    for (let i = 0; i < 10; i++) {
+      expect((await acceptEstimate(req(ESTIMATE_ID, wrong, ip), ctx(ESTIMATE_ID))).status).toBe(404)
+    }
+    const limited = await acceptEstimate(req(ESTIMATE_ID, validBody(), ip), ctx(ESTIMATE_ID))
+    expect(limited.status).toBe(429)
+    expect(limited.headers.get('Retry-After')).toBeTruthy()
+    expect(fake.rows[0].signedAt).toBeNull()
+  })
+
   it('requires the document version', async () => {
     const res = await acceptEstimate(req(ESTIMATE_ID, validBody({ documentVersion: undefined })), ctx(ESTIMATE_ID))
     expect(res.status).toBe(400)

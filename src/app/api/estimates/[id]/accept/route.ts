@@ -4,6 +4,7 @@ import { invoices } from '@/lib/db/schema'
 import { and, eq, gte, isNull, lt } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
 import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
+import { checkIpRateLimit } from '@/lib/rate-limit'
 
 type AcceptBody = {
   shareToken?: unknown
@@ -63,6 +64,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rl = checkIpRateLimit(request, { bucket: 'estimate-accept', max: 10, windowMs: 10 * 60 * 1000 })
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many signing attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': rl.retryAfter.toString() } }
+    )
+  }
+
   const { id } = await params
 
   let body: AcceptBody
