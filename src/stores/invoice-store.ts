@@ -8,6 +8,7 @@ import { calculateInvoiceTotals } from '@/lib/invoice-totals'
 // localStorage versioning for schema migrations
 const STORAGE_VERSION = 1
 const STORAGE_KEY = `invoicecommand-draft-v${STORAGE_VERSION}`
+const LEGACY_STORAGE_KEY = 'invoicecommand-draft'
 
 // Debounce utility
 function debounce<T extends (...args: Parameters<T>) => void>(
@@ -396,13 +397,13 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
             // Migrate from old storage key if new one doesn't exist
             if (!stored) {
-              const oldStored = localStorage.getItem('invoicecommand-draft')
+              const oldStored = localStorage.getItem(LEGACY_STORAGE_KEY)
               if (oldStored) {
                 stored = oldStored
                 // Migrate to new key
                 localStorage.setItem(STORAGE_KEY, oldStored)
                 // Clean up old key
-                localStorage.removeItem('invoicecommand-draft')
+                localStorage.removeItem(LEGACY_STORAGE_KEY)
               }
             }
 
@@ -477,6 +478,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
         set(() => ({ ...defaultInvoice }))
         if (typeof window !== 'undefined') {
           localStorage.removeItem(STORAGE_KEY)
+          localStorage.removeItem(LEGACY_STORAGE_KEY)
         }
         get().initializeDates()
       },

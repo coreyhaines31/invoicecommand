@@ -841,6 +841,21 @@ describe('InvoiceStore', () => {
       expect(state.clientName).toBe('Saved B')
     })
 
+    it('Reset: a legacy unversioned draft is not migrated back afterwards', () => {
+      localStorage.setItem('invoicecommand-draft', JSON.stringify({ id: 'inv-old', clientName: 'Legacy draft' }))
+
+      act(() => {
+        useInvoiceStore.getState().resetInvoice()
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(localStorage.getItem('invoicecommand-draft')).toBeNull()
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+      expect(useInvoiceStore.getState().clientName).toBe('')
+    })
+
     it('Reset: clears the saved invoice identity and the stored draft', async () => {
       await act(async () => {
         await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
