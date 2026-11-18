@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { CheckCircle, Download, CreditCard, Clock, XCircle, Smartphone } from 'lucide-react'
 import { PublicPaymentButton } from '@/components/payment/public-payment-button'
 import { toStripeAmount } from '@/lib/stripe-amount'
+import { formatDateOnly } from '@/lib/date-only'
 import { EstimateSignature, EstimateSignedBanner } from './estimate-signature'
 import { ShareQR } from '@/components/invoice/share-qr'
 
@@ -86,8 +87,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
   }
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDateOnly(dateString, 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
