@@ -39,7 +39,8 @@ describe('email verification config', () => {
   it('sends on signup without making login require verification', () => {
     expect(options.emailAndPassword.requireEmailVerification).toBe(false)
     expect(verification.sendOnSignUp).toBe(true)
-    expect(verification.autoSignInAfterVerification).toBe(true)
+    // A verification link must not hand the clicker a session.
+    expect(verification.autoSignInAfterVerification).toBe(false)
     expect(verification.expiresIn).toBe(60 * 60 * 24)
   })
 

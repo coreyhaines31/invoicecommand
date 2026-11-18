@@ -36,7 +36,9 @@ export const auth = betterAuth({
   // Login does not need a verified email; sending invoices by email does.
   emailVerification: {
     sendOnSignUp: true,
-    autoSignInAfterVerification: true,
+    // Off so a verification link never signs the clicker in: whoever holds
+    // the inbox is not necessarily whoever set the password.
+    autoSignInAfterVerification: false,
     expiresIn: VERIFICATION_EXPIRES_IN_SECONDS,
     sendVerificationEmail: async ({ user, url }, request) => {
       try {
