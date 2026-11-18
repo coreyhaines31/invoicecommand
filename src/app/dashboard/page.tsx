@@ -33,6 +33,7 @@ export default async function DashboardPage() {
       documentType: invoices.documentType,
       signedAt: invoices.signedAt,
       collectSignature: invoices.collectSignature,
+      convertedToInvoiceId: invoices.convertedToInvoiceId,
     })
     .from(invoices)
     .where(eq(invoices.userId, session.user.id))
