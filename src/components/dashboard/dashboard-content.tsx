@@ -44,7 +44,7 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" data-exclude>
           <Card className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-lg">

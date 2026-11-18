@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, createApiResponse } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { agentFeedback } from '@/lib/db/schema'
-import { jsonErrorResponse } from '@/lib/error-response'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { appFromEmail, sendMail } from '@/lib/mail'
 import {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       .values({ ...feedback, userId: authResult.userId, apiKeyId })
       .returning({ id: agentFeedback.id })
 
-    // The report is stored either way; a failed notification only gets logged.
+    // The report is stored either way; a failed notification is only reported.
     const supportEmail = process.env.SUPPORT_EMAIL
     if (supportEmail) {
       try {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           text: feedbackEmailText({ ...feedback, id: row.id, userId: authResult.userId, apiKeyId }),
         })
       } catch (error) {
-        console.error('Agent feedback email failed:', error instanceof Error ? error.message : error)
+        reportError(error, 'Agent feedback email failed', { feedbackId: row.id })
       }
     } else {
       console.warn('SUPPORT_EMAIL is not configured; agent feedback stored without a notification')
