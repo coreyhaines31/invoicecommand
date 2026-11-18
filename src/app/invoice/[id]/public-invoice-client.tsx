@@ -129,6 +129,30 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
     }
   }
 
+  // An estimate is not a bill: it shows its signature state instead of a payment state,
+  // and no payment surfaces even if online payments were switched on in the builder.
+  const isEstimate = invoice.documentType === 'estimate'
+  const documentLabel = isEstimate ? 'Estimate' : 'Invoice'
+
+  const getStatusBadge = () => {
+    if (!isEstimate) return getPaymentStatusBadge()
+    if (signature.signedAt) {
+      return (
+        <Badge className="bg-green-100 text-green-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Signed
+        </Badge>
+      )
+    }
+    if (invoice.collectSignature === false) return null
+    return (
+      <Badge variant="secondary">
+        <Clock className="w-3 h-3 mr-1" />
+        Awaiting signature
+      </Badge>
+    )
+  }
+
   const handlePaymentSuccess = () => {
     setPaymentStatus('paid')
   }
@@ -140,14 +164,14 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Invoice {invoice.invoiceNumber}</h1>
+              <h1 className="text-2xl font-bold">{documentLabel} {invoice.invoiceNumber}</h1>
               <p className="text-muted-foreground">From {invoice.senderName}</p>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-primary">
                 {formatCurrency(invoice.total)}
               </div>
-              {getPaymentStatusBadge()}
+              {getStatusBadge()}
             </div>
           </div>
         </div>
@@ -160,14 +184,14 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Invoice Details</CardTitle>
+                <CardTitle>{documentLabel} Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
 
                 {/* Invoice Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Invoice Number</p>
+                    <p className="text-sm font-medium text-muted-foreground">{documentLabel} Number</p>
                     <p className="font-mono">{invoice.invoiceNumber}</p>
                   </div>
                   <div>
@@ -182,10 +206,12 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                       <p>{formatDate(invoice.dueDate)}</p>
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    {getPaymentStatusBadge()}
-                  </div>
+                  {getStatusBadge() && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Status</p>
+                      {getStatusBadge()}
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
@@ -342,56 +368,58 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
             <div className="sticky top-8 space-y-4">
 
               {/* Payment Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    Payment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center space-y-4">
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(invoice.total)}
+              {!isEstimate && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" />
+                      Payment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center space-y-4">
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(invoice.total)}
+                      </div>
+                      {getPaymentStatusBadge()}
+
+                      {/* Payment Button — public flow only. Requires shareToken
+                          so the server can validate the share link is enabled. */}
+                      {viewMode === 'public' && shareToken && invoice.paymentEnabled && (paymentStatus === 'unpaid' || paymentStatus === 'failed') && (
+                        <PublicPaymentButton
+                          shareToken={shareToken}
+                          amount={toStripeAmount(invoice.total, invoice.currency)}
+                          currency={invoice.currency}
+                          invoiceNumber={invoice.invoiceNumber}
+                          recipientName={invoice.senderName}
+                          onSuccess={handlePaymentSuccess}
+                        />
+                      )}
+
+                      {paymentStatus === 'paid' && (
+                        <Alert>
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            This invoice has been paid. Thank you!
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {!invoice.paymentEnabled && (
+                        <Alert>
+                          <AlertDescription>
+                            Online payments are not enabled for this invoice. Please follow the payment instructions provided separately.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
-                    {getPaymentStatusBadge()}
-
-                    {/* Payment Button — public flow only. Requires shareToken
-                        so the server can validate the share link is enabled. */}
-                    {viewMode === 'public' && shareToken && invoice.paymentEnabled && (paymentStatus === 'unpaid' || paymentStatus === 'failed') && (
-                      <PublicPaymentButton
-                        shareToken={shareToken}
-                        amount={toStripeAmount(invoice.total, invoice.currency)}
-                        currency={invoice.currency}
-                        invoiceNumber={invoice.invoiceNumber}
-                        recipientName={invoice.senderName}
-                        onSuccess={handlePaymentSuccess}
-                      />
-                    )}
-
-                    {paymentStatus === 'paid' && (
-                      <Alert>
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          This invoice has been paid. Thank you!
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    {!invoice.paymentEnabled && (
-                      <Alert>
-                        <AlertDescription>
-                          Online payments are not enabled for this invoice. Please follow the payment instructions provided separately.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Scan-to-pay QR — public flow only, when payment is still
                   possible, and once we know the current URL (client-side). */}
-              {viewMode === 'public' && invoice.paymentEnabled && paymentStatus === 'unpaid' && pageUrl && (
+              {viewMode === 'public' && !isEstimate && invoice.paymentEnabled && paymentStatus === 'unpaid' && pageUrl && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
