@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { MAX_LOGO_BYTES, MAX_LOGO_SIZE_LABEL } from '@/lib/logo'
 
-const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024
 // SVG intentionally excluded — it can carry <script> and event handlers.
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
 
@@ -40,8 +40,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 })
     }
 
-    if (file.size <= 0 || file.size > MAX_FILE_SIZE_BYTES) {
-      return NextResponse.json({ error: 'Image must be between 1 byte and 2MB' }, { status: 400 })
+    if (file.size <= 0) {
+      return NextResponse.json({ error: 'The image file is empty' }, { status: 400 })
+    }
+
+    // The logo is saved inline with each invoice, so it must stay small
+    if (file.size > MAX_LOGO_BYTES) {
+      return NextResponse.json({ error: `Logo must be ${MAX_LOGO_SIZE_LABEL} or smaller` }, { status: 400 })
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())

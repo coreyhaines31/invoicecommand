@@ -1,3 +1,5 @@
+import { MAX_LOGO_BYTES, MAX_LOGO_SIZE_LABEL } from '@/lib/logo'
+
 export interface LogoUploadResult {
   success: boolean
   url?: string
@@ -13,15 +15,23 @@ export async function uploadLogo(file: File, _userId: string): Promise<LogoUploa
       return { success: false, error: 'File must be an image' }
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      return { success: false, error: 'File size must be less than 2MB' }
+    if (file.size > MAX_LOGO_BYTES) {
+      return { success: false, error: `Logo must be ${MAX_LOGO_SIZE_LABEL} or smaller` }
     }
 
     const formData = new FormData()
     formData.append('file', file)
 
     const res = await fetch('/api/upload/logo', { method: 'POST', body: formData })
-    if (!res.ok) return { success: false, error: 'Failed to upload file' }
+    if (!res.ok) {
+      let message: string | undefined
+      try {
+        message = (await res.json())?.error
+      } catch {
+        // Fall back to the generic message
+      }
+      return { success: false, error: message || 'Failed to upload file' }
+    }
 
     const data = await res.json()
     return { success: true, url: data.url }
