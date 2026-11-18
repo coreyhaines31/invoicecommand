@@ -627,13 +627,15 @@ export function InvoiceForm() {
         </CardContent>
       </Card>
 
-      {/* Payment Settings */}
-      <PaymentSettings
-        paymentEnabled={paymentEnabled || false}
-        onPaymentToggle={(enabled) => updatePaymentSettings({ paymentEnabled: enabled })}
-        invoiceTotal={total}
-        currency={currency}
-      />
+      {/* Payment Settings: estimates are not paid online, so the share page shows no payment panel for them */}
+      {documentType !== 'estimate' && (
+        <PaymentSettings
+          paymentEnabled={paymentEnabled || false}
+          onPaymentToggle={(enabled) => updatePaymentSettings({ paymentEnabled: enabled })}
+          invoiceTotal={total}
+          currency={currency}
+        />
+      )}
 
       {/* Error Display */}
       {error && (
