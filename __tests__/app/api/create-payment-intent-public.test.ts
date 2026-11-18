@@ -151,4 +151,24 @@ describe('POST /api/stripe/create-payment-intent-public', () => {
     expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
     expect(invoice().stripePaymentIntentId).toBe('pi_old')
   })
+
+  it.each(['processing', 'requires_capture'])(
+    'returns 409 when the superseded intent is %s and cannot be cancelled',
+    async (status) => {
+      seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
+      stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status })
+      stripeMock.paymentIntents.cancel.mockRejectedValue(new Error('payment_intent_unexpected_state'))
+      const res = await POST(request())
+      expect(res.status).toBe(409)
+      expect((await res.json()).error).toBe('A payment for this invoice is already in progress. Please wait a few minutes and refresh.')
+      expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+    },
+  )
+
+  it('rethrows a cancel failure in an unexpected state', async () => {
+    seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 8000 })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'requires_payment_method' })
+    stripeMock.paymentIntents.cancel.mockRejectedValue(new Error('stripe down'))
+    await expect(POST(request())).rejects.toThrow('stripe down')
+  })
 })

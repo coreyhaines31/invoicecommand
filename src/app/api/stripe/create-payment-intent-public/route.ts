@@ -118,6 +118,12 @@ export async function POST(request: NextRequest) {
           // The client may have paid it between the retrieve and the cancel.
           const latest = await stripe.paymentIntents.retrieve(existing.id)
           if (latest.status === 'succeeded') return alreadyPaid()
+          if (latest.status === 'processing' || latest.status === 'requires_capture') {
+            return NextResponse.json(
+              { error: 'A payment for this invoice is already in progress. Please wait a few minutes and refresh.' },
+              { status: 409 },
+            )
+          }
           if (latest.status !== 'canceled') throw error
         }
       }
