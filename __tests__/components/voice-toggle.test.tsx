@@ -159,3 +159,26 @@ describe('VoiceToggle errors for signed-in users', () => {
     expect(mockStartListening).not.toHaveBeenCalled()
   })
 })
+
+describe('VoiceToggle in a browser without speech recognition', () => {
+  it('shows a quiet note instead of an error or the signup line', () => {
+    mockSpeech = { ...mockSpeech, isSupported: false }
+    render(<VoiceToggle onVoiceCommand={jest.fn()} />)
+
+    expect(
+      screen.getByText('Voice commands are not supported in this browser. Chrome, Edge and Safari support them.')
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Start Recording/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Voice commands need a free account/)).not.toBeInTheDocument()
+  })
+
+  it('does not offer recording to a signed-in user either', () => {
+    mockUser = { id: 'user-1' }
+    mockSpeech = { ...mockSpeech, isSupported: false }
+    render(<VoiceToggle onVoiceCommand={jest.fn()} />)
+
+    expect(screen.getByText(/not supported in this browser/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Start Recording/ })).not.toBeInTheDocument()
+  })
+})

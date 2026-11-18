@@ -152,17 +152,6 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     return 'text-red-600'
   }
 
-  if (!isSupported) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Voice recognition is not supported in this browser. Please use Chrome, Safari, or Edge for voice features.
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Voice Commands Header with Recording Button */}
@@ -173,7 +162,12 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
             Use voice commands to quickly update your invoice
           </p>
         </div>
-        {needsAccount ? (
+        {!isSupported ? (
+          // Voice is optional, so a browser without the Web Speech API gets a quiet note
+          <p className="text-sm text-muted-foreground">
+            Voice commands are not supported in this browser. Chrome, Edge and Safari support them.
+          </p>
+        ) : needsAccount ? (
           <p className="text-sm text-muted-foreground">
             Voice commands need a free account.{' '}
             <Link
