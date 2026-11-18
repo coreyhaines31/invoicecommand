@@ -46,6 +46,8 @@ interface Invoice {
   status: string | null
   dueDate?: string | null
   createdAt: string | Date | null
+  documentType?: 'invoice' | 'estimate' | null
+  signedAt?: string | Date | null
 }
 
 export type InvoiceListItem = Invoice
@@ -93,11 +95,14 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     }).format(Number.isFinite(normalizedAmount) ? normalizedAmount : 0)
   }
 
+  // Each builder switches a saved document of the other type to a fresh draft, so open the matching one
+  const builderPath = (invoice: Invoice) =>
+    invoice.documentType === 'estimate' ? '/estimate-maker' : '/'
+
   const handleEditInvoice = async (invoice: Invoice) => {
-    // Load the invoice into the store and navigate to the main page
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
-      router.push('/')
+      router.push(builderPath(invoice))
     }
   }
 
@@ -106,7 +111,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
       useInvoiceStore.getState().detachAsCopy()
-      router.push('/')
+      router.push(builderPath(invoice))
     }
   }
 
