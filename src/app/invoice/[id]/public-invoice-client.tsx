@@ -52,6 +52,8 @@ interface InvoiceData {
   signatureData: string | null
   signerName: string | null
   signerEmail: string | null
+  /** updated_at as rendered on the share page; see serializeDocumentVersion. */
+  documentVersion?: string
 }
 
 interface PublicInvoiceClientProps {
@@ -309,6 +311,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                         <EstimateSignature
                           estimateId={invoice.id}
                           shareToken={shareToken ?? ''}
+                          documentVersion={invoice.documentVersion ?? ''}
                           defaultSignerEmail={invoice.clientEmail}
                           onSigned={(data) =>
                             setSignature({

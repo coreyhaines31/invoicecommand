@@ -22,17 +22,21 @@ const CONSENT_TEXT =
 interface EstimateSignatureProps {
   estimateId: string
   shareToken: string
+  /** The estimate's updated_at as rendered, so the server can refuse to
+   *  sign a version the signer never saw. */
+  documentVersion: string
   defaultSignerEmail?: string
   onSigned: (data: { signedAt: string; signerName: string; signerEmail: string; signatureData: string }) => void
 }
 
-export function EstimateSignature({ estimateId, shareToken, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
+export function EstimateSignature({ estimateId, shareToken, documentVersion, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
   const sigRef = useRef<ReactSignatureCanvas | null>(null)
   const [signerName, setSignerName] = useState('')
   const [signerEmail, setSignerEmail] = useState(defaultSignerEmail)
   const [accepted, setAccepted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [documentChanged, setDocumentChanged] = useState(false)
 
   const handleClear = () => {
     sigRef.current?.clear()
@@ -69,6 +73,7 @@ export function EstimateSignature({ estimateId, shareToken, defaultSignerEmail =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shareToken,
+          documentVersion,
           signatureData,
           signerName: signerName.trim(),
           signerEmail: signerEmail.trim(),
@@ -77,6 +82,7 @@ export function EstimateSignature({ estimateId, shareToken, defaultSignerEmail =
       })
       const data = await res.json()
       if (!res.ok) {
+        setDocumentChanged(data.code === 'document_changed')
         setError(data.error || 'Could not accept the estimate. Please try again.')
         setSubmitting(false)
         return
@@ -173,7 +179,20 @@ export function EstimateSignature({ estimateId, shareToken, defaultSignerEmail =
           {error && (
             <Alert variant="destructive">
               <XCircle className="w-4 h-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                {documentChanged && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => window.location.reload()}
+                  >
+                    Reload estimate
+                  </Button>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 

@@ -15,9 +15,11 @@ jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 jest.mock('@/lib/email-service', () => ({ sendEstimateAcceptanceEmail: jest.fn(async () => undefined) }))
 
 import { POST as acceptEstimate } from '@/app/api/estimates/[id]/accept/route'
+import { serializeDocumentVersion } from '@/lib/estimate-signing'
 
 const ESTIMATE_ID = '33333333-3333-4333-8333-333333333333'
 const TOKEN = 'tok_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+const RENDERED_AT = new Date('2026-11-01T10:00:00.123Z')
 const SIGNATURE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
 
 let ipCounter = 0
@@ -43,6 +45,7 @@ function validBody(overrides: Record<string, unknown> = {}) {
     signerName: 'Jane Client',
     signerEmail: 'jane@example.test',
     consentText: 'I agree',
+    documentVersion: serializeDocumentVersion(RENDERED_AT),
     ...overrides,
   }
 }
@@ -60,7 +63,7 @@ function seed(overrides: Record<string, unknown> = {}) {
     shareEnabled: true,
     shareExpiresAt: null,
     senderEmail: null,
-    updatedAt: new Date('2026-11-01T10:00:00.123Z'),
+    updatedAt: new Date(RENDERED_AT),
     ...overrides,
   })
 }
@@ -114,5 +117,28 @@ describe('POST /api/estimates/:id/accept', () => {
 
   it('is not found when the token belongs to a different document than the path', async () => {
     await expectNotFound(validBody(), '44444444-4444-4444-8444-444444444444')
+  })
+
+  it('accepts the rendered version after a real round trip through JSON', async () => {
+    const rendered = JSON.parse(JSON.stringify({ documentVersion: serializeDocumentVersion(RENDERED_AT) }))
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody(rendered)), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects a signature for a document changed after it was rendered', async () => {
+    // The owner edited the estimate after the signer loaded the page.
+    seed({ updatedAt: new Date(RENDERED_AT.getTime() + 1) })
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody()), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.code).toBe('document_changed')
+    expect(body.error).toMatch(/reload/i)
+    expect(fake.rows[0].signedAt).toBeNull()
+  })
+
+  it('requires the document version', async () => {
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody({ documentVersion: undefined })), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(400)
+    expect(fake.rows[0].signedAt).toBeNull()
   })
 })

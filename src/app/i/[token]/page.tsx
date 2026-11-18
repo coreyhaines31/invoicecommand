@@ -5,6 +5,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { PublicInvoiceClient } from '@/app/invoice/[id]/public-invoice-client'
 import { ShareLinkExpired } from './share-link-expired'
+import { serializeDocumentVersion } from '@/lib/estimate-signing'
 
 // Share URLs encode billing data — keep them out of search engines even if a
 // recipient accidentally pastes one into a public place.
@@ -103,6 +104,7 @@ export default async function SharedInvoicePage({ params }: PageProps) {
     signatureData: invoice.signatureData ?? null,
     signerName: invoice.signerName ?? null,
     signerEmail: invoice.signerEmail ?? null,
+    documentVersion: serializeDocumentVersion(invoice.updatedAt),
   }
 
   return <PublicInvoiceClient invoice={invoiceData} viewMode="public" shareToken={token} />

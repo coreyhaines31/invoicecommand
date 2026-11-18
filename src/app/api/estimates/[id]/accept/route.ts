@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, gte, isNull, lt } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
+import { serializeDocumentVersion } from '@/lib/estimate-signing'
 
 type AcceptBody = {
   shareToken?: unknown
+  documentVersion?: unknown
   signatureData?: unknown
   signerName?: unknown
   signerEmail?: unknown
@@ -44,6 +46,20 @@ function validatePngDataUrl(value: string): { ok: true; bytes: number } | { ok: 
   return { ok: true, bytes: decodedBytes }
 }
 
+// Postgres stores updated_at to the microsecond, but the version the page
+// rendered went through a JS Date and keeps only milliseconds. Match the whole
+// millisecond instead of testing equality.
+function matchesDocumentVersion(version: Date | null) {
+  if (!version) return isNull(invoices.updatedAt)
+  return and(
+    gte(invoices.updatedAt, version),
+    lt(invoices.updatedAt, new Date(version.getTime() + 1)),
+  )
+}
+
+const DOCUMENT_CHANGED_ERROR =
+  'This estimate was updated after you opened it. Please reload the page and review the updated estimate before signing.'
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -60,6 +76,17 @@ export async function POST(
   const shareToken = typeof body.shareToken === 'string' ? body.shareToken : ''
   if (!shareToken) {
     return NextResponse.json({ error: 'shareToken is required' }, { status: 400 })
+  }
+
+  // The version is the estimate's updated_at as the share page rendered it
+  // ('' when the row has none).
+  if (typeof body.documentVersion !== 'string') {
+    return NextResponse.json({ error: 'documentVersion is required' }, { status: 400 })
+  }
+  const documentVersion = body.documentVersion
+  const renderedVersion = documentVersion ? new Date(documentVersion) : null
+  if (renderedVersion && Number.isNaN(renderedVersion.getTime())) {
+    return NextResponse.json({ error: 'Invalid documentVersion' }, { status: 400 })
   }
 
   const signatureData = typeof body.signatureData === 'string' ? body.signatureData : ''
@@ -121,9 +148,10 @@ export async function POST(
   const signedAt = new Date()
 
   // Atomic write-once: only update if signed_at is still NULL AND the
-  // document is still an estimate with signature collection enabled.
-  // This closes the TOCTOU window where the owner toggles collection off
-  // or converts to an invoice between the pre-check and the write.
+  // document is still an estimate with signature collection enabled AND it
+  // is still the version the signer was shown. This closes the TOCTOU window
+  // where the owner toggles collection off, converts to an invoice, or edits
+  // the estimate between page load and the write.
   const updatedRows = await db
     .update(invoices)
     .set({
@@ -143,6 +171,7 @@ export async function POST(
       isNull(invoices.signedAt),
       eq(invoices.documentType, 'estimate'),
       eq(invoices.collectSignature, true),
+      matchesDocumentVersion(renderedVersion),
     ))
     .returning()
 
@@ -155,6 +184,7 @@ export async function POST(
         collectSignature: invoices.collectSignature,
         shareToken: invoices.shareToken,
         shareEnabled: invoices.shareEnabled,
+        updatedAt: invoices.updatedAt,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
@@ -167,6 +197,9 @@ export async function POST(
     }
     if (current.collectSignature === false) {
       return NextResponse.json({ error: 'Signature collection is disabled for this estimate' }, { status: 400 })
+    }
+    if (!current.signedAt && serializeDocumentVersion(current.updatedAt) !== documentVersion) {
+      return NextResponse.json({ error: DOCUMENT_CHANGED_ERROR, code: 'document_changed' }, { status: 409 })
     }
     return NextResponse.json({ error: 'This estimate has already been accepted' }, { status: 409 })
   }

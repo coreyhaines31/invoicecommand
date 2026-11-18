@@ -11,6 +11,8 @@ export const drizzleOrmMock = {
   eq: (col: Column, value: unknown): Predicate => (row) => row[col.key] === value,
   and: (...preds: Predicate[]): Predicate => (row) => preds.every((p) => p(row)),
   isNull: (col: Column): Predicate => (row) => row[col.key] == null,
+  gte: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) >= Number(value),
+  lt: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) < Number(value),
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),
   desc: (col: Column) => col,
 }
