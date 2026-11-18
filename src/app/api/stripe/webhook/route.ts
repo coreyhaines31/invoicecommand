@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
-import { invoices, userProfiles } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { invoices, user, userProfiles } from '@/lib/db/schema'
+import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
+import { triggerWebhooks } from '@/lib/webhook-service'
+import { sendPaymentReceivedEmail } from '@/lib/email-service'
+import { jsonErrorResponse, reportError } from '@/lib/error-response'
+import { toStripeAmount } from '@/lib/stripe-amount'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,8 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error('STRIPE_WEBHOOK_SECRET not configured')
-      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+      return jsonErrorResponse(new Error('STRIPE_WEBHOOK_SECRET not configured'), 'Webhook secret not configured')
     }
 
     let event
@@ -27,6 +30,14 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error('Webhook signature verification failed:', err)
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    }
+
+    // Invoice payment intents are created on the platform account. One from a
+    // connected account is not ours, whatever its metadata says. (account.updated
+    // legitimately arrives from connected accounts, so this is limited to intents.)
+    if (event.account && event.type.startsWith('payment_intent.')) {
+      console.log(`Ignoring ${event.type} from connected account ${event.account}`)
+      return NextResponse.json({ received: true })
     }
 
     switch (event.type) {
@@ -45,25 +56,121 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook error:', error)
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
+    return jsonErrorResponse(error, 'Webhook handler failed')
   }
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  if (!paymentIntent.metadata?.invoice_id) return
-  await db
-    .update(invoices)
-    .set({ stripePaymentStatus: 'paid', updatedAt: new Date() })
-    .where(eq(invoices.stripePaymentIntentId, paymentIntent.id))
+// Matches rows where the column is NULL or anything other than 'paid'.
+function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentStatus) {
+  return or(isNull(column), ne(column, 'paid'))
 }
 
+// Payment bookkeeping never touches updatedAt: estimate signing uses it as the
+// document version, and a payment is not a change to the document.
+//
+// Stripe delivers events at least once and in any order, so the handlers are
+// idempotent by state. The conditional UPDATE lets only one delivery win the
+// transition to paid, even when two arrive at the same time.
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+  const invoiceId = paymentIntent.metadata?.invoice_id
+  if (!invoiceId) return
+
+  // Metadata alone doesn't prove this intent pays this invoice: the currency
+  // and amount must match what the invoice is owed.
+  const [owed] = await db
+    .select({
+      total: invoices.total,
+      currency: invoices.currency,
+      stripePaymentIntentId: invoices.stripePaymentIntentId,
+      paymentAmountCents: invoices.paymentAmountCents,
+    })
+    .from(invoices)
+    .where(eq(invoices.id, invoiceId))
+  if (!owed) return
+
+  const currency = (owed.currency || 'USD').toLowerCase()
+  const expectedAmount =
+    owed.stripePaymentIntentId === paymentIntent.id && owed.paymentAmountCents != null
+      ? owed.paymentAmountCents
+      : toStripeAmount(Number(owed.total), currency)
+  const receivedAmount = paymentIntent.amount_received || paymentIntent.amount
+  if (paymentIntent.currency !== currency || receivedAmount !== expectedAmount) {
+    reportError(new Error('Stripe payment does not match the invoice'), 'Ignoring mismatched payment_intent.succeeded', {
+      invoiceId,
+      paymentIntentId: paymentIntent.id,
+    })
+    return
+  }
+
+  const paid = {
+    status: 'paid' as const,
+    stripePaymentStatus: 'paid' as const,
+    stripePaymentIntentId: paymentIntent.id,
+  }
+
+  const transitioned = await db
+    .update(invoices)
+    .set(paid)
+    .where(and(eq(invoices.id, invoiceId), notPaid(invoices.status)))
+    .returning()
+
+  if (transitioned.length === 0) {
+    // Already paid (a redelivery, or the owner marked it paid by hand): record
+    // the Stripe payment but don't repeat any side effects.
+    await db
+      .update(invoices)
+      .set(paid)
+      .where(and(eq(invoices.id, invoiceId), notPaid(invoices.stripePaymentStatus)))
+    return
+  }
+
+  const [invoice] = transitioned
+
+  // The invoice is already marked paid, so a Stripe retry would not get here
+  // again: report failures instead of failing the delivery.
+  try {
+    await triggerWebhooks(invoice.userId, 'invoice.paid', { invoice })
+  } catch (error) {
+    reportError(error, 'Failed to queue invoice.paid webhook', { invoiceId: invoice.id })
+  }
+
+  // The account's auth email, not invoice.senderEmail: that one is free text
+  // anyone with edit access can point anywhere.
+  try {
+    const [owner] = await db
+      .select({ email: user.email })
+      .from(user)
+      .where(eq(user.id, invoice.userId))
+    if (owner?.email) {
+      await sendPaymentReceivedEmail({
+        toEmail: owner.email,
+        senderName: invoice.senderName ?? '',
+        clientName: invoice.clientName,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: paymentIntent.amount_received || paymentIntent.amount,
+        currency: paymentIntent.currency,
+        invoiceId: invoice.id,
+      })
+    }
+  } catch (error) {
+    reportError(error, 'Failed to send payment received email', { invoiceId: invoice.id })
+  }
+}
+
+// A failure only counts for the invoice's current intent, and never moves a
+// paid invoice back: a late or redelivered failure must not undo a payment.
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  if (!paymentIntent.metadata?.invoice_id) return
+  const invoiceId = paymentIntent.metadata?.invoice_id
+  if (!invoiceId) return
   await db
     .update(invoices)
-    .set({ stripePaymentStatus: 'failed', updatedAt: new Date() })
-    .where(eq(invoices.stripePaymentIntentId, paymentIntent.id))
+    .set({ stripePaymentStatus: 'failed' })
+    .where(and(
+      eq(invoices.id, invoiceId),
+      eq(invoices.stripePaymentIntentId, paymentIntent.id),
+      notPaid(invoices.status),
+      notPaid(invoices.stripePaymentStatus),
+    ))
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
