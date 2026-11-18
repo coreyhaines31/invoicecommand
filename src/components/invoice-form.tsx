@@ -122,12 +122,8 @@ export function InvoiceForm() {
       return
     }
 
-    if (sessionLoading) return
-
-    if (isAnonymous) {
-      triggerUpgrade('convert-estimate')
-      return
-    }
+    // The Convert button is only shown to signed-in users; conversion saves both documents
+    if (sessionLoading || isAnonymous) return
 
     setIsConverting(true)
     toast.loading('Converting estimate to invoice...', { id: 'converting' })
