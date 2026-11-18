@@ -4,7 +4,7 @@ import { professions } from '@/data/professions-expanded';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, FileCheck, Zap, Shield, FileDown, Mic, Users } from 'lucide-react';
+import { ArrowRight, FileCheck, Zap, Shield, FileDown, Mic } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Free Estimate Maker | Create Professional Quotes & Estimates | Invoice Command',
@@ -71,14 +71,7 @@ export default function EstimateMakerPage() {
       "No registration required",
       "Privacy-first design"
     ],
-    "screenshot": "/og-image.png",
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "ratingCount": "1247",
-      "bestRating": "5",
-      "worstRating": "1"
-    }
+    "screenshot": "/og-image.png"
   };
 
   // Popular profession categories for quick access
@@ -138,10 +131,6 @@ export default function EstimateMakerPage() {
                 <div className="flex items-center gap-2">
                   <FileCheck className="w-4 h-4 text-primary" />
                   <span>405+ industry templates</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  <span>Trusted by 10,000+ users</span>
                 </div>
               </div>
             </div>
@@ -351,7 +340,7 @@ export default function EstimateMakerPage() {
               Ready to Create Your First Estimate?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Join thousands of professionals using Invoice Command to create winning estimates and get more projects approved.
+              Build an estimate in minutes and download it as a PDF.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" variant="secondary" asChild className="text-lg px-8">
