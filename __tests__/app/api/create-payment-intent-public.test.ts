@@ -108,7 +108,9 @@ describe('POST /api/stripe/create-payment-intent-public', () => {
     seed(overrides)
     const res = await POST(request())
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe('This invoice has already been paid')
+    const body = await res.json()
+    expect(body.error).toBe('This invoice has already been paid')
+    expect(body.code).toBe('already_paid')
     expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
   })
 
@@ -119,6 +121,51 @@ describe('POST /api/stripe/create-payment-intent-public', () => {
     expect((await res.json()).paymentIntentId).toBe('pi_old')
     expect(stripeMock.paymentIntents.cancel).not.toHaveBeenCalled()
     expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+  })
+
+  it.each(['requires_payment_method', 'requires_confirmation', 'requires_action'])(
+    'resumes an abandoned checkout whose intent is still %s at Stripe',
+    async (status) => {
+      seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 10000 })
+      stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status, client_secret: 'secret_old' })
+      const res = await POST(request())
+      expect(res.status).toBe(200)
+      expect((await res.json()).clientSecret).toBe('secret_old')
+      expect(stripeMock.paymentIntents.cancel).not.toHaveBeenCalled()
+      expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+    },
+  )
+
+  it('reuses a usable intent after a declined card', async () => {
+    seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'failed', paymentAmountCents: 10000 })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'requires_payment_method', client_secret: 'secret_old' })
+    const res = await POST(request())
+    expect((await res.json()).clientSecret).toBe('secret_old')
+    expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+  })
+
+  it.each(['processing', 'requires_capture'])(
+    'reports a payment in progress, without a client secret, when Stripe says the intent is %s',
+    async (status) => {
+      seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 10000 })
+      stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status, client_secret: 'secret_old' })
+      const res = await POST(request())
+      expect(res.status).toBe(409)
+      const body = await res.json()
+      expect(body.code).toBe('payment_in_progress')
+      expect(body.clientSecret).toBeUndefined()
+      expect(stripeMock.paymentIntents.cancel).not.toHaveBeenCalled()
+      expect(stripeMock.paymentIntents.create).not.toHaveBeenCalled()
+    },
+  )
+
+  it('replaces a canceled intent', async () => {
+    seed({ stripePaymentIntentId: 'pi_old', stripePaymentStatus: 'processing', paymentAmountCents: 10000 })
+    stripeMock.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_old', status: 'canceled' })
+    const res = await POST(request())
+    expect((await res.json()).clientSecret).toBe('secret_new')
+    expect(stripeMock.paymentIntents.cancel).not.toHaveBeenCalled()
+    expect(invoice().stripePaymentIntentId).toBe('pi_new')
   })
 
   it('cancels the superseded intent before creating one for a new total', async () => {

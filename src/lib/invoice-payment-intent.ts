@@ -29,13 +29,29 @@ function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentS
   return or(isNull(column), ne(column, 'paid'))
 }
 
+// Intents the client can still complete with the client secret it is given.
+const RESUMABLE_STATUSES = new Set<Stripe.PaymentIntent.Status>([
+  'requires_payment_method',
+  'requires_confirmation',
+  'requires_action',
+])
+
+// Money is moving: the intent can neither be completed again nor cancelled.
+const IN_FLIGHT_STATUSES = new Set<Stripe.PaymentIntent.Status>(['processing', 'requires_capture'])
+
 function alreadyPaid() {
-  return NextResponse.json({ error: 'This invoice has already been paid' }, { status: 409 })
+  return NextResponse.json(
+    { error: 'This invoice has already been paid', code: 'already_paid' },
+    { status: 409 },
+  )
 }
 
 function paymentInProgress() {
   return NextResponse.json(
-    { error: 'A payment for this invoice is already in progress. Please wait a few minutes and refresh.' },
+    {
+      error: 'A payment for this invoice is already in progress. Please wait a few minutes and refresh.',
+      code: 'payment_in_progress',
+    },
     { status: 409 },
   )
 }
@@ -57,20 +73,19 @@ export async function startInvoicePayment({
     return alreadyPaid()
   }
 
-  // Reuse an in-flight payment intent rather than creating a new one, and
-  // cancel one we replace (e.g. the total changed): its clientSecret was
-  // already handed out, so it could otherwise still be paid alongside the new
-  // one. Either way, an intent that already succeeded means the invoice is
-  // paid and the webhook just hasn't landed yet.
+  // Stripe, not the stored status, says what the last intent is doing. The
+  // stored 'processing' only means a payment form was opened, so a client who
+  // abandoned checkout resumes the same intent. One we replace (e.g. the total
+  // changed) is cancelled first: its clientSecret was already handed out, so
+  // it could otherwise still be paid alongside the new one. An intent that
+  // already succeeded means the invoice is paid and the webhook just hasn't
+  // landed yet.
   if (invoice.stripePaymentIntentId) {
     const existing = await stripe.paymentIntents.retrieve(invoice.stripePaymentIntentId)
     if (existing.status === 'succeeded') return alreadyPaid()
+    if (IN_FLIGHT_STATUSES.has(existing.status)) return paymentInProgress()
 
-    if (
-      existing.status !== 'canceled' &&
-      invoice.stripePaymentStatus === 'processing' &&
-      invoice.paymentAmountCents === amount
-    ) {
+    if (RESUMABLE_STATUSES.has(existing.status) && invoice.paymentAmountCents === amount) {
       return NextResponse.json({
         clientSecret: existing.client_secret,
         paymentIntentId: existing.id,
@@ -87,9 +102,7 @@ export async function startInvoicePayment({
         // The client may have paid it between the retrieve and the cancel.
         const latest = await stripe.paymentIntents.retrieve(existing.id)
         if (latest.status === 'succeeded') return alreadyPaid()
-        if (latest.status === 'processing' || latest.status === 'requires_capture') {
-          return paymentInProgress()
-        }
+        if (IN_FLIGHT_STATUSES.has(latest.status)) return paymentInProgress()
         if (latest.status !== 'canceled') throw error
       }
     }
