@@ -2,13 +2,20 @@ import { Metadata } from 'next'
 import { SignupForm } from '@/components/auth/signup-form'
 import { Logo } from '@/components/logo'
 import Link from 'next/link'
+import { getSafeNextPath, withNextPath } from '@/lib/next-path'
 
 export const metadata: Metadata = {
   title: 'Create Free Account | Invoice Command',
   description: 'Sign up for your free Invoice Command account and unlock logo uploads, invoice history, and payment collection.',
 }
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>
+}) {
+  const next = getSafeNextPath((await searchParams).next)
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       {/* Navigation - Fixed at top */}
@@ -19,7 +26,7 @@ export default function SignupPage() {
               <Logo width={24} height={24} className="text-primary" />
               <span className="text-lg font-semibold text-foreground">Invoice Command</span>
             </Link>
-            <Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href={withNextPath('/auth/login', next)} className="text-sm text-muted-foreground hover:text-foreground">
               Already have an account? Sign in
             </Link>
           </div>
@@ -36,9 +43,14 @@ export default function SignupPage() {
             <p className="text-sm text-muted-foreground">
               Enter your email below to create your account
             </p>
+            {next === '/' && (
+              <p className="text-sm text-foreground mt-3">
+                Your invoice draft is kept in this browser and will be there after you sign up.
+              </p>
+            )}
           </div>
 
-          <SignupForm />
+          <SignupForm next={next} />
         </div>
       </div>
     </div>

@@ -109,7 +109,8 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     try {
       await onVoiceCommand(transcript.trim())
 
-      // Increment voice usage and update local state
+      // Counts anonymous usage locally (the server already counted signed-in
+      // usage), then refreshes the counter
       const success = await incrementVoiceUsage(user?.id)
       if (success) {
         const updatedUsage = await getVoiceUsageThisMonth(user?.id)

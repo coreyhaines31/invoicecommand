@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useInvoiceStore } from '@/stores/invoice-store'
+import { formatDateOnly } from '@/lib/date-only'
 import { useRouter } from 'next/navigation'
 import { SendEmailDialog } from '@/components/send-email-dialog'
 import { ShareInvoiceDialog } from '@/components/dashboard/share-invoice-dialog'
@@ -196,7 +197,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {invoice.dueDate ? formatDate(invoice.dueDate) : '—'}
+                  {invoice.dueDate ? formatDateOnly(invoice.dueDate, undefined) : '—'}
                 </TableCell>
                 <TableCell>{formatDate(invoice.createdAt)}</TableCell>
                 <TableCell>
