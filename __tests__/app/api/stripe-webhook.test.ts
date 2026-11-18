@@ -57,10 +57,11 @@ function seed(overrides: Record<string, unknown> = {}) {
   fake.tables.user = [{ id: 'user-a', email: 'account@example.test' }]
 }
 
-function event(type: string, intent: Record<string, unknown>) {
+function event(type: string, intent: Record<string, unknown>, envelope: Record<string, unknown> = {}) {
   return new NextRequest('http://localhost/api/stripe/webhook', {
     method: 'POST',
     body: JSON.stringify({
+      ...envelope,
       type,
       data: {
         object: {
@@ -94,6 +95,15 @@ describe('payment_intent.succeeded', () => {
     expect(invoice().status).toBe('paid')
     expect(invoice().stripePaymentStatus).toBe('paid')
     expect(invoice().updatedAt).toBe(DOCUMENT_VERSION)
+  })
+
+  it('ignores an event from a connected account', async () => {
+    jest.spyOn(console, 'log').mockImplementation(() => {})
+    const res = await POST(event('payment_intent.succeeded', {}, { account: 'acct_connected' }))
+    expect(res.status).toBe(200)
+    expect(invoice().status).toBe('sent')
+    expect(invoice().stripePaymentStatus).toBe('processing')
+    expect(triggerWebhooks).not.toHaveBeenCalled()
   })
 
   it('leaves the invoice untouched when the same event is delivered again', async () => {
@@ -212,6 +222,12 @@ describe('payment_intent.payment_failed', () => {
   it('leaves an invoice the owner marked paid alone', async () => {
     seed({ status: 'paid' })
     await POST(event('payment_intent.payment_failed', {}))
+    expect(invoice().stripePaymentStatus).toBe('processing')
+  })
+
+  it('ignores a failure from a connected account', async () => {
+    jest.spyOn(console, 'log').mockImplementation(() => {})
+    await POST(event('payment_intent.payment_failed', {}, { account: 'acct_connected' }))
     expect(invoice().stripePaymentStatus).toBe('processing')
   })
 

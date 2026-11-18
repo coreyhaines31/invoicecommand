@@ -31,6 +31,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
 
+    // Invoice payment intents are created on the platform account. One from a
+    // connected account is not ours, whatever its metadata says. (account.updated
+    // legitimately arrives from connected accounts, so this is limited to intents.)
+    if (event.account && event.type.startsWith('payment_intent.')) {
+      console.log(`Ignoring ${event.type} from connected account ${event.account}`)
+      return NextResponse.json({ received: true })
+    }
+
     switch (event.type) {
       case 'payment_intent.succeeded':
         await handlePaymentIntentSucceeded(event.data.object)
