@@ -61,7 +61,7 @@ function TestComponent() {
   return (
     <div>
       <button onClick={() => triggerUpgrade('save-invoice')}>Trigger Save Invoice</button>
-      <button onClick={() => triggerUpgrade('voice-limit-anonymous')}>Trigger Voice Limit</button>
+      <button onClick={() => triggerUpgrade('logo-upload')}>Trigger Logo Upload</button>
       <button onClick={() => triggerUpgrade('custom-themes')}>Trigger Custom Themes</button>
       <button onClick={() => triggerUpgrade('zero-fees')}>Trigger Zero Fees</button>
       <button onClick={() => triggerUpgrade('unknown-trigger')}>Trigger Unknown</button>
@@ -131,7 +131,7 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       )
 
       expect(screen.getByText('Trigger Save Invoice')).toBeInTheDocument()
-      expect(screen.getByText('Trigger Voice Limit')).toBeInTheDocument()
+      expect(screen.getByText('Trigger Logo Upload')).toBeInTheDocument()
     })
   })
 
@@ -153,21 +153,6 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       expect(screen.getByTestId('paywall-modal')).toBeInTheDocument()
       expect(screen.getByText('Save Your Invoices')).toBeInTheDocument()
       expect(screen.getByText(/Create a free account to save unlimited invoices/)).toBeInTheDocument()
-    })
-
-    it('should show paywall for voice-limit-anonymous trigger', () => {
-      render(
-        <UpgradeTriggersProvider>
-          <TestComponent />
-        </UpgradeTriggersProvider>
-      )
-
-      const button = screen.getByText('Trigger Voice Limit')
-      fireEvent.click(button)
-
-      expect(screen.getByTestId('paywall-modal')).toBeInTheDocument()
-      expect(screen.getByText('Voice Command Limit Reached')).toBeInTheDocument()
-      expect(screen.getByText(/You've used all 3 free voice commands/)).toBeInTheDocument()
     })
 
     it('should not show paywall for free→premium trigger when user is anonymous', () => {
@@ -437,7 +422,6 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
             <button onClick={() => triggerUpgrade('save-invoice')}>Save Invoice</button>
             <button onClick={() => triggerUpgrade('logo-upload')}>Logo Upload</button>
             <button onClick={() => triggerUpgrade('style-selection')}>Style Selection</button>
-            <button onClick={() => triggerUpgrade('voice-limit-anonymous')}>Voice Limit</button>
             <button onClick={() => triggerUpgrade('dashboard-access')}>Dashboard Access</button>
           </div>
         )
@@ -453,7 +437,6 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       fireEvent.click(screen.getByText('Save Invoice'))
       fireEvent.click(screen.getByText('Logo Upload'))
       fireEvent.click(screen.getByText('Style Selection'))
-      fireEvent.click(screen.getByText('Voice Limit'))
       fireEvent.click(screen.getByText('Dashboard Access'))
 
       // No warnings should have been logged
@@ -542,8 +525,8 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       expect(screen.queryByTestId('paywall-modal')).not.toBeInTheDocument()
 
       // Open second paywall
-      fireEvent.click(screen.getByText('Trigger Voice Limit'))
-      expect(screen.getByText('Voice Command Limit Reached')).toBeInTheDocument()
+      fireEvent.click(screen.getByText('Trigger Logo Upload'))
+      expect(screen.getByText('Add Your Logo')).toBeInTheDocument()
 
       // Close it
       fireEvent.click(screen.getByText('Close'))
@@ -562,8 +545,8 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       expect(screen.getByText('Save Your Invoices')).toBeInTheDocument()
 
       // Open second paywall (should replace first)
-      fireEvent.click(screen.getByText('Trigger Voice Limit'))
-      expect(screen.getByText('Voice Command Limit Reached')).toBeInTheDocument()
+      fireEvent.click(screen.getByText('Trigger Logo Upload'))
+      expect(screen.getByText('Add Your Logo')).toBeInTheDocument()
       expect(screen.queryByText('Save Your Invoices')).not.toBeInTheDocument()
     })
 

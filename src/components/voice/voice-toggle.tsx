@@ -1,22 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition'
 import { useUser } from '@/hooks/use-user'
 import { useUpgradeTriggers } from '@/hooks/use-upgrade-triggers'
-import { useUserTier } from '@/hooks/use-user-tier'
-import { getVoiceUsageThisMonth, incrementVoiceUsage, canUseVoiceCommand } from '@/lib/utils'
+import { getVoiceUsageThisMonth, canUseVoiceCommand } from '@/lib/utils'
+import { withNextPath } from '@/lib/next-path'
 import {
   Mic,
   MicOff,
   Volume2,
-  VolumeX,
   Loader2,
   AlertCircle,
-  CheckCircle,
   Send
 } from 'lucide-react'
 
@@ -30,9 +29,10 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   const [processingError, setProcessingError] = useState<string | null>(null)
   const [voiceUsage, setVoiceUsage] = useState({ used: 0, limit: 10 })
 
-  const { user } = useUser()
+  const { user, loading: userLoading } = useUser()
   const { triggerUpgrade } = useUpgradeTriggers()
-  const { tier, isAnonymous } = useUserTier()
+  // The draft is kept in localStorage, so signup returns the visitor to the builder
+  const needsAccount = !userLoading && !user
 
   const {
     isListening,
@@ -55,27 +55,19 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     }
   })
 
-  // Load voice usage on component mount and when user changes
   useEffect(() => {
+    if (!user) return
     const loadUsage = async () => {
-      const usage = await getVoiceUsageThisMonth(user?.id)
-      setVoiceUsage(usage)
+      setVoiceUsage(await getVoiceUsageThisMonth())
     }
     loadUsage()
   }, [user])
 
   const handleStartRecording = async () => {
-    if (!isSupported) return
+    if (!isSupported || !user) return
 
-    // Check if user has reached their voice command limit before starting recording
-    const canUse = await canUseVoiceCommand(user?.id)
-    if (!canUse) {
-      // Trigger appropriate upgrade based on user tier
-      if (isAnonymous) {
-        triggerUpgrade('voice-limit-anonymous')
-      } else {
-        triggerUpgrade('voice-limit-free')
-      }
+    if (!(await canUseVoiceCommand())) {
+      triggerUpgrade('voice-limit-free')
       return
     }
 
@@ -89,17 +81,10 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   }
 
   const handleProcessTranscript = async () => {
-    if (!transcript.trim() || !onVoiceCommand) return
+    if (!transcript.trim() || !onVoiceCommand || !user) return
 
-    // Check if user has reached their voice command limit
-    const canUse = await canUseVoiceCommand(user?.id)
-    if (!canUse) {
-      // Trigger appropriate upgrade based on user tier
-      if (isAnonymous) {
-        triggerUpgrade('voice-limit-anonymous')
-      } else {
-        triggerUpgrade('voice-limit-free')
-      }
+    if (!(await canUseVoiceCommand())) {
+      triggerUpgrade('voice-limit-free')
       return
     }
 
@@ -108,15 +93,7 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
 
     try {
       await onVoiceCommand(transcript.trim())
-
-      // Counts anonymous usage locally (the server already counted signed-in
-      // usage), then refreshes the counter
-      const success = await incrementVoiceUsage(user?.id)
-      if (success) {
-        const updatedUsage = await getVoiceUsageThisMonth(user?.id)
-        setVoiceUsage(updatedUsage)
-      }
-
+      setVoiceUsage(await getVoiceUsageThisMonth())
       resetTranscript()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to process voice command'
@@ -160,52 +137,64 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
             Use voice commands to quickly update your invoice
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Usage Counter */}
-          <div className="text-sm text-muted-foreground">
-            <span className="font-mono">
-              {voiceUsage.used}/{voiceUsage.limit}
-            </span>
-            <span className="ml-1">this month</span>
-          </div>
-
-          {/* Confidence Indicator */}
-          {confidence > 0 && (
-            <div className="flex items-center space-x-2 text-sm">
-              <Volume2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Confidence:</span>
-              <span className={`font-mono font-medium ${getConfidenceColor(confidence)}`}>
-                {Math.round(confidence * 100)}%
+        {needsAccount ? (
+          <p className="text-sm text-muted-foreground">
+            Voice commands need a free account.{' '}
+            <Link
+              href={withNextPath('/auth/signup', '/')}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Create a free account
+            </Link>
+          </p>
+        ) : user ? (
+          <div className="flex items-center gap-4">
+            {/* Usage Counter */}
+            <div className="text-sm text-muted-foreground">
+              <span className="font-mono">
+                {voiceUsage.used}/{voiceUsage.limit}
               </span>
+              <span className="ml-1">this month</span>
             </div>
-          )}
 
-          {/* Recording Button */}
-          <Button
-            onClick={isListening ? handleStopRecording : handleStartRecording}
-            disabled={disabled || isProcessing}
-            variant={isListening ? "destructive" : "default"}
-            size="lg"
-            className="min-w-[140px]"
-          >
-            {isListening ? (
-              <>
-                <MicOff className="mr-2 h-5 w-5" />
-                Stop Recording
-              </>
-            ) : isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Processing
-              </>
-            ) : (
-              <>
-                <Mic className="mr-2 h-5 w-5" />
-                Start Recording
-              </>
+            {/* Confidence Indicator */}
+            {confidence > 0 && (
+              <div className="flex items-center space-x-2 text-sm">
+                <Volume2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Confidence:</span>
+                <span className={`font-mono font-medium ${getConfidenceColor(confidence)}`}>
+                  {Math.round(confidence * 100)}%
+                </span>
+              </div>
             )}
-          </Button>
-        </div>
+
+            {/* Recording Button */}
+            <Button
+              onClick={isListening ? handleStopRecording : handleStartRecording}
+              disabled={disabled || isProcessing}
+              variant={isListening ? "destructive" : "default"}
+              size="lg"
+              className="min-w-[140px]"
+            >
+              {isListening ? (
+                <>
+                  <MicOff className="mr-2 h-5 w-5" />
+                  Stop Recording
+                </>
+              ) : isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Processing
+                </>
+              ) : (
+                <>
+                  <Mic className="mr-2 h-5 w-5" />
+                  Start Recording
+                </>
+              )}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {/* Transcript Tray - only show when transcript exists */}

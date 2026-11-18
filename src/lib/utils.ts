@@ -53,20 +53,10 @@ function setLastAnonymousDocumentNumber(documentType: 'invoice' | 'estimate', nu
   localStorage.setItem(storageKey, num.toString())
 }
 
-// Voice usage tracking
-const ANONYMOUS_VOICE_LIMIT = 3 // Anonymous users get 3 voice commands per month
+// Voice commands need an account; /api/parse-voice counts each one server-side
 const FREE_USER_VOICE_LIMIT = 10 // Free users get 10 voice commands per month
 
-export async function getVoiceUsageThisMonth(userId?: string): Promise<{ used: number; limit: number }> {
-  if (!userId) {
-    // Anonymous users
-    return {
-      used: getAnonymousVoiceUsage(),
-      limit: ANONYMOUS_VOICE_LIMIT
-    }
-  }
-
-  // For authenticated users, fetch from database
+export async function getVoiceUsageThisMonth(): Promise<{ used: number; limit: number }> {
   try {
     const response = await fetch('/api/voice-usage')
     if (response.ok) {
@@ -87,47 +77,9 @@ export async function getVoiceUsageThisMonth(userId?: string): Promise<{ used: n
   }
 }
 
-export async function incrementVoiceUsage(userId?: string): Promise<boolean> {
-  if (!userId) {
-    // Anonymous users - track in localStorage
-    const currentUsage = getAnonymousVoiceUsage()
-    if (currentUsage >= ANONYMOUS_VOICE_LIMIT) {
-      return false // Usage limit exceeded
-    }
-    setAnonymousVoiceUsage(currentUsage + 1)
-    return true
-  }
-
-  // Authenticated users are charged once, server-side, by /api/parse-voice
-  return true
-}
-
-export async function canUseVoiceCommand(userId?: string): Promise<boolean> {
-  const usage = await getVoiceUsageThisMonth(userId)
+export async function canUseVoiceCommand(): Promise<boolean> {
+  const usage = await getVoiceUsageThisMonth()
   return usage.used < usage.limit
-}
-
-function getAnonymousVoiceUsage(): number {
-  if (typeof window === 'undefined') return 0
-
-  const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
-  const storageKey = `invoicecommand-voice-usage-${currentMonth}`
-
-  const stored = localStorage.getItem(storageKey)
-  if (stored) {
-    const num = parseInt(stored)
-    return isNaN(num) ? 0 : num
-  }
-  return 0
-}
-
-function setAnonymousVoiceUsage(count: number): void {
-  if (typeof window === 'undefined') return
-
-  const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
-  const storageKey = `invoicecommand-voice-usage-${currentMonth}`
-
-  localStorage.setItem(storageKey, count.toString())
 }
 
 // Date validation utilities

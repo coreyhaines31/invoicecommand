@@ -80,23 +80,6 @@ const UPGRADE_TRIGGERS: Record<string, PaywallTrigger> = {
     ctaAction: () => window.location.href = '/auth/signup'
   },
 
-  'voice-limit-anonymous': {
-    feature: 'voice commands',
-    title: 'Voice Command Limit Reached',
-    description: 'You\'ve used all 3 free voice commands. Create an account for 10 monthly commands.',
-    icon: <Mic className="w-5 h-5 text-primary" />,
-    fromTier: 'anonymous',
-    toTier: 'free',
-    benefits: [
-      '10 voice commands per month (3x more)',
-      'Save and manage invoices',
-      'Add custom logos',
-      'Access 3 professional templates'
-    ],
-    ctaText: 'Upgrade to Free Account',
-    ctaAction: () => window.location.href = '/auth/signup'
-  },
-
   'dashboard-access': {
     feature: 'invoice dashboard',
     title: 'Access Your Dashboard',
