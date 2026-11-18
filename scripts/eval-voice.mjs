@@ -121,7 +121,7 @@ async function runCase(client, testCase, now) {
   try {
     reply = await requestVoiceUpdate(client, { transcript: sanitize(testCase.transcript), currentInvoice: invoice, now, model })
   } catch (error) {
-    return { ...testCase, pass: false, reason: `request failed: ${error.status ?? ''} ${error.message}`, fatal: error.status === 401 || error.status === 403 || error.status === 404 }
+    return { ...testCase, pass: false, reason: `request failed: ${error.status ?? ''} ${error.message}`, fatal: [401, 403, 404, 429].includes(error.status) }
   }
   const ms = Date.now() - started
 
