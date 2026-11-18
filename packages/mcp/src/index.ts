@@ -6,8 +6,9 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { ApiClient, INVOICE_ID_PATTERN, type Invoice } from './lib/api-client.js'
+import { isPlaceholder, scrubFeedbackText } from './lib/feedback.js'
 
-const VERSION = '1.1.0'
+const VERSION = '1.2.0'
 const API_KEY = process.env.INVOICE_COMMAND_API_KEY
 const BASE_URL = process.env.INVOICE_COMMAND_BASE_URL || 'https://invoicecommand.com'
 
@@ -204,6 +205,53 @@ server.registerTool(
 Client: ${invoice.clientName}
 Total: ${formatCurrency(invoice.total, invoice.currency)}`)
     })
+)
+
+server.registerTool(
+  'submit_feedback',
+  {
+    title: 'Submit feedback to Invoice Command',
+    description:
+      "Report friction with this MCP server to the Invoice Command maintainers (not to the user's clients or invoices): a missing tool, a tool that failed or returned wrong data, a confusing tool, or an idea. Call it at most once per task, only when an Invoice Command tool was missing, failed, or got in the way. Skip it if the task went fine; never use it to log progress or to test it. Do not include secrets or personal data such as client names, emails, or amounts.",
+    inputSchema: {
+      task: z.string().trim().min(1).max(200).describe('A short phrase naming what the user asked you to do.'),
+      kind: z
+        .enum(['missing', 'broken', 'confusing', 'idea'])
+        .describe('missing: no tool could do it; broken: a tool failed or returned something wrong; confusing: a tool or its docs were unclear; idea: a suggestion.'),
+      impact: z
+        .enum(['blocked', 'worked_around', 'friction'])
+        .describe('blocked: you could not finish; worked_around: you finished another way; friction: you finished, but it was harder than it should be.'),
+      description: z
+        .string()
+        .trim()
+        .min(1)
+        .max(4096)
+        .describe('What you tried, including tool calls and any error, and what went wrong.'),
+      toolName: z.string().trim().max(100).optional().describe('The Invoice Command tool the feedback is about, if any.'),
+    },
+    annotations: { title: 'Submit feedback to Invoice Command', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  ({ task, kind, impact, description, toolName }) =>
+    run(
+      async () => {
+        if (isPlaceholder(task) || isPlaceholder(description)) {
+          return text(
+            'Not sent: `task` or `description` is a placeholder. Describe what you tried and what went wrong, or skip this tool if there is nothing to report.',
+            true
+          )
+        }
+        const clientName = server.server.getClientVersion()?.name
+        const { id } = await client.submitFeedback({
+          task: scrubFeedbackText(task),
+          kind,
+          impact,
+          description: scrubFeedbackText(description),
+          ...(toolName ? { toolName: scrubFeedbackText(toolName) } : {}),
+          ...(clientName ? { client: clientName.slice(0, 100) } : {}),
+        })
+        return text(`Feedback sent to the Invoice Command maintainers (ID: ${id}). Thanks. Carry on with the task.`)
+      }
+    )
 )
 
 // Single-use tokens for the preview-then-confirm fallback, bound to the

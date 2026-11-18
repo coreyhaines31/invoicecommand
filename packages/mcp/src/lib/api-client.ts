@@ -65,6 +65,22 @@ export function invoicePath(id: string, suffix = ''): string {
   return `/invoices/${encodeURIComponent(id)}${suffix}`
 }
 
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+export type FeedbackInput = {
+  task: string
+  kind: 'missing' | 'broken' | 'confusing' | 'idea'
+  impact: 'blocked' | 'worked_around' | 'friction'
+  description: string
+  toolName?: string
+  client?: string
+}
+
 export class ApiClient {
   private apiKey: string
   private baseUrl: string
@@ -94,7 +110,7 @@ export class ApiClient {
       } catch {
         // Ignore JSON parse errors
       }
-      throw new Error(errorMessage)
+      throw new ApiError(errorMessage, response.status)
     }
 
     // Handle binary responses (PDF)
@@ -146,5 +162,10 @@ export class ApiClient {
       senderMessage,
     })
     return { emailId: result.emailId }
+  }
+
+  async submitFeedback(feedback: FeedbackInput): Promise<{ id: string }> {
+    const result = await this.request<{ data: { id: string } }>('POST', '/feedback', feedback)
+    return result.data
   }
 }
