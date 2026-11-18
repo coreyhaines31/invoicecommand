@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
 import { and, eq, gte, isNull, lt } from 'drizzle-orm'
 import { sendEstimateAcceptanceEmail } from '@/lib/email-service'
-import { serializeDocumentVersion } from '@/lib/estimate-signing'
+import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
 
 type AcceptBody = {
   shareToken?: unknown
@@ -11,13 +11,12 @@ type AcceptBody = {
   signatureData?: unknown
   signerName?: unknown
   signerEmail?: unknown
-  consentText?: unknown
+  consentAccepted?: unknown
 }
 
 const MAX_SIGNATURE_BYTES = 250_000
 const MAX_NAME_LENGTH = 200
 const MAX_EMAIL_LENGTH = 320
-const MAX_CONSENT_LENGTH = 2000
 const MAX_USER_AGENT_LENGTH = 500
 const PNG_PREFIX = 'data:image/png;base64,'
 
@@ -92,7 +91,6 @@ export async function POST(
   const signatureData = typeof body.signatureData === 'string' ? body.signatureData : ''
   const signerName = typeof body.signerName === 'string' ? body.signerName.trim().slice(0, MAX_NAME_LENGTH) : ''
   const signerEmail = typeof body.signerEmail === 'string' ? body.signerEmail.trim().slice(0, MAX_EMAIL_LENGTH) : ''
-  const consentText = typeof body.consentText === 'string' ? body.consentText.trim().slice(0, MAX_CONSENT_LENGTH) : ''
 
   const sigCheck = validatePngDataUrl(signatureData)
   if (!sigCheck.ok) {
@@ -104,7 +102,7 @@ export async function POST(
   if (!signerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
     return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
   }
-  if (!consentText) {
+  if (body.consentAccepted !== true) {
     return NextResponse.json({ error: 'Consent acknowledgement is required' }, { status: 400 })
   }
 
@@ -161,7 +159,7 @@ export async function POST(
       signerEmail,
       signedIp,
       signedUserAgent,
-      consentText,
+      consentText: ESTIMATE_CONSENT_TEXT,
       updatedAt: signedAt,
     })
     .where(and(

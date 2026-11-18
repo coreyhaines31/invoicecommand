@@ -10,14 +10,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, XCircle, Pen } from 'lucide-react'
+import { ESTIMATE_CONSENT_TEXT } from '@/lib/estimate-signing'
 
 const SignatureCanvas = dynamic<SignatureCanvasProps & React.RefAttributes<ReactSignatureCanvas>>(
   () => import('react-signature-canvas'),
   { ssr: false }
 )
 
-const CONSENT_TEXT =
-  'I accept this estimate and agree that this electronic signature is the legal equivalent of my handwritten signature under the U.S. ESIGN Act and applicable state law (UETA).'
 
 interface EstimateSignatureProps {
   estimateId: string
@@ -77,7 +76,7 @@ export function EstimateSignature({ estimateId, shareToken, documentVersion, def
           signatureData,
           signerName: signerName.trim(),
           signerEmail: signerEmail.trim(),
-          consentText: CONSENT_TEXT,
+          consentAccepted: true,
         }),
       })
       const data = await res.json()
@@ -173,7 +172,7 @@ export function EstimateSignature({ estimateId, shareToken, documentVersion, def
               className="mt-1"
               disabled={submitting}
             />
-            <span>{CONSENT_TEXT}</span>
+            <span>{ESTIMATE_CONSENT_TEXT}</span>
           </label>
 
           {error && (

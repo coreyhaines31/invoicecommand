@@ -15,7 +15,7 @@ jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 jest.mock('@/lib/email-service', () => ({ sendEstimateAcceptanceEmail: jest.fn(async () => undefined) }))
 
 import { POST as acceptEstimate } from '@/app/api/estimates/[id]/accept/route'
-import { serializeDocumentVersion } from '@/lib/estimate-signing'
+import { ESTIMATE_CONSENT_TEXT, serializeDocumentVersion } from '@/lib/estimate-signing'
 
 const ESTIMATE_ID = '33333333-3333-4333-8333-333333333333'
 const TOKEN = 'tok_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
@@ -44,7 +44,7 @@ function validBody(overrides: Record<string, unknown> = {}) {
     signatureData: SIGNATURE,
     signerName: 'Jane Client',
     signerEmail: 'jane@example.test',
-    consentText: 'I agree',
+    consentAccepted: true,
     documentVersion: serializeDocumentVersion(RENDERED_AT),
     ...overrides,
   }
@@ -133,6 +133,21 @@ describe('POST /api/estimates/:id/accept', () => {
     const body = await res.json()
     expect(body.code).toBe('document_changed')
     expect(body.error).toMatch(/reload/i)
+    expect(fake.rows[0].signedAt).toBeNull()
+  })
+
+  it('stores the server consent text even if the request sends another', async () => {
+    const res = await acceptEstimate(
+      req(ESTIMATE_ID, validBody({ consentText: 'I agree to nothing in particular' })),
+      ctx(ESTIMATE_ID)
+    )
+    expect(res.status).toBe(200)
+    expect(fake.rows[0].consentText).toBe(ESTIMATE_CONSENT_TEXT)
+  })
+
+  it('requires the signer to accept the consent text', async () => {
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody({ consentAccepted: undefined })), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(400)
     expect(fake.rows[0].signedAt).toBeNull()
   })
 
