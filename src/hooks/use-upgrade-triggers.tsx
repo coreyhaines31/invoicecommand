@@ -8,13 +8,7 @@ import {
   Mic,
   FileText,
   Palette,
-  Users,
-  Mail,
-  RefreshCw,
-  TrendingUp,
-  Crown,
-  Zap,
-  Shield
+  TrendingUp
 } from 'lucide-react'
 
 interface UpgradeTriggersContextType {
@@ -89,8 +83,8 @@ const UPGRADE_TRIGGERS: Record<string, PaywallTrigger> = {
     toTier: 'free',
     benefits: [
       'Complete invoice history',
-      'Search and filter invoices',
-      'Real-time statistics',
+      'Search invoices by client or number',
+      'Invoice totals and paid count',
       'Duplicate and edit functionality'
     ],
     ctaText: 'Create Account',
@@ -99,139 +93,14 @@ const UPGRADE_TRIGGERS: Record<string, PaywallTrigger> = {
 
   // Free → Premium
   'voice-limit-free': {
-    feature: 'unlimited voice commands',
+    feature: 'voice commands',
     title: 'Voice Command Limit Reached',
-    description: 'You\'ve used all 10 monthly voice commands. Upgrade to Premium for unlimited AI voice.',
+    description: 'You\'ve used all 10 voice commands for this month. More become available at the start of next month.',
     icon: <Mic className="w-5 h-5 text-primary" />,
     fromTier: 'free',
     toTier: 'premium',
-    benefits: [
-      'Unlimited AI voice commands',
-      'Custom brand themes',
-      'Team collaboration features',
-      'Advanced analytics dashboard'
-    ],
-    ctaText: 'Upgrade to Premium',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  'custom-themes': {
-    feature: 'custom branding',
-    title: 'Unlock Custom Themes',
-    description: 'Create unlimited custom brand themes with your colors, fonts, and styling.',
-    icon: <Palette className="w-5 h-5 text-primary" />,
-    fromTier: 'free',
-    toTier: 'premium',
-    benefits: [
-      'Unlimited custom brand themes',
-      'Advanced color and font options',
-      'Logo placement variations',
-      'Branded email templates'
-    ],
-    ctaText: 'Upgrade to Premium',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  'team-collaboration': {
-    feature: 'team features',
-    title: 'Team Collaboration',
-    description: 'Invite unlimited team members and collaborate on invoices together.',
-    icon: <Users className="w-5 h-5 text-primary" />,
-    fromTier: 'free',
-    toTier: 'premium',
-    benefits: [
-      'Invite unlimited team members',
-      'Role-based permissions',
-      'Team invoice collaboration',
-      'Approval workflows'
-    ],
-    ctaText: 'Unlock Team Features',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  'recurring-invoices': {
-    feature: 'automation',
-    title: 'Automate Recurring Invoices',
-    description: 'Set up automated recurring billing and subscription management.',
-    icon: <RefreshCw className="w-5 h-5 text-primary" />,
-    fromTier: 'free',
-    toTier: 'premium',
-    benefits: [
-      'Automated recurring invoices',
-      'Subscription management',
-      'Auto-send scheduling',
-      'Payment reminders'
-    ],
-    ctaText: 'Enable Automation',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  'email-tracking': {
-    feature: 'email insights',
-    title: 'Track Email Opens',
-    description: 'See when clients view your invoices and get detailed email analytics.',
-    icon: <Mail className="w-5 h-5 text-primary" />,
-    fromTier: 'free',
-    toTier: 'premium',
-    benefits: [
-      'Email open tracking',
-      'View timestamps',
-      'Client engagement insights',
-      'Automated follow-up reminders'
-    ],
-    ctaText: 'Get Email Tracking',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  // Premium → Pro
-  'zero-fees': {
-    feature: 'fee elimination',
-    title: 'Eliminate All Transaction Fees',
-    description: 'Upgrade to Pro and pay 0% fees on all Stripe transactions.',
-    icon: <Zap className="w-5 h-5 text-primary" />,
-    fromTier: 'premium',
-    toTier: 'pro',
-    benefits: [
-      '0% transaction fees on all payments',
-      'Direct Stripe integration',
-      'Priority payment processing',
-      'Advanced payment analytics'
-    ],
-    ctaText: 'Eliminate Fees',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  'white-label': {
-    feature: 'white-label branding',
-    title: 'White-Label Solution',
-    description: 'Remove all InvoiceCommand branding and use your custom domain.',
-    icon: <Crown className="w-5 h-5 text-primary" />,
-    fromTier: 'premium',
-    toTier: 'pro',
-    benefits: [
-      'Complete white-label branding',
-      'Custom domain integration',
-      'Remove all platform branding',
-      'Enterprise-grade customization'
-    ],
-    ctaText: 'Go White-Label',
-    ctaAction: () => window.location.href = '/billing'
-  },
-
-  'priority-support': {
-    feature: 'enterprise support',
-    title: 'Priority Support',
-    description: 'Get 24/7 priority support with a dedicated account manager.',
-    icon: <Shield className="w-5 h-5 text-primary" />,
-    fromTier: 'premium',
-    toTier: 'pro',
-    benefits: [
-      '24/7 priority support',
-      'Dedicated account manager',
-      'Phone support availability',
-      'Custom onboarding session'
-    ],
-    ctaText: 'Get Priority Support',
+    benefits: [],
+    ctaText: 'See Plans',
     ctaAction: () => window.location.href = '/billing'
   }
 }

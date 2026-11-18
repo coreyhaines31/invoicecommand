@@ -62,8 +62,7 @@ function TestComponent() {
     <div>
       <button onClick={() => triggerUpgrade('save-invoice')}>Trigger Save Invoice</button>
       <button onClick={() => triggerUpgrade('logo-upload')}>Trigger Logo Upload</button>
-      <button onClick={() => triggerUpgrade('custom-themes')}>Trigger Custom Themes</button>
-      <button onClick={() => triggerUpgrade('zero-fees')}>Trigger Zero Fees</button>
+      <button onClick={() => triggerUpgrade('voice-limit-free')}>Trigger Free Voice Limit</button>
       <button onClick={() => triggerUpgrade('unknown-trigger')}>Trigger Unknown</button>
 
       <div data-testid="can-access-free">{canAccess('test', 'free').toString()}</div>
@@ -162,7 +161,7 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
         </UpgradeTriggersProvider>
       )
 
-      const button = screen.getByText('Trigger Custom Themes')
+      const button = screen.getByText('Trigger Free Voice Limit')
       fireEvent.click(button)
 
       // Should not show because user tier doesn't match fromTier
@@ -175,19 +174,19 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       mockTier = 'free'
     })
 
-    it('should show paywall for custom-themes trigger', () => {
+    it('should show paywall for voice-limit-free trigger', () => {
       render(
         <UpgradeTriggersProvider>
           <TestComponent />
         </UpgradeTriggersProvider>
       )
 
-      const button = screen.getByText('Trigger Custom Themes')
+      const button = screen.getByText('Trigger Free Voice Limit')
       fireEvent.click(button)
 
       expect(screen.getByTestId('paywall-modal')).toBeInTheDocument()
-      expect(screen.getByText('Unlock Custom Themes')).toBeInTheDocument()
-      expect(screen.getByText(/Create unlimited custom brand themes/)).toBeInTheDocument()
+      expect(screen.getByText('Voice Command Limit Reached')).toBeInTheDocument()
+      expect(screen.getByText(/You've used all 10 voice commands for this month/)).toBeInTheDocument()
     })
 
     it('should not show paywall for anonymous→free trigger when user is free', () => {
@@ -210,21 +209,6 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
       mockTier = 'premium'
     })
 
-    it('should show paywall for zero-fees trigger', () => {
-      render(
-        <UpgradeTriggersProvider>
-          <TestComponent />
-        </UpgradeTriggersProvider>
-      )
-
-      const button = screen.getByText('Trigger Zero Fees')
-      fireEvent.click(button)
-
-      expect(screen.getByTestId('paywall-modal')).toBeInTheDocument()
-      expect(screen.getByText('Eliminate All Transaction Fees')).toBeInTheDocument()
-      expect(screen.getByText(/Upgrade to Pro and pay 0% fees/)).toBeInTheDocument()
-    })
-
     it('should not show paywall for free→premium trigger when user is premium', () => {
       render(
         <UpgradeTriggersProvider>
@@ -232,7 +216,7 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
         </UpgradeTriggersProvider>
       )
 
-      const button = screen.getByText('Trigger Custom Themes')
+      const button = screen.getByText('Trigger Free Voice Limit')
       fireEvent.click(button)
 
       // Should not show because user tier doesn't match fromTier
@@ -380,33 +364,14 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
         </UpgradeTriggersProvider>
       )
 
-      const button = screen.getByText('Trigger Custom Themes')
+      const button = screen.getByText('Trigger Free Voice Limit')
       fireEvent.click(button)
 
-      const ctaButton = screen.getByText('Upgrade to Premium')
+      const ctaButton = screen.getByText('See Plans')
       fireEvent.click(ctaButton)
 
       // CTA button should exist and be clickable
-      expect(screen.getByText('Upgrade to Premium')).toBeInTheDocument()
-    })
-
-    it('should navigate to billing for pro upgrade', () => {
-      mockTier = 'premium'
-
-      render(
-        <UpgradeTriggersProvider>
-          <TestComponent />
-        </UpgradeTriggersProvider>
-      )
-
-      const button = screen.getByText('Trigger Zero Fees')
-      fireEvent.click(button)
-
-      const ctaButton = screen.getByText('Eliminate Fees')
-      fireEvent.click(ctaButton)
-
-      // CTA button should exist and be clickable
-      expect(screen.getByText('Eliminate Fees')).toBeInTheDocument()
+      expect(screen.getByText('See Plans')).toBeInTheDocument()
     })
   })
 
@@ -452,10 +417,6 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
         return (
           <div>
             <button onClick={() => triggerUpgrade('voice-limit-free')}>Voice Limit</button>
-            <button onClick={() => triggerUpgrade('custom-themes')}>Custom Themes</button>
-            <button onClick={() => triggerUpgrade('team-collaboration')}>Team Collaboration</button>
-            <button onClick={() => triggerUpgrade('recurring-invoices')}>Recurring Invoices</button>
-            <button onClick={() => triggerUpgrade('email-tracking')}>Email Tracking</button>
           </div>
         )
       }
@@ -468,40 +429,6 @@ describe('UpgradeTriggersProvider and useUpgradeTriggers', () => {
 
       // Click each trigger to verify they're defined
       fireEvent.click(screen.getByText('Voice Limit'))
-      fireEvent.click(screen.getByText('Custom Themes'))
-      fireEvent.click(screen.getByText('Team Collaboration'))
-      fireEvent.click(screen.getByText('Recurring Invoices'))
-      fireEvent.click(screen.getByText('Email Tracking'))
-
-      // No warnings should have been logged
-      expect(consoleWarnSpy).not.toHaveBeenCalled()
-    })
-
-    it('should have all premium→pro triggers configured', () => {
-      mockTier = 'premium'
-
-      const TriggersTest = () => {
-        const { triggerUpgrade } = useUpgradeTriggers()
-
-        return (
-          <div>
-            <button onClick={() => triggerUpgrade('zero-fees')}>Zero Fees</button>
-            <button onClick={() => triggerUpgrade('white-label')}>White Label</button>
-            <button onClick={() => triggerUpgrade('priority-support')}>Priority Support</button>
-          </div>
-        )
-      }
-
-      render(
-        <UpgradeTriggersProvider>
-          <TriggersTest />
-        </UpgradeTriggersProvider>
-      )
-
-      // Click each trigger to verify they're defined
-      fireEvent.click(screen.getByText('Zero Fees'))
-      fireEvent.click(screen.getByText('White Label'))
-      fireEvent.click(screen.getByText('Priority Support'))
 
       // No warnings should have been logged
       expect(consoleWarnSpy).not.toHaveBeenCalled()

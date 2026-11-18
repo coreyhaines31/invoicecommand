@@ -60,7 +60,7 @@ const nextConfig: NextConfig = {
             // react-pdf compiles its layout engine (yoga) from WebAssembly that it fetches from a data: URL,
             // so PDF export needs 'wasm-unsafe-eval' (Wasm only, not string eval) and data: in connect-src.
             // Dev only: Next's dev runtime evaluates strings, so without 'unsafe-eval' the page never hydrates.
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://tracerkit.com https://in.headstream.app https://cdn.usefathom.com https://js.stripe.com https://*.i.posthog.com https://ingest.getuserproof.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' data: https://api.openai.com https://tracerkit.com https://in.headstream.app https://cdn.usefathom.com https://*.sentry.io https://api.stripe.com https://m.stripe.com https://r.stripe.com https://*.i.posthog.com https://app.posthog.com https://ingest.getuserproof.com; media-src 'self'; object-src 'none'; frame-src 'self' https://js.stripe.com https://hooks.stripe.com;`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://tracerkit.com https://in.headstream.app https://cdn.usefathom.com https://js.stripe.com https://*.i.posthog.com https://ingest.getuserproof.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' data: https://api.openai.com https://tracerkit.com https://in.headstream.app https://cdn.usefathom.com https://honeywarden.com https://api.stripe.com https://m.stripe.com https://r.stripe.com https://*.i.posthog.com https://app.posthog.com https://ingest.getuserproof.com; media-src 'self'; object-src 'none'; frame-src 'self' https://js.stripe.com https://hooks.stripe.com;`,
           },
           {
             key: 'Strict-Transport-Security',
@@ -110,12 +110,6 @@ export default withSentryConfig(nextConfig, {
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-  // side errors will fail.
-  tunnelRoute: "/monitoring",
-
   // Webpack-specific options
   webpack: {
     // Automatically annotate React components to show their full name in breadcrumbs and session replay
@@ -126,7 +120,5 @@ export default withSentryConfig(nextConfig, {
     treeshake: {
       removeDebugLogging: true,
     },
-    // Enables automatic instrumentation of Vercel Cron Monitors
-    automaticVercelMonitors: true,
   },
 });

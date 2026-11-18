@@ -36,6 +36,8 @@ import { formatDateOnly } from '@/lib/date-only'
 import { useRouter } from 'next/navigation'
 import { SendEmailDialog } from '@/components/send-email-dialog'
 import { ShareInvoiceDialog } from '@/components/dashboard/share-invoice-dialog'
+import { downloadOwnerInvoicePdf } from '@/lib/download-pdf'
+import { toast } from 'sonner'
 
 interface Invoice {
   id: string
@@ -60,6 +62,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const { loadFromDatabase, deleteFromDatabase } = useInvoiceStore()
   const router = useRouter()
 
@@ -120,6 +123,21 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     }
   }
 
+  const handleDownloadPdf = async (invoice: Invoice) => {
+    // The menu closes on select, so the pending state lives in a toast.
+    const toastId = `pdf-${invoice.id}`
+    setDownloadingId(invoice.id)
+    toast.loading('Generating PDF...', { id: toastId })
+    try {
+      await downloadOwnerInvoicePdf(invoice.id)
+      toast.dismiss(toastId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not download the PDF', { id: toastId })
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
   const handleSendEmail = (invoice: Invoice) => {
     setSelectedInvoice(invoice)
     setEmailDialogOpen(true)
@@ -153,7 +171,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-exclude>
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -216,9 +234,12 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDownloadPdf(invoice)}
+                        disabled={downloadingId === invoice.id}
+                      >
                         <Download className="w-4 h-4 mr-2" />
-                        Download PDF
+                        {downloadingId === invoice.id ? 'Generating PDF...' : 'Download PDF'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleSendEmail(invoice)}>
                         <Send className="w-4 h-4 mr-2" />
