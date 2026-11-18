@@ -57,7 +57,7 @@ export default async function PublicInvoicePage({ params }: PageProps) {
     terms: invoice.terms || '',
     currency: invoice.currency || 'USD',
     paymentEnabled: invoice.paymentEnabled || false,
-    stripePaymentStatus: invoice.stripePaymentStatus || 'unpaid',
+    stripePaymentStatus: invoice.status === 'paid' ? 'paid' : invoice.stripePaymentStatus || 'unpaid',
     style: (invoice.style as 'modern' | 'classic' | 'minimal') || 'modern',
     documentType: (invoice.documentType as 'invoice' | 'estimate') || 'invoice',
     expirationDate: invoice.expirationDate || '',

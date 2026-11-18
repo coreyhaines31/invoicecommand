@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { CheckCircle, Download, CreditCard, Clock, XCircle, Smartphone } from 'lucide-react'
 import { PublicPaymentButton } from '@/components/payment/public-payment-button'
 import { toStripeAmount } from '@/lib/stripe-amount'
+import { formatDateOnly } from '@/lib/date-only'
 import { EstimateSignature, EstimateSignedBanner } from './estimate-signature'
 import { ShareQR } from '@/components/invoice/share-qr'
 
@@ -52,6 +53,8 @@ interface InvoiceData {
   signatureData: string | null
   signerName: string | null
   signerEmail: string | null
+  /** updated_at as rendered on the share page; see serializeDocumentVersion. */
+  documentVersion?: string
 }
 
 interface PublicInvoiceClientProps {
@@ -86,8 +89,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
   }
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDateOnly(dateString, 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -306,17 +308,27 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                             </AlertDescription>
                           </Alert>
                         )}
-                        <EstimateSignature
-                          estimateId={invoice.id}
-                          defaultSignerEmail={invoice.clientEmail}
-                          onSigned={(data) =>
-                            setSignature({
-                              signedAt: data.signedAt,
-                              signerName: data.signerName,
-                              signatureData: data.signatureData,
-                            })
-                          }
-                        />
+                        {/* Only the recipient signs, through the share link.
+                            The owner preview shows the pending state. */}
+                        {viewMode === 'public' && shareToken ? (
+                          <EstimateSignature
+                            estimateId={invoice.id}
+                            shareToken={shareToken}
+                            documentVersion={invoice.documentVersion ?? ''}
+                            defaultSignerEmail={invoice.clientEmail}
+                            onSigned={(data) =>
+                              setSignature({
+                                signedAt: data.signedAt,
+                                signerName: data.signerName,
+                                signatureData: data.signatureData,
+                              })
+                            }
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Awaiting the client&apos;s signature. They sign from the share link.
+                          </p>
+                        )}
                       </>
                     )}
                   </>
@@ -346,7 +358,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
 
                     {/* Payment Button — public flow only. Requires shareToken
                         so the server can validate the share link is enabled. */}
-                    {viewMode === 'public' && shareToken && invoice.paymentEnabled && paymentStatus === 'unpaid' && (
+                    {viewMode === 'public' && shareToken && invoice.paymentEnabled && (paymentStatus === 'unpaid' || paymentStatus === 'failed') && (
                       <PublicPaymentButton
                         shareToken={shareToken}
                         amount={toStripeAmount(invoice.total, invoice.currency)}

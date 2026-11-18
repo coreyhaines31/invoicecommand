@@ -23,6 +23,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
+    revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       // Better Auth assembles the reset URL using the redirectTo passed from
       // the client form plus its own token query param, so we just relay it.

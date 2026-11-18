@@ -9,43 +9,86 @@ type Column = { key: string }
 
 export const drizzleOrmMock = {
   eq: (col: Column, value: unknown): Predicate => (row) => row[col.key] === value,
+  // SQL semantics: NULL <> 'x' is not true, so a NULL column never matches.
+  ne: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && row[col.key] !== value,
+  or: (...preds: Predicate[]): Predicate => (row) => preds.some((p) => p(row)),
   and: (...preds: Predicate[]): Predicate => (row) => preds.every((p) => p(row)),
   isNull: (col: Column): Predicate => (row) => row[col.key] == null,
+  gt: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) > Number(value),
+  gte: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) >= Number(value),
+  lt: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) < Number(value),
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),
   desc: (col: Column) => col,
+  // Supports only the `${column} + n` increment the voice usage routes use.
+  sql: (strings: TemplateStringsArray, col: Column) => {
+    const by = Number(strings[1].replace('+', '').trim())
+    return (row: Row) => (row[col.key] as number) + by
+  },
+}
+
+const TABLE_NAME = '__tableName'
+type Table = Record<string, Column>
+
+function fakeTable(name: string): Table {
+  return new Proxy({} as Table, {
+    get: (_, key) => (key === TABLE_NAME ? name : { key: String(key) }),
+  })
 }
 
 export const schemaMock = {
-  invoices: new Proxy({} as Record<string, Column>, { get: (_, key) => ({ key: String(key) }) }),
+  invoices: fakeTable('invoices'),
+  userProfiles: fakeTable('userProfiles'),
+  user: fakeTable('user'),
+  voiceUsage: fakeTable('voiceUsage'),
 }
 
+// `rows` is the invoices table; other tables live in `tables`.
 export function createFakeDb() {
   const rows: Row[] = []
+  const tables: Record<string, Row[]> = { invoices: rows, voiceUsage: [] }
+  const tableRows = (table?: Table): Row[] => {
+    const name = (table?.[TABLE_NAME] as unknown as string | undefined) ?? 'invoices'
+    return (tables[name] ??= [])
+  }
 
   class Query implements PromiseLike<Row[]> {
     private predicate: Predicate = () => true
     private projection?: Record<string, Column>
     private mutate?: (matches: Row[]) => Row[]
+    private source: Row[]
     private max = Infinity
     private skip = 0
 
-    constructor(opts: { projection?: Record<string, Column>; mutate?: (matches: Row[]) => Row[] } = {}) {
+    constructor(opts: { projection?: Record<string, Column>; mutate?: (matches: Row[]) => Row[]; source?: Row[] } = {}) {
       this.projection = opts.projection
       this.mutate = opts.mutate
+      this.source = opts.source ?? rows
     }
 
-    from() { return this }
+    from(table?: Table) { this.source = tableRows(table); return this }
     where(predicate: Predicate) { this.predicate = predicate; return this }
     orderBy() { return this }
     limit(n: number) { this.max = n; return this }
     offset(n: number) { this.skip = n; return this }
+    onConflictDoNothing({ target }: { target: Column[] }) {
+      const source = this.source
+      const inserted = source[source.length - 1]
+      const conflict = source.some(
+        (r) => r !== inserted && target.every((col) => r[col.key] === inserted[col.key])
+      )
+      if (conflict) {
+        source.pop()
+        this.predicate = () => false
+      }
+      return this
+    }
     returning(projection?: Record<string, Column>) {
       if (projection) this.projection = projection
       return this
     }
 
     private run(): Row[] {
-      let matches = rows.filter(this.predicate)
+      let matches = this.source.filter(this.predicate)
       if (this.mutate) matches = this.mutate(matches)
       matches = matches.slice(this.skip, this.skip + this.max)
       const projection = this.projection
@@ -65,30 +108,39 @@ export function createFakeDb() {
 
   const db = {
     select: (projection?: Record<string, Column>) => new Query({ projection }),
-    update: () => ({
+    update: (table?: Table) => ({
       set: (values: Row) =>
         new Query({
+          source: tableRows(table),
           mutate: (matches) => {
-            matches.forEach((r) => Object.assign(r, values))
+            matches.forEach((r) => {
+              for (const [key, value] of Object.entries(values)) {
+                r[key] = typeof value === 'function' ? value(r) : value
+              }
+            })
             return matches
           },
         }),
     }),
-    delete: () =>
-      new Query({
+    delete: (table?: Table) => {
+      const source = tableRows(table)
+      return new Query({
+        source,
         mutate: (matches) => {
-          matches.forEach((r) => rows.splice(rows.indexOf(r), 1))
+          matches.forEach((r) => source.splice(source.indexOf(r), 1))
           return matches
         },
-      }),
-    insert: () => ({
+      })
+    },
+    insert: (table?: Table) => ({
       values: (values: Row) => {
+        const source = tableRows(table)
         const row = { id: crypto.randomUUID(), status: 'draft', ...values }
-        rows.push(row)
-        return new Query({ mutate: (matches) => matches.filter((r) => r === row) })
+        source.push(row)
+        return new Query({ source, mutate: (matches) => matches.filter((r) => r === row) })
       },
     }),
   }
 
-  return { db, rows }
+  return { db, rows, tables }
 }

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useInvoiceStore } from '@/stores/invoice-store'
+import { formatDateOnly } from '@/lib/date-only'
 import { useRouter } from 'next/navigation'
 import { SendEmailDialog } from '@/components/send-email-dialog'
 import { ShareInvoiceDialog } from '@/components/dashboard/share-invoice-dialog'
@@ -104,8 +105,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
     // Load the invoice and reset the ID to create a copy
     const success = await loadFromDatabase(invoice.id, userId)
     if (success) {
-      // Reset the invoice ID and number to create a new invoice
-      useInvoiceStore.setState({ id: undefined, invoiceNumber: '' })
+      useInvoiceStore.getState().detachAsCopy()
       router.push('/')
     }
   }
@@ -144,7 +144,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
           Create your first invoice to get started with Invoice Command
         </p>
         <Button asChild>
-          <Link href="/">
+          <Link href="/?new=1">
             Create Your First Invoice
           </Link>
         </Button>
@@ -197,7 +197,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {invoice.dueDate ? formatDate(invoice.dueDate) : '—'}
+                  {invoice.dueDate ? formatDateOnly(invoice.dueDate, undefined) : '—'}
                 </TableCell>
                 <TableCell>{formatDate(invoice.createdAt)}</TableCell>
                 <TableCell>

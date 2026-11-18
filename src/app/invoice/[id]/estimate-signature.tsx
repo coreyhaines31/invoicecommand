@@ -10,28 +10,32 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, XCircle, Pen } from 'lucide-react'
+import { ESTIMATE_CONSENT_TEXT } from '@/lib/estimate-signing'
 
 const SignatureCanvas = dynamic<SignatureCanvasProps & React.RefAttributes<ReactSignatureCanvas>>(
   () => import('react-signature-canvas'),
   { ssr: false }
 )
 
-const CONSENT_TEXT =
-  'I accept this estimate and agree that this electronic signature is the legal equivalent of my handwritten signature under the U.S. ESIGN Act and applicable state law (UETA).'
 
 interface EstimateSignatureProps {
   estimateId: string
+  shareToken: string
+  /** The estimate's updated_at as rendered, so the server can refuse to
+   *  sign a version the signer never saw. */
+  documentVersion: string
   defaultSignerEmail?: string
   onSigned: (data: { signedAt: string; signerName: string; signerEmail: string; signatureData: string }) => void
 }
 
-export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
+export function EstimateSignature({ estimateId, shareToken, documentVersion, defaultSignerEmail = '', onSigned }: EstimateSignatureProps) {
   const sigRef = useRef<ReactSignatureCanvas | null>(null)
   const [signerName, setSignerName] = useState('')
   const [signerEmail, setSignerEmail] = useState(defaultSignerEmail)
   const [accepted, setAccepted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [documentChanged, setDocumentChanged] = useState(false)
 
   const handleClear = () => {
     sigRef.current?.clear()
@@ -67,14 +71,17 @@ export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigne
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          shareToken,
+          documentVersion,
           signatureData,
           signerName: signerName.trim(),
           signerEmail: signerEmail.trim(),
-          consentText: CONSENT_TEXT,
+          consentAccepted: true,
         }),
       })
       const data = await res.json()
       if (!res.ok) {
+        setDocumentChanged(data.code === 'document_changed')
         setError(data.error || 'Could not accept the estimate. Please try again.')
         setSubmitting(false)
         return
@@ -165,13 +172,26 @@ export function EstimateSignature({ estimateId, defaultSignerEmail = '', onSigne
               className="mt-1"
               disabled={submitting}
             />
-            <span>{CONSENT_TEXT}</span>
+            <span>{ESTIMATE_CONSENT_TEXT}</span>
           </label>
 
           {error && (
             <Alert variant="destructive">
               <XCircle className="w-4 h-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                {documentChanged && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => window.location.reload()}
+                  >
+                    Reload estimate
+                  </Button>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 

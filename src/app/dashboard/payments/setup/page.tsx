@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { userProfiles } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
+import { withNextPath } from '@/lib/next-path'
 import { PaymentSetupClient } from './payment-setup-client'
 
 export default async function PaymentSetupPage({
@@ -12,7 +13,7 @@ export default async function PaymentSetupPage({
   searchParams: Promise<{ success?: string; refresh?: string }>
 }) {
   const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) redirect('/auth/login')
+  if (!session) redirect(withNextPath('/auth/login', '/dashboard/payments/setup'))
 
   const [userProfile] = await db
     .select({

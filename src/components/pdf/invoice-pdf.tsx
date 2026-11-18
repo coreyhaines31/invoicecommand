@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
 import type { InvoiceData } from '@/stores/invoice-store'
+import { formatDateOnly } from '@/lib/date-only'
 
 interface InvoicePDFProps {
   invoice: InvoiceData
@@ -277,16 +278,11 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
   }
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    } catch {
-      return dateString
-    }
+    return formatDateOnly(dateString, 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
   }
 
   // Filter out empty line items for PDF

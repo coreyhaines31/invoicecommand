@@ -155,6 +155,86 @@ describe('useInvoiceInitialization', () => {
     })
   })
 
+  describe('starting a new invoice from the dashboard (issue #77)', () => {
+    beforeEach(() => {
+      act(() => {
+        useInvoiceStore.setState({ id: 'inv-a', clientName: 'Saved A', invoiceNumber: 'INV-0007' })
+        useInvoiceStore.getState().saveToStorage()
+      })
+    })
+
+    afterEach(() => {
+      window.history.replaceState(null, '', '/')
+    })
+
+    it('a plain mount reopens the last saved invoice with its id', async () => {
+      renderHook(() => useInvoiceInitialization())
+
+      await waitFor(() => {
+        expect(useInvoiceStore.getState().clientName).toBe('Saved A')
+      })
+      expect(useInvoiceStore.getState().id).toBe('inv-a')
+    })
+
+    it('?new=1 starts a clean draft without the saved id and removes the param', async () => {
+      window.history.replaceState(null, '', '/?new=1')
+
+      renderHook(() => useInvoiceInitialization())
+
+      await waitFor(() => {
+        expect(useInvoiceStore.getState().invoiceNumber).toBe('INV-1001')
+      })
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.clientName).toBe('')
+      expect(window.location.search).toBe('')
+
+      // The page's own loadFromStorage call after mount must not bring the saved invoice back
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+    })
+
+    it('?new=1 keeps a never-saved draft and removes the param', async () => {
+      act(() => {
+        useInvoiceStore.getState().resetInvoice()
+        useInvoiceStore.setState({ clientName: 'Unsaved work', invoiceNumber: 'INV-0009' })
+        useInvoiceStore.getState().saveToStorage()
+      })
+      window.history.replaceState(null, '', '/?new=1')
+
+      renderHook(() => useInvoiceInitialization())
+
+      await waitFor(() => {
+        expect(window.location.search).toBe('')
+      })
+      const state = useInvoiceStore.getState()
+      expect(state.clientName).toBe('Unsaved work')
+      expect(state.invoiceNumber).toBe('INV-0009')
+      expect(state.id).toBeUndefined()
+    })
+
+    it('?new=1 starts clean when the store holds a saved id the stored draft lacks', async () => {
+      // saveToDatabase sets the id in memory without rewriting the stored draft
+      act(() => {
+        useInvoiceStore.getState().resetInvoice()
+        useInvoiceStore.setState({ clientName: 'Just saved', invoiceNumber: 'INV-0010' })
+        useInvoiceStore.getState().saveToStorage()
+        useInvoiceStore.setState({ id: 'inv-new' })
+      })
+      window.history.replaceState(null, '', '/?new=1')
+
+      renderHook(() => useInvoiceInitialization())
+
+      await waitFor(() => {
+        expect(useInvoiceStore.getState().invoiceNumber).toBe('INV-1001')
+      })
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+      expect(useInvoiceStore.getState().clientName).toBe('')
+    })
+  })
+
   it('should handle corrupted localStorage data', async () => {
     localStorage.setItem('invoicecommand-draft', 'invalid json {')
 

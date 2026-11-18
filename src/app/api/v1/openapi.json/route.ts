@@ -343,6 +343,42 @@ const openApiSpec = {
         },
       },
     },
+    '/feedback': {
+      post: {
+        summary: 'Submit agent feedback',
+        description: 'Report a missing, broken, or confusing tool to the Invoice Command maintainers. Used by the MCP server\'s submit_feedback tool. Any valid API key works; no scope is needed. Secrets and emails are scrubbed before storing. Limited to 10 reports per hour per user.',
+        operationId: 'submitFeedback',
+        tags: ['Feedback'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['task', 'kind', 'impact', 'description'],
+                properties: {
+                  task: { type: 'string', maxLength: 200, description: 'What the user asked the agent to do' },
+                  kind: { type: 'string', enum: ['missing', 'broken', 'confusing', 'idea'] },
+                  impact: { type: 'string', enum: ['blocked', 'worked_around', 'friction'] },
+                  description: { type: 'string', maxLength: 4096, description: 'What was tried, the calls made, and any error' },
+                  toolName: { type: 'string', maxLength: 100, description: 'The tool the feedback is about' },
+                  client: { type: 'string', maxLength: 100, description: 'The MCP client name' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Feedback stored',
+            content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } } } } } } },
+          },
+          '400': { description: 'Invalid or placeholder feedback' },
+          '401': { description: 'Unauthorized' },
+          '429': { description: 'Too many reports' },
+        },
+      },
+    },
     '/api-keys': {
       get: {
         summary: 'List API keys',
@@ -510,6 +546,7 @@ const openApiSpec = {
     { name: 'Invoices', description: 'Invoice and estimate management' },
     { name: 'API Keys', description: 'API key management (session auth required)' },
     { name: 'Webhooks', description: 'Webhook endpoint management' },
+    { name: 'Feedback', description: 'Agent feedback to the maintainers' },
   ],
 }
 
