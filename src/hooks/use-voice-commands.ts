@@ -23,7 +23,8 @@ interface VoiceInvoiceUpdate {
 // invalid: the server rejected the request and said why (400)
 // signed-out: the session is gone (401)
 // failed: network or server failure, worth retrying
-export type VoiceErrorKind = 'unclear' | 'limit' | 'invalid' | 'signed-out' | 'failed'
+// unavailable: the model provider is down or out of credit (503); the command was not counted
+export type VoiceErrorKind = 'unclear' | 'limit' | 'invalid' | 'signed-out' | 'unavailable' | 'failed'
 
 export interface VoiceCommandResult {
   success: boolean
@@ -35,8 +36,8 @@ export interface VoiceCommandResult {
   resetsAt?: string
 }
 
-// /api/parse-voice answers a model reply without an action (the model's own
-// "error" response) with this message and a 500
+// /api/parse-voice answers a command the model could not act on with a 422.
+// A reply with no action at all still comes back as a 500 with this message.
 const MODEL_DECLINED_MESSAGE = 'AI response missing required action field'
 
 class VoiceCommandError extends Error {
@@ -49,6 +50,8 @@ function errorKindForResponse(status: number, message: unknown): VoiceErrorKind 
   if (status === 429) return 'limit'
   if (status === 401) return 'signed-out'
   if (status === 400) return 'invalid'
+  if (status === 422) return 'unclear'
+  if (status === 503) return 'unavailable'
   if (message === MODEL_DECLINED_MESSAGE) return 'unclear'
   return 'failed'
 }

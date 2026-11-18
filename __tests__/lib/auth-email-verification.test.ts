@@ -3,6 +3,12 @@
  */
 jest.mock('better-auth', () => ({ betterAuth: (options: unknown) => ({ options }) }))
 jest.mock('better-auth/adapters/drizzle', () => ({ drizzleAdapter: () => ({}) }))
+// auth.ts also wires account deletion, which imports the ESM-only API module.
+jest.mock('better-auth/api', () => ({
+  createAuthMiddleware: (fn: unknown) => fn,
+  APIError: class APIError extends Error {},
+}))
+jest.mock('@/lib/account-deletion', () => ({ deleteUserData: jest.fn() }))
 jest.mock('@/lib/db', () => ({ db: {} }))
 jest.mock('@/lib/email-service', () => ({
   sendPasswordResetEmail: jest.fn(),

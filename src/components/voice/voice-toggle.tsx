@@ -48,6 +48,8 @@ function describeVoiceError(result: VoiceCommandResult, limit: number): string {
       return /[.!?]$/.test(result.message) ? result.message : `${result.message}.`
     case 'signed-out':
       return 'You are signed out. Log in again to use voice commands.'
+    case 'unavailable':
+      return 'Voice commands are temporarily unavailable. This one was not counted. Try again in a few minutes.'
     default:
       return FAILED_MESSAGE
   }

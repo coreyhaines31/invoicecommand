@@ -468,6 +468,16 @@ describe('useVoiceCommands', () => {
         expect(returned).toMatchObject({ success: false, errorKind: 'unclear' })
       })
 
+      it('treats a 422 from the route as unclear', async () => {
+        const returned = await run({ ok: false, status: 422, json: async () => ({ error: 'Which item should change?' }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'unclear' })
+      })
+
+      it('reports a provider outage (503) as unavailable', async () => {
+        const returned = await run({ ok: false, status: 503, json: async () => ({ error: 'Voice commands are temporarily unavailable.' }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'unavailable' })
+      })
+
       it('treats an update with no action as unclear', async () => {
         const returned = await run({ ok: true, status: 200, json: async () => ({ update: { error: 'Command is ambiguous' } }) })
         expect(returned).toMatchObject({ success: false, errorKind: 'unclear' })
