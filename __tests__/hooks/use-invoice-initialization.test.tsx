@@ -155,6 +155,48 @@ describe('useInvoiceInitialization', () => {
     })
   })
 
+  describe('starting a new invoice from the dashboard (issue #77)', () => {
+    beforeEach(() => {
+      act(() => {
+        useInvoiceStore.setState({ id: 'inv-a', clientName: 'Saved A', invoiceNumber: 'INV-0007' })
+        useInvoiceStore.getState().saveToStorage()
+      })
+    })
+
+    afterEach(() => {
+      window.history.replaceState(null, '', '/')
+    })
+
+    it('a plain mount reopens the last saved invoice with its id', async () => {
+      renderHook(() => useInvoiceInitialization())
+
+      await waitFor(() => {
+        expect(useInvoiceStore.getState().clientName).toBe('Saved A')
+      })
+      expect(useInvoiceStore.getState().id).toBe('inv-a')
+    })
+
+    it('?new=1 starts a clean draft without the saved id and removes the param', async () => {
+      window.history.replaceState(null, '', '/?new=1')
+
+      renderHook(() => useInvoiceInitialization())
+
+      await waitFor(() => {
+        expect(useInvoiceStore.getState().invoiceNumber).toBe('INV-1001')
+      })
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.clientName).toBe('')
+      expect(window.location.search).toBe('')
+
+      // The page's own loadFromStorage call after mount must not bring the saved invoice back
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+      expect(useInvoiceStore.getState().id).toBeUndefined()
+    })
+  })
+
   it('should handle corrupted localStorage data', async () => {
     localStorage.setItem('invoicecommand-draft', 'invalid json {')
 
