@@ -90,7 +90,8 @@ export default async function SettingsPage() {
             <CardHeader>
               <CardTitle>Export your data</CardTitle>
               <CardDescription>
-                Download a JSON file with your account details, profile, invoices and estimates.
+                Download a JSON file with your account details, invoices, estimates, voice usage, API key
+                names, webhook endpoints and agent feedback. Key values and webhook secrets are not included.
               </CardDescription>
             </CardHeader>
             <CardContent>

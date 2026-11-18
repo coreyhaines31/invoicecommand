@@ -7,7 +7,21 @@ import { createFakeDb } from '../../helpers/fake-db'
 const fake = createFakeDb()
 
 jest.mock('drizzle-orm', () => jest.requireActual('../../helpers/fake-db').drizzleOrmMock)
-jest.mock('@/lib/db/schema', () => jest.requireActual('../../helpers/fake-db').schemaMock)
+jest.mock('@/lib/db/schema', () => {
+  const { schemaMock } = jest.requireActual('../../helpers/fake-db')
+  // Same shape as the helper's tables: columns resolve to { key }, and
+  // __tableName tells the fake db which rows to use.
+  const table = (name: string) =>
+    new Proxy({}, { get: (_, key) => (key === '__tableName' ? name : { key: String(key) }) })
+  return {
+    ...schemaMock,
+    account: table('account'),
+    session: table('session'),
+    apiKeys: table('apiKeys'),
+    webhooks: table('webhooks'),
+    agentFeedback: table('agentFeedback'),
+  }
+})
 jest.mock('@/lib/db', () => ({ get db() { return fake.db } }))
 
 const mockGetSession = jest.fn()
@@ -20,15 +34,37 @@ jest.mock('@/lib/error-response', () => ({
 
 import { GET } from '@/app/api/account/export/route'
 
+const TABLES = ['user', 'userProfiles', 'account', 'session', 'voiceUsage', 'apiKeys', 'webhooks', 'agentFeedback']
+
 function seed() {
-  for (const name of Object.keys(fake.tables)) fake.tables[name].length = 0
-  fake.tables.user.push(
-    { id: 'user-a', name: 'A', email: 'a@example.test', emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date(), password: 'hash-a' },
+  fake.rows.length = 0
+  for (const name of TABLES) fake.tables[name] = []
+  const t = fake.tables
+  t.user.push(
+    { id: 'user-a', name: 'A', email: 'a@example.test', emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
     { id: 'user-b', name: 'B', email: 'b@example.test', emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
   )
-  fake.tables.userProfiles.push(
+  t.account.push({ id: 'acc-a', userId: 'user-a', providerId: 'credential', password: 'PASSWORD-HASH-A' })
+  t.session.push({ id: 'ses-a', userId: 'user-a', token: 'SESSION-TOKEN-A' })
+  t.userProfiles.push(
     { id: 'p-a', userId: 'user-a', stripeAccountId: 'acct_a', subscriptionTier: 'free' },
     { id: 'p-b', userId: 'user-b', stripeAccountId: 'acct_b', subscriptionTier: 'free' },
+  )
+  t.voiceUsage.push(
+    { id: 'vu-a', userId: 'user-a', monthYear: '2026-11', commandCount: 3 },
+    { id: 'vu-b', userId: 'user-b', monthYear: '2026-11', commandCount: 9 },
+  )
+  t.apiKeys.push(
+    { id: 'key-a', userId: 'user-a', name: 'CLI', keyPrefix: 'sk_live_aaaa', keyHash: 'KEY-HASH-A', scopes: ['invoices:read'], createdAt: new Date(), lastUsedAt: null },
+    { id: 'key-b', userId: 'user-b', name: 'Other', keyPrefix: 'sk_live_bbbb', keyHash: 'KEY-HASH-B' },
+  )
+  t.webhooks.push(
+    { id: 'wh-a', userId: 'user-a', url: 'https://a.example.test/hook', secret: 'WEBHOOK-SECRET-A', events: ['invoice.paid'], createdAt: new Date() },
+    { id: 'wh-b', userId: 'user-b', url: 'https://b.example.test/hook', secret: 'WEBHOOK-SECRET-B', events: [] },
+  )
+  t.agentFeedback.push(
+    { id: 'fb-a', userId: 'user-a', task: 'send invoice', kind: 'idea', description: 'feedback a' },
+    { id: 'fb-b', userId: 'user-b', task: 'other', kind: 'idea', description: 'feedback b' },
   )
   fake.rows.push(
     { id: 'inv-a', userId: 'user-a', documentType: 'invoice', invoiceNumber: 'INV-001', shareToken: 'share-a' },
@@ -42,8 +78,6 @@ function request() {
 }
 
 beforeEach(() => {
-  fake.tables.user ??= []
-  fake.tables.userProfiles ??= []
   seed()
   jest.clearAllMocks()
 })
@@ -69,24 +103,28 @@ describe('GET /api/account/export', () => {
     expect(body.invoices.map((i: { id: string }) => i.id)).toEqual(['inv-a'])
     expect(body.estimates.map((i: { id: string }) => i.id)).toEqual(['est-a'])
     expect(body.invoices[0].shareToken).toBe('share-a')
+    expect(body.voiceUsage).toEqual([expect.objectContaining({ monthYear: '2026-11', commandCount: 3 })])
+    expect(body.apiKeys).toEqual([expect.objectContaining({ name: 'CLI', keyPrefix: 'sk_live_aaaa' })])
+    expect(body.webhooks).toEqual([
+      expect.objectContaining({ url: 'https://a.example.test/hook', events: ['invoice.paid'] }),
+    ])
+    expect(body.agentFeedback).toEqual([expect.objectContaining({ description: 'feedback a' })])
 
     const text = JSON.stringify(body)
-    expect(text).not.toContain('user-b')
-    expect(text).not.toContain('acct_b')
-    expect(text).not.toContain('INV-B')
+    for (const other of ['user-b', 'acct_b', 'INV-B', 'sk_live_bbbb', 'b.example.test', 'feedback b']) {
+      expect(text).not.toContain(other)
+    }
   })
 
-  it('leaves out secrets', async () => {
+  it('leaves out password hashes, session tokens, key hashes and webhook secrets', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-a' } })
-    const body = await (await GET(request())).json()
+    const text = await (await GET(request())).text()
 
-    const text = JSON.stringify(body)
-    expect(text).not.toContain('hash-a')
-    expect(body.user).not.toHaveProperty('password')
-    for (const key of ['keyHash', 'secret', 'token', 'apiKeys', 'webhooks', 'sessions']) {
-      expect(body).not.toHaveProperty(key)
-      expect(body.user).not.toHaveProperty(key)
+    for (const secret of ['PASSWORD-HASH-A', 'SESSION-TOKEN-A', 'KEY-HASH-A', 'WEBHOOK-SECRET-A']) {
+      expect(text).not.toContain(secret)
     }
+    expect(text).not.toContain('"keyHash"')
+    expect(text).not.toContain('"secret"')
   })
 
   it('rate limits repeated exports by the same user', async () => {
