@@ -51,6 +51,12 @@ export default async function SignupPage({
           </div>
 
           <SignupForm next={next} />
+
+          <p className="text-xs text-muted-foreground text-center mt-6">
+            By creating an account you agree to the{' '}
+            <Link href="/terms" className="underline hover:text-foreground">Terms</Link> and{' '}
+            <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
+          </p>
         </div>
       </div>
     </div>
