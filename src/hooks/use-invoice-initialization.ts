@@ -11,14 +11,17 @@ export function useInvoiceInitialization() {
     let mounted = true
 
     const initialize = async () => {
-      // "Create New Invoice" links to /?new=1 so it starts clean instead of reopening the last saved invoice
+      loadFromStorage()
+
+      // "Create New Invoice" links to /?new=1. Start clean only when the draft belongs to a
+      // saved invoice; a never-saved draft is unsaved work and is kept.
       const url = new URL(window.location.href)
       if (url.searchParams.get('new') === '1') {
-        resetInvoice()
+        if (useInvoiceStore.getState().id) {
+          resetInvoice()
+        }
         url.searchParams.delete('new')
         window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
-      } else {
-        loadFromStorage()
       }
 
       await new Promise(resolve => setTimeout(resolve, 0))
