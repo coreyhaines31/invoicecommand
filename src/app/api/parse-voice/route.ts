@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const response = await requestVoiceUpdate(client, {
+    const { content: response } = await requestVoiceUpdate(client, {
       transcript: sanitizedTranscript,
       currentInvoice,
       now: new Date(),
