@@ -145,6 +145,24 @@ describe('POST /api/estimates/:id/accept', () => {
     expect(res.status).toBe(200)
   })
 
+  it('signs with the stored updatedAt sent back after a JSON round trip', async () => {
+    seed({ updatedAt: new Date('2026-11-17T23:59:59.987Z') })
+    const page = JSON.stringify({ documentVersion: serializeDocumentVersion(fake.rows[0].updatedAt as Date) })
+    const { documentVersion } = JSON.parse(page)
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody({ documentVersion })), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(200)
+  })
+
+  it('lets exactly one of two concurrent accept requests sign', async () => {
+    const [a, b] = await Promise.all([
+      acceptEstimate(req(ESTIMATE_ID, validBody({ signerName: 'First' })), ctx(ESTIMATE_ID)),
+      acceptEstimate(req(ESTIMATE_ID, validBody({ signerName: 'Second' })), ctx(ESTIMATE_ID)),
+    ])
+    expect([a.status, b.status].sort()).toEqual([200, 409])
+    const winner = a.status === 200 ? 'First' : 'Second'
+    expect(fake.rows[0].signerName).toBe(winner)
+  })
+
   it('rejects a signature for a document changed after it was rendered', async () => {
     // The owner edited the estimate after the signer loaded the page.
     seed({ updatedAt: new Date(RENDERED_AT.getTime() + 1) })
