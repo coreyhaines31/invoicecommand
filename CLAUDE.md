@@ -23,6 +23,7 @@ Invoice Command is a free, open-source (AGPL-3.0) invoicing app hosted at invoic
 npm run dev        # http://localhost:3005
 npm run build
 npm run lint
+npm run typecheck  # next typegen && tsc --noEmit
 npm test           # Jest (__tests__/)
 npm run test:e2e   # e2e browser tests (tests/), see Testing
 npm run db:push    # apply src/lib/db/schema.ts to DATABASE_URL

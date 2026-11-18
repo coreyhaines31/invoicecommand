@@ -1,109 +1,78 @@
-# Testing Infrastructure for Invoice Command
+# Testing
 
-## Overview
+Invoice Command has two test suites:
 
-This document provides a comprehensive guide to the testing infrastructure set up for Invoice Command. The project uses **Jest** as the test runner with **React Testing Library** for component testing.
+- **Jest** with React Testing Library for libraries, hooks, stores, components and route handlers. Tests live in `__tests__/`.
+- **e2e** ([tester.army/e2e](https://tester.army/e2e)) drives a real browser. Tests live in `tests/`.
 
-## Quick Start
+CI runs both on every PR (`.github/workflows/jest.yml` and `.github/workflows/e2e.yml`).
+
+## Commands
 
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode (for development)
-npm run test:watch
-
-# Generate coverage report
-npm run test:coverage
-
-# Run tests in CI mode
-npm run test:ci
+npm test               # run the Jest suite
+npm run test:watch     # Jest in watch mode
+npm run test:coverage  # Jest with a coverage report in coverage/
+npm run test:ci        # what CI runs: jest --ci --coverage --maxWorkers=2
+npm run test:e2e       # e2e browser tests (see below)
 ```
 
-## Current Test Coverage
+Run one file or one test name:
 
-**Baseline Coverage (as of setup):**
-- Statements: 3.6%
-- Branches: 2.38%
-- Functions: 3.42%
-- Lines: 3.57%
+```bash
+npm test -- __tests__/utils/invoice-numbering.test.ts
+npm test -- --testNamePattern="share link"
+```
 
-**Coverage Thresholds:**
-- Statements: 3%
-- Branches: 2%
-- Functions: 3%
-- Lines: 3%
+## Jest
 
-## Test Structure
+### Layout
+
+`__tests__/` mirrors `src/`:
 
 ```
 __tests__/
-├── components/
-│   └── document-type-toggle.test.tsx
-├── utils/
-│   ├── invoice-numbering.test.ts
-│   └── date-validation.test.ts
-└── README.md
+├── app/          # pages and client components under src/app
+│   └── api/      # route handler tests
+├── components/   # src/components (including providers/ and ui/)
+├── data/         # SEO page data in src/data
+├── helpers/      # shared test helpers (fake-db.ts)
+├── hooks/        # src/hooks
+├── lib/          # src/lib
+├── stores/       # src/stores
+└── utils/        # helpers from src/lib/utils.ts
 ```
 
-## Existing Tests (34 tests passing)
+Name files `<name>.test.ts` or `<name>.test.tsx`. Jest only picks up files under `__tests__/` (see `testMatch` in `jest.config.js`).
 
-### 1. **Invoice Numbering Tests** (`__tests__/utils/invoice-numbering.test.ts`)
-- Tests document number generation for invoices (INV-1001) and estimates (EST-1001)
-- Validates sequential numbering
-- Tests localStorage persistence for anonymous users
-- Verifies proper prefix formatting
+### Configuration
 
-### 2. **Date Validation Tests** (`__tests__/utils/date-validation.test.ts`)
-- Tests expiration date validation (estimates only)
-- Validates future date requirements
-- Tests date range constraints (within 1 year)
-- Verifies default expiration date generation (30 days)
-- Tests error messaging for invalid dates
+`jest.config.js` uses `next/jest`, so `next.config.ts` and `.env` files load in tests and TypeScript is compiled with SWC. It maps `@/` to `src/`, defaults to the `jsdom` environment, and collects coverage from `src/**`.
 
-### 3. **Document Type Toggle Tests** (`__tests__/components/document-type-toggle.test.tsx`)
-- Tests UI rendering for invoice/estimate toggle
-- Validates visual highlighting of selected type
-- Tests document type switching behavior
-- Verifies Zustand store integration
-- Tests descriptive text updates
+Coverage thresholds live in `coverageThreshold` in `jest.config.js`; `test:coverage` and `test:ci` fail when coverage drops below them.
 
-## Configuration Files
+`jest.setup.js` loads `@testing-library/jest-dom` and, under jsdom only, mocks `window.matchMedia`, `IntersectionObserver`, `localStorage` and `sessionStorage`.
 
-### `jest.config.js`
-- Next.js integration via `next/jest`
-- TypeScript support via `ts-jest`
-- Path aliases configured (`@/` → `src/`)
-- Coverage collection from `src/**/*` files
-- Excludes `.next/`, `node_modules/`, test files from coverage
+### Route handler tests
 
-### `jest.setup.js`
-Browser API mocks for JSDOM environment:
-- `window.matchMedia` - for responsive design tests
-- `IntersectionObserver` - for visibility tests
-- `localStorage` / `sessionStorage` - for storage tests
+Route handlers run in Node, not jsdom. Opt in with a docblock at the top of the file:
 
-## Writing New Tests
+```ts
+/**
+ * @jest-environment node
+ */
+```
 
-### Test File Naming
-- Component tests: `__tests__/components/[component-name].test.tsx`
-- Utility tests: `__tests__/utils/[util-name].test.ts`
-- Hook tests: `__tests__/hooks/[hook-name].test.ts`
-- Store tests: `__tests__/stores/[store-name].test.ts`
+Use the in-memory fake database in `__tests__/helpers/fake-db.ts` instead of a real one. `__tests__/app/api/v1-invoice-isolation.test.ts` shows the pattern.
 
-### Example Component Test
+### Component tests
 
 ```tsx
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MyComponent } from '@/components/my-component'
 
 describe('MyComponent', () => {
-  it('should render correctly', () => {
-    render(<MyComponent />)
-    expect(screen.getByText('Hello')).toBeInTheDocument()
-  })
-
-  it('should handle click events', () => {
+  it('calls onClick when the button is pressed', () => {
     const handleClick = jest.fn()
     render(<MyComponent onClick={handleClick} />)
 
@@ -113,206 +82,18 @@ describe('MyComponent', () => {
 })
 ```
 
-### Example Utility Test
+Prefer `getByRole` and `getByLabelText` over `getByTestId`, and use `waitFor` for async updates.
 
-```typescript
-import { myUtilFunction } from '@/lib/utils'
+## e2e
 
-describe('myUtilFunction', () => {
-  it('should return expected value', () => {
-    const result = myUtilFunction('input')
-    expect(result).toBe('expected')
-  })
+`e2e.config.ts` starts `npm run dev` itself. Agent steps (`agent.act`, `agent.assert`) call a model through the Vercel AI Gateway, so they need `AI_GATEWAY_API_KEY` or a `vercel link`ed project. Run `npx e2e guide` for the full reference.
 
-  it('should handle edge cases', () => {
-    expect(myUtilFunction('')).toBe('default')
-    expect(myUtilFunction(null)).toBe('default')
-  })
-})
-```
+- Wait for hydration before typing (see `waitForHydration` in `tests/invoice-builder.e2e.ts`). Input typed into server-rendered HTML before React hydrates is silently dropped.
+- `.e2e/` is excluded from Tailwind's source scanning in `globals.css`. Without that, e2e's output files trigger dev rebuilds that reset page state mid-test.
+- Fork PRs don't receive secrets, so e2e skips there.
 
-## Priority Areas for Test Expansion
+## Common issues
 
-Based on the current codebase, here are the recommended priorities for expanding test coverage:
-
-### High Priority (Core Functionality)
-1. **Invoice Store** (`src/stores/invoice-store.ts`)
-   - Test all Zustand store actions
-   - Test `convertEstimateToInvoice` function
-   - Test state updates and persistence
-   - Current coverage: 6.95%
-
-2. **Invoice Form Component** (`src/components/invoice-form.tsx`)
-   - Test form validation
-   - Test line item CRUD operations
-   - Test calculation logic
-   - Test voice command integration
-   - Current coverage: 0%
-
-3. **Invoice Preview Components**
-   - Test Modern/Classic/Minimal templates
-   - Test PDF generation triggers
-   - Test data rendering
-   - Current coverage: 0%
-
-4. **Utils Library** (`src/lib/utils.ts`)
-   - Expand voice usage tracking tests
-   - Test invoice number generation for authenticated users
-   - Current coverage: 49.12%
-
-### Medium Priority (User Features)
-5. **Payment Integration** (`src/components/payment/`)
-   - Test Stripe payment flow
-   - Test payment button states
-   - Test error handling
-   - Current coverage: 0%
-
-6. **Authentication Forms** (`src/components/auth/`)
-   - Test login/signup validation
-   - Test error states
-   - Test redirect logic
-   - Current coverage: 0%
-
-7. **Dashboard Components** (`src/components/dashboard/`)
-   - Test invoice list rendering
-   - Test filtering/sorting
-   - Test CRUD operations
-   - Current coverage: 0%
-
-### Lower Priority (Supporting Features)
-8. **Email Service** (`src/lib/email-service.ts`)
-   - Mock Resend API calls
-   - Test email template generation
-   - Current coverage: 0%
-
-9. **PDF Generator** (`src/lib/pdf-generator.ts`)
-   - Test PDF generation logic
-   - Test template rendering
-   - Current coverage: 0%
-
-10. **Hooks** (`src/hooks/`)
-    - Test custom React hooks
-    - Mock external dependencies
-    - Current coverage: 0%
-
-## Testing Best Practices
-
-### 1. Follow the AAA Pattern
-- **Arrange**: Set up test data and mocks
-- **Act**: Execute the code being tested
-- **Assert**: Verify the expected outcome
-
-### 2. Mock External Dependencies
-```typescript
-// Mock Supabase
-jest.mock('@/lib/supabase', () => ({
-  createBrowserSupabaseClient: jest.fn(() => ({
-    from: jest.fn(),
-    auth: jest.fn(),
-  })),
-}))
-```
-
-### 3. Use Testing Library Queries
-- Prefer `getByRole`, `getByLabelText` over `getByTestId`
-- Use `waitFor` for async operations
-- Use `userEvent` for more realistic interactions
-
-### 4. Test User Behavior, Not Implementation
-- Focus on what the user sees and does
-- Avoid testing internal state unless necessary
-- Test accessibility (ARIA labels, keyboard navigation)
-
-### 5. Keep Tests Isolated
-- Each test should be independent
-- Clear mocks between tests with `beforeEach`
-- Don't rely on test execution order
-
-## Continuous Integration
-
-The test suite is ready for CI/CD integration. Use the `test:ci` script for optimized CI performance:
-
-```yaml
-# GitHub Actions example
-- name: Run tests
-  run: npm run test:ci
-
-- name: Upload coverage
-  uses: codecov/codecov-action@v3
-  with:
-    files: ./coverage/lcov.info
-```
-
-## Coverage Goals
-
-**Short-term goals (3 months):**
-- Core store functions: 80%
-- Core utility functions: 80%
-- Main components: 60%
-- Overall project: 40%
-
-**Long-term goals (6 months):**
-- Core store functions: 95%
-- Core utility functions: 95%
-- Main components: 80%
-- Overall project: 70%
-
-## Debugging Tests
-
-### Run specific test file
-```bash
-npm test invoice-numbering.test.ts
-```
-
-### Run tests matching a pattern
-```bash
-npm test -- --testNamePattern="should validate"
-```
-
-### Run with verbose output
-```bash
-npm test -- --verbose
-```
-
-### Debug in VS Code
-Add to `.vscode/launch.json`:
-```json
-{
-  "type": "node",
-  "request": "launch",
-  "name": "Jest Debug",
-  "program": "${workspaceFolder}/node_modules/.bin/jest",
-  "args": ["--runInBand", "--no-cache"],
-  "console": "integratedTerminal",
-  "internalConsoleOptions": "neverOpen"
-}
-```
-
-## Common Issues and Solutions
-
-### Issue: "Cannot find module '@/...'"
-**Solution**: Check that `jest.config.js` has the correct `moduleNameMapper` configuration.
-
-### Issue: "matchMedia is not defined"
-**Solution**: Ensure `jest.setup.js` includes the matchMedia mock.
-
-### Issue: "localStorage is not defined"
-**Solution**: Ensure `jest.setup.js` includes the localStorage mock.
-
-### Issue: Tests pass locally but fail in CI
-**Solution**: Check timezone differences. Use consistent date parsing (see `src/lib/utils.ts` date validation functions).
-
-## Resources
-
-- [Jest Documentation](https://jestjs.io/docs/getting-started)
-- [React Testing Library Documentation](https://testing-library.com/docs/react-testing-library/intro/)
-- [Testing Library Cheatsheet](https://testing-library.com/docs/react-testing-library/cheatsheet)
-- [Common Testing Mistakes](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
-
-## Next Steps
-
-1. **Add E2E Testing** - Consider Playwright or Cypress for end-to-end tests
-2. **Add Visual Regression Testing** - Use Percy or Chromatic for visual testing
-3. **Add Performance Testing** - Use Lighthouse CI for performance monitoring
-4. **Increase Coverage** - Start with high-priority areas listed above
-5. **Add Integration Tests** - Test full user workflows (create invoice → send → pay)
+- **"Cannot find module '@/...'"**: check `moduleNameMapper` in `jest.config.js`.
+- **"window is not defined" in a route test**: add the `@jest-environment node` docblock.
+- **Date tests pass locally but fail in CI**: CI runs in UTC. Build dates with explicit components rather than parsing local date strings.
