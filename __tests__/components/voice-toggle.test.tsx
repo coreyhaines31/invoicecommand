@@ -19,11 +19,6 @@ jest.mock('@/hooks/use-user', () => ({
   useUser: () => ({ user: mockUser, loading: mockUserLoading, isAuthenticated: !!mockUser }),
 }))
 
-const mockTriggerUpgrade = jest.fn()
-jest.mock('@/hooks/use-upgrade-triggers', () => ({
-  useUpgradeTriggers: () => ({ triggerUpgrade: mockTriggerUpgrade }),
-}))
-
 const mockStartListening = jest.fn()
 const mockResetTranscript = jest.fn()
 let mockSpeech = {
@@ -92,5 +87,75 @@ describe('VoiceToggle for signed-in users', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Start Recording/ }))
     await waitFor(() => expect(mockStartListening).toHaveBeenCalled())
+  })
+})
+
+describe('VoiceToggle errors for signed-in users', () => {
+  beforeEach(() => {
+    mockUser = { id: 'user-1' }
+    mockSpeech = { ...mockSpeech, transcript: 'set tax to eight' }
+  })
+
+  async function processWith(result: unknown) {
+    const onVoiceCommand = jest.fn().mockResolvedValue(result)
+    render(<VoiceToggle onVoiceCommand={onVoiceCommand} />)
+    await screen.findByText('2/10')
+    fireEvent.click(screen.getByRole('button', { name: /Process/ }))
+    await waitFor(() => expect(onVoiceCommand).toHaveBeenCalledWith('set tax to eight'))
+    return screen.findByRole('alert')
+  }
+
+  it('says when the command was not clear and keeps the transcript', async () => {
+    const alert = await processWith({ success: false, message: 'x', errorKind: 'unclear' })
+    expect(alert).toHaveTextContent('That command was not clear enough to change the invoice.')
+    expect(screen.getByText(/set tax to eight/)).toBeInTheDocument()
+    expect(mockResetTranscript).not.toHaveBeenCalled()
+  })
+
+  it('says how many commands are included and when they reset on a 429', async () => {
+    const alert = await processWith({ success: false, message: 'x', errorKind: 'limit' })
+    const now = new Date()
+    const reset = new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+    expect(alert).toHaveTextContent(`Your account includes 10 voice commands a month and you have used them all. They reset on ${reset}.`)
+  })
+
+  it('uses the limit and reset date from the route when given', async () => {
+    const alert = await processWith({ success: false, message: 'x', errorKind: 'limit', limit: 25, resetsAt: '2027-01-01T12:00:00Z' })
+    expect(alert).toHaveTextContent('includes 25 voice commands a month')
+    expect(alert).toHaveTextContent('They reset on January 1.')
+  })
+
+  it('suggests a retry on a network or server failure', async () => {
+    const alert = await processWith({ success: false, message: 'x', errorKind: 'failed' })
+    expect(alert).toHaveTextContent('network or server problem')
+    expect(alert).toHaveTextContent('press Process to try again')
+    expect(screen.getByRole('button', { name: /Process/ })).toBeInTheDocument()
+  })
+
+  it('suggests a retry when the command handler throws', async () => {
+    const onVoiceCommand = jest.fn().mockRejectedValue(new Error('boom'))
+    render(<VoiceToggle onVoiceCommand={onVoiceCommand} />)
+    await screen.findByText('2/10')
+    fireEvent.click(screen.getByRole('button', { name: /Process/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('press Process to try again')
+  })
+
+  it('clears the transcript after a successful command', async () => {
+    const onVoiceCommand = jest.fn().mockResolvedValue({ success: true, message: 'ok' })
+    render(<VoiceToggle onVoiceCommand={onVoiceCommand} />)
+    await screen.findByText('2/10')
+    fireEvent.click(screen.getByRole('button', { name: /Process/ }))
+    await waitFor(() => expect(mockResetTranscript).toHaveBeenCalled())
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows the limit inline before recording when none are left', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ used: 10, limit: 10 }) })
+    mockSpeech = { ...mockSpeech, transcript: '' }
+    render(<VoiceToggle onVoiceCommand={jest.fn()} />)
+    await screen.findByText('10/10')
+    fireEvent.click(screen.getByRole('button', { name: /Start Recording/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('you have used them all')
+    expect(mockStartListening).not.toHaveBeenCalled()
   })
 })

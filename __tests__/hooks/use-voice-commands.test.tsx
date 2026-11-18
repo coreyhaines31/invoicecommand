@@ -442,6 +442,73 @@ describe('useVoiceCommands', () => {
       expect(result.current.lastResult?.success).toBe(false)
     })
 
+    describe('error kinds returned to the caller', () => {
+      async function run(response: unknown) {
+        ;(global.fetch as jest.Mock).mockResolvedValueOnce(response)
+        const { result } = renderHook(() => useVoiceCommands())
+        let returned
+        await act(async () => {
+          returned = await result.current.processVoiceCommand('test command')
+        })
+        return returned as unknown as { success: boolean; errorKind?: string; limit?: number; resetsAt?: string }
+      }
+
+      it('reports the monthly limit on a 429', async () => {
+        const returned = await run({ ok: false, status: 429, json: async () => ({ error: 'Voice command limit reached for this month' }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'limit' })
+      })
+
+      it('passes on the limit and reset date if the route sends them', async () => {
+        const returned = await run({ ok: false, status: 429, json: async () => ({ error: 'x', limit: 25, resetsAt: '2026-12-01T00:00:00Z' }) })
+        expect(returned).toMatchObject({ errorKind: 'limit', limit: 25, resetsAt: '2026-12-01T00:00:00Z' })
+      })
+
+      it('treats the model declining the command as unclear', async () => {
+        const returned = await run({ ok: false, status: 500, json: async () => ({ error: 'AI response missing required action field' }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'unclear' })
+      })
+
+      it('treats an update with no action as unclear', async () => {
+        const returned = await run({ ok: true, status: 200, json: async () => ({ update: { error: 'Command is ambiguous' } }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'unclear' })
+      })
+
+      it('treats an unknown field as unclear', async () => {
+        const returned = await run({ ok: true, status: 200, json: async () => ({ update: { action: 'update_field', field: 'nope', value: 1 } }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'unclear' })
+      })
+
+      it('reports a 400 as invalid with the server message', async () => {
+        const returned = await run({ ok: false, status: 400, json: async () => ({ error: 'Invoice is too large for voice commands' }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'invalid' })
+      })
+
+      it('reports a 401 as signed out', async () => {
+        const returned = await run({ ok: false, status: 401, json: async () => ({ error: 'Unauthorized' }) })
+        expect(returned).toMatchObject({ success: false, errorKind: 'signed-out' })
+      })
+
+      it('reports other server errors and non-JSON bodies as failed', async () => {
+        const returned = await run({ ok: false, status: 502, json: async () => { throw new SyntaxError('Unexpected token <') } })
+        expect(returned).toMatchObject({ success: false, errorKind: 'failed' })
+      })
+
+      it('reports a network failure as failed', async () => {
+        ;(global.fetch as jest.Mock).mockRejectedValueOnce(new TypeError('Failed to fetch'))
+        const { result } = renderHook(() => useVoiceCommands())
+        let returned
+        await act(async () => {
+          returned = await result.current.processVoiceCommand('test command')
+        })
+        expect(returned).toMatchObject({ success: false, errorKind: 'failed' })
+      })
+
+      it('returns success for an applied update', async () => {
+        const returned = await run({ ok: true, status: 200, json: async () => ({ update: { action: 'update_field', field: 'notes', value: 'Hi' } }) })
+        expect(returned).toMatchObject({ success: true })
+      })
+    })
+
     it('should clear error state', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,

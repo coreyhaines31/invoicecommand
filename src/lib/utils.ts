@@ -77,11 +77,6 @@ export async function getVoiceUsageThisMonth(): Promise<{ used: number; limit: n
   }
 }
 
-export async function canUseVoiceCommand(): Promise<boolean> {
-  const usage = await getVoiceUsageThisMonth()
-  return usage.used < usage.limit
-}
-
 // Date validation utilities
 export function isValidExpirationDate(dateString: string): boolean {
   if (!dateString) return false

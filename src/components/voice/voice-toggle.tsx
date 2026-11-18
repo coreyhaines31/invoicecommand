@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition'
 import { useUser } from '@/hooks/use-user'
-import { useUpgradeTriggers } from '@/hooks/use-upgrade-triggers'
-import { getVoiceUsageThisMonth, canUseVoiceCommand } from '@/lib/utils'
+import type { VoiceCommandResult } from '@/hooks/use-voice-commands'
+import { getVoiceUsageThisMonth } from '@/lib/utils'
 import { withNextPath } from '@/lib/next-path'
 import {
   Mic,
@@ -20,8 +20,37 @@ import {
 } from 'lucide-react'
 
 interface VoiceToggleProps {
-  onVoiceCommand?: (transcript: string) => Promise<void>
+  onVoiceCommand?: (transcript: string) => Promise<VoiceCommandResult | void>
   disabled?: boolean
+}
+
+const FAILED_MESSAGE = 'The voice command did not go through because of a network or server problem. Check your connection, then press Process to try again.'
+
+// The server counts commands per calendar month
+function formatResetDate(resetsAt?: string): string {
+  const now = new Date()
+  const parsed = resetsAt ? new Date(resetsAt) : null
+  const date = parsed && !isNaN(parsed.getTime()) ? parsed : new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+}
+
+function limitMessage(limit: number, resetsAt?: string): string {
+  return `Your account includes ${limit} voice commands a month and you have used them all. They reset on ${formatResetDate(resetsAt)}.`
+}
+
+function describeVoiceError(result: VoiceCommandResult, limit: number): string {
+  switch (result.errorKind) {
+    case 'unclear':
+      return 'That command was not clear enough to change the invoice. Try again and name the field and the value, for example "set the tax rate to 8 percent".'
+    case 'limit':
+      return limitMessage(result.limit ?? limit, result.resetsAt)
+    case 'invalid':
+      return /[.!?]$/.test(result.message) ? result.message : `${result.message}.`
+    case 'signed-out':
+      return 'You are signed out. Log in again to use voice commands.'
+    default:
+      return FAILED_MESSAGE
+  }
 }
 
 export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceToggleProps) {
@@ -30,7 +59,6 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   const [voiceUsage, setVoiceUsage] = useState({ used: 0, limit: 10 })
 
   const { user, loading: userLoading } = useUser()
-  const { triggerUpgrade } = useUpgradeTriggers()
   // The draft is kept in localStorage, so signup returns the visitor to the builder
   const needsAccount = !userLoading && !user
 
@@ -63,13 +91,20 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
     loadUsage()
   }, [user])
 
+  // Refreshes the counter and reports whether a command is left this month
+  const checkAllowance = async () => {
+    const usage = await getVoiceUsageThisMonth()
+    setVoiceUsage(usage)
+    if (usage.used < usage.limit) return true
+    setProcessingError(limitMessage(usage.limit))
+    return false
+  }
+
   const handleStartRecording = async () => {
     if (!isSupported || !user) return
 
-    if (!(await canUseVoiceCommand())) {
-      triggerUpgrade('voice-limit-free')
-      return
-    }
+    setProcessingError(null)
+    if (!(await checkAllowance())) return
 
     resetTranscript()
     setProcessingError(null)
@@ -83,24 +118,25 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
   const handleProcessTranscript = async () => {
     if (!transcript.trim() || !onVoiceCommand || !user) return
 
-    if (!(await canUseVoiceCommand())) {
-      triggerUpgrade('voice-limit-free')
-      return
-    }
+    setProcessingError(null)
+    if (!(await checkAllowance())) return
 
     setIsProcessing(true)
-    setProcessingError(null)
 
+    // On failure the transcript stays, so the user can see what was heard and retry
     try {
-      await onVoiceCommand(transcript.trim())
-      setVoiceUsage(await getVoiceUsageThisMonth())
-      resetTranscript()
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to process voice command'
-      setProcessingError(errorMessage)
+      const result = await onVoiceCommand(transcript.trim())
+      if (result && !result.success) {
+        setProcessingError(describeVoiceError(result, voiceUsage.limit))
+      } else {
+        resetTranscript()
+      }
+    } catch {
+      setProcessingError(FAILED_MESSAGE)
     } finally {
       setIsProcessing(false)
     }
+    setVoiceUsage(await getVoiceUsageThisMonth())
   }
 
   const handleManualSubmit = () => {
@@ -197,6 +233,15 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
         ) : null}
       </div>
 
+      {(speechError || processingError) && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {processingError || speechError}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Transcript Tray - only show when transcript exists */}
       {transcript && (
         <Card className="p-4">
@@ -220,7 +265,10 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
                   </Button>
                 )}
                 <Button
-                  onClick={resetTranscript}
+                  onClick={() => {
+                    resetTranscript()
+                    setProcessingError(null)
+                  }}
                   variant="outline"
                   size="sm"
                   disabled={isListening || isProcessing}
@@ -237,16 +285,6 @@ export function VoiceToggle({ onVoiceCommand, disabled = false }: VoiceTogglePro
             </div>
           </div>
         </Card>
-      )}
-
-      {/* Error Display */}
-      {(speechError || processingError) && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {speechError || processingError}
-          </AlertDescription>
-        </Alert>
       )}
     </div>
   )

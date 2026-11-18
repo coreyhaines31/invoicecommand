@@ -3,7 +3,7 @@
  * always comes from the server.
  */
 
-import { getVoiceUsageThisMonth, canUseVoiceCommand } from '@/lib/utils'
+import { getVoiceUsageThisMonth } from '@/lib/utils'
 
 global.fetch = jest.fn()
 
@@ -59,35 +59,6 @@ describe('Voice Usage Utilities', () => {
 
       expect(result.used).toBe(0)
       localStorage.clear()
-    })
-  })
-
-  describe('canUseVoiceCommand', () => {
-    it('should return true when under limit', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ used: 5, limit: 10 }),
-      })
-
-      expect(await canUseVoiceCommand()).toBe(true)
-    })
-
-    it('should return false when at limit', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ used: 10, limit: 10 }),
-      })
-
-      expect(await canUseVoiceCommand()).toBe(false)
-    })
-
-    it('should return false when over limit', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ used: 15, limit: 10 }),
-      })
-
-      expect(await canUseVoiceCommand()).toBe(false)
     })
   })
 })
