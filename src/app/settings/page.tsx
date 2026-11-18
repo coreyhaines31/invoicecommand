@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth'
 import { withNextPath } from '@/lib/next-path'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ExportDataButton } from './export-data-button'
 
 export const metadata: Metadata = {
   title: 'Settings | Invoice Command',
@@ -81,6 +82,18 @@ export default async function SettingsPage() {
                   </li>
                 ))}
               </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Export your data</CardTitle>
+              <CardDescription>
+                Download a JSON file with your account details, profile, invoices and estimates.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ExportDataButton />
             </CardContent>
           </Card>
         </div>
