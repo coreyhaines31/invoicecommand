@@ -1,5 +1,6 @@
 import { sendMail, invoiceFromEmail, appFromEmail, replyToEmail } from './mail'
 import type { InvoiceData } from '@/stores/invoice-store'
+import { formatDateOnly } from './date-only'
 
 // Providers reject an email with neither an HTML nor a text body.
 type EmailBody = { html: string; text?: string } | { html?: string; text: string }
@@ -121,7 +122,7 @@ function generateInvoiceEmailHtml(data: InvoiceEmailTemplateData): string {
     currency: currency || 'USD'
   }).format(total)
 
-  const formattedDueDate = new Date(dueDate).toLocaleDateString('en-US', {
+  const formattedDueDate = formatDateOnly(dueDate, 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -371,7 +372,7 @@ function generateInvoiceEmailText(data: InvoiceEmailTemplateData): string {
     currency: currency || 'USD'
   }).format(total)
 
-  const formattedDueDate = new Date(dueDate).toLocaleDateString('en-US', {
+  const formattedDueDate = formatDateOnly(dueDate, 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
