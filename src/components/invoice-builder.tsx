@@ -160,7 +160,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
                   <div>
                     <h3 className="font-semibold">AI Voice Commands</h3>
                     <p className="text-sm text-muted-foreground">
-                      Unique voice-to-invoice feature. Simply speak your invoice details and watch them populate automatically.
+                      Unique voice-to-invoice feature, free with an account. Speak your invoice details and watch them populate automatically.
                     </p>
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
                   How does the AI voice feature work?
                 </summary>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Simply click the voice button and speak naturally about your invoice details. Our AI understands commands like &quot;Add 5 hours of consulting at $150 per hour&quot; and automatically populates your invoice.
+                  With a free account, click the voice button and speak naturally about your invoice details. Our AI understands commands like &quot;Add 5 hours of consulting at $150 per hour&quot; and automatically populates your invoice.
                 </p>
               </details>
               <details className="border-b border-border pb-4">

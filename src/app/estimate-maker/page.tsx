@@ -310,7 +310,7 @@ export default function EstimateMakerPage() {
               <Card className="p-6">
                 <h3 className="font-semibold text-lg mb-2">How does the AI voice input work?</h3>
                 <p className="text-muted-foreground">
-                  Simply click the microphone button and speak naturally. Our AI understands phrases like
+                  With a free account, click the microphone button and speak naturally. Our AI understands phrases like
                   &quot;Add $500 for design work&quot; or &quot;Set the client name to John Smith&quot; and automatically updates your estimate.
                   It&apos;s perfect for creating estimates hands-free or on mobile devices.
                 </p>

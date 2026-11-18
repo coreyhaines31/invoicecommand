@@ -201,7 +201,7 @@ export default function RootLayout({
             "name": "How does the AI voice feature work?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Simply click the voice button and speak naturally about your invoice details. Our AI understands commands like 'Add 5 hours of consulting at $150 per hour' and automatically populates your invoice."
+              "text": "With a free account, click the voice button and speak naturally about your invoice details. Our AI understands commands like 'Add 5 hours of consulting at $150 per hour' and automatically populates your invoice."
             }
           },
           {

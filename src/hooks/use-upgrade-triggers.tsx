@@ -39,7 +39,7 @@ const UPGRADE_TRIGGERS: Record<string, PaywallTrigger> = {
       'Save unlimited invoices',
       'Access invoice history dashboard',
       'Duplicate and edit saved invoices',
-      'Increase voice commands to 10/month'
+      '10 voice commands per month'
     ],
     ctaText: 'Create Free Account',
     // The draft stays in localStorage, so send the new user back to the builder.
