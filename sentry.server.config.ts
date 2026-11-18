@@ -12,5 +12,7 @@ Sentry.init({
 
   // Redact share tokens (/i/<token>) from request.url, headers and breadcrumbs.
   beforeSend: scrubSentryPayload,
+  // Unused while tracing is off; kept so turning it back on can't leak tokens.
+  beforeSendTransaction: scrubSentryPayload,
   beforeBreadcrumb: scrubSentryPayload,
 });
