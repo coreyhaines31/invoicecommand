@@ -1,9 +1,14 @@
-// Share links put the access token in the path (/i/<token>), and the token is
+// Share links put the access token in the path (/i/<token> and
+// /api/share/<token>/pdf), and the token is
 // the only thing guarding a shared invoice. Anything that sends URLs to an
 // analytics vendor has to run them through here first.
 
 const TOKEN_PATH_RE = /^\/i\/[^/?#]+/
 export const REDACTED_TOKEN_PATH = '/i/[redacted]'
+
+// The share link's PDF download carries the same token: /api/share/<token>/pdf.
+const SHARE_API_PATH_RE = /^\/api\/share\/[^/?#]+/
+export const REDACTED_SHARE_API_PATH = '/api/share/[redacted]'
 
 // Query params that carry auth/share secrets.
 const SENSITIVE_QUERY_PARAMS = new Set([
@@ -25,11 +30,13 @@ const SENSITIVE_PATH_RES = [/^\/i(\/|$)/, /^\/invoice(\/|$)/]
 const ELEMENT_EVENTS = new Set(['$autocapture', '$rageclick', '$dead_click', '$copy_autocapture'])
 
 export function redactPath(pathname: string): string {
-  return pathname.replace(TOKEN_PATH_RE, REDACTED_TOKEN_PATH)
+  return pathname
+    .replace(TOKEN_PATH_RE, REDACTED_TOKEN_PATH)
+    .replace(SHARE_API_PATH_RE, REDACTED_SHARE_API_PATH)
 }
 
 export function hasTokenInPath(pathname: string): boolean {
-  return TOKEN_PATH_RE.test(pathname)
+  return TOKEN_PATH_RE.test(pathname) || SHARE_API_PATH_RE.test(pathname)
 }
 
 export function isSensitivePath(pathname: string): boolean {
