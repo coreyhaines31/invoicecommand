@@ -92,10 +92,9 @@ export default function PrivacyPage() {
           on their own servers.
         </li>
         <li>
-          <strong>Sentry</strong> receives error reports from the app and the server. It also
-          records a sample of sessions, and sessions where an error happens, with all text masked
-          and images blocked. It does not record on shared invoice links. Share tokens are removed
-          from what we send.
+          <strong>HoneyWarden</strong> receives error reports from the app and the server. It
+          does not record sessions or trace performance. Share tokens are removed from what we
+          send.
         </li>
         <li>
           <strong>PostHog</strong> receives page views, clicks and session recordings, with form
@@ -129,7 +128,7 @@ export default function PrivacyPage() {
       <p>
         The privacy banner offers two choices. <strong>Accept All</strong> keeps PostHog
         analytics on. <strong>Essential</strong> turns PostHog off in that browser. Error reports
-        to Sentry stay on with either choice, because we need them to fix the app. The banner does
+        to HoneyWarden stay on with either choice, because we need them to fix the app. The banner does
         not control Headstream, Fathom or UserProof, which follow the page rules above. PostHog
         also respects your browser&apos;s Do Not Track setting.
       </p>
