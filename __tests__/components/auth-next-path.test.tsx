@@ -138,3 +138,23 @@ describe('SignupForm analytics', () => {
     expect(mockTrackUserSignup).not.toHaveBeenCalled()
   })
 })
+
+describe('SignupForm submit button', () => {
+  it('stays disabled after a successful signup until the redirect', async () => {
+    mockSignUpEmail.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null })
+    render(<SignupForm />)
+    fillAndSubmit(/create account/i)
+
+    await screen.findByText(CREATED)
+    expect(screen.getByRole('button', { name: /creat/i })).toBeDisabled()
+  })
+
+  it('re-enables after a failed signup', async () => {
+    mockSignUpEmail.mockResolvedValue({ data: null, error: { code: 'USER_ALREADY_EXISTS' } })
+    render(<SignupForm />)
+    fillAndSubmit(/create account/i)
+
+    await screen.findByText('Sign in instead')
+    expect(screen.getByRole('button', { name: /create account/i })).toBeEnabled()
+  })
+})

@@ -26,6 +26,8 @@ export function SignupForm({ next }: { next?: string | null }) {
     setIsLoading(true)
     setError(null)
     setMessage('')
+    // After success the button stays disabled until the redirect happens.
+    let succeeded = false
 
     try {
       const { data, error } = await signUp.email({
@@ -45,12 +47,13 @@ export function SignupForm({ next }: { next?: string | null }) {
       if (data?.user?.id) identifyUser(data.user.id)
       trackUserSignup('email')
 
+      succeeded = true
       setMessage(`Account created. We sent a verification email to ${email}. Redirecting...`)
       setTimeout(() => { window.location.href = redirectTo }, 1000)
     } catch {
       setError(getAuthErrorMessage(null))
     } finally {
-      setIsLoading(false)
+      if (!succeeded) setIsLoading(false)
     }
   }
 
