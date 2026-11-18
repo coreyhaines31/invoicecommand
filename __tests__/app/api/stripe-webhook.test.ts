@@ -110,3 +110,36 @@ describe('payment_intent.succeeded', () => {
     expect(invoice().stripePaymentStatus).toBe('processing')
   })
 })
+
+describe('payment_intent.payment_failed', () => {
+  it('marks the current intent failed', async () => {
+    await POST(event('payment_intent.payment_failed', {}))
+    expect(invoice().stripePaymentStatus).toBe('failed')
+    expect(invoice().status).toBe('sent')
+  })
+
+  it('never undoes a payment that already succeeded', async () => {
+    await POST(event('payment_intent.succeeded', {}))
+    const res = await POST(event('payment_intent.payment_failed', {}))
+    expect(res.status).toBe(200)
+    expect(invoice().status).toBe('paid')
+    expect(invoice().stripePaymentStatus).toBe('paid')
+  })
+
+  it('leaves an invoice the owner marked paid alone', async () => {
+    seed({ status: 'paid' })
+    await POST(event('payment_intent.payment_failed', {}))
+    expect(invoice().stripePaymentStatus).toBe('processing')
+  })
+
+  it('ignores a failure for an intent that has been superseded', async () => {
+    seed({ stripePaymentIntentId: 'pi_newer' })
+    await POST(event('payment_intent.payment_failed', { id: 'pi_older' }))
+    expect(invoice().stripePaymentStatus).toBe('processing')
+  })
+
+  it('ignores an intent without invoice metadata', async () => {
+    await POST(event('payment_intent.payment_failed', { metadata: {} }))
+    expect(invoice().stripePaymentStatus).toBe('processing')
+  })
+})

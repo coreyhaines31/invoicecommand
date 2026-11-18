@@ -85,12 +85,20 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   }
 }
 
+// A failure only counts for the invoice's current intent, and never moves a
+// paid invoice back: a late or redelivered failure must not undo a payment.
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  if (!paymentIntent.metadata?.invoice_id) return
+  const invoiceId = paymentIntent.metadata?.invoice_id
+  if (!invoiceId) return
   await db
     .update(invoices)
     .set({ stripePaymentStatus: 'failed', updatedAt: new Date() })
-    .where(eq(invoices.stripePaymentIntentId, paymentIntent.id))
+    .where(and(
+      eq(invoices.id, invoiceId),
+      eq(invoices.stripePaymentIntentId, paymentIntent.id),
+      notPaid(invoices.status),
+      notPaid(invoices.stripePaymentStatus),
+    ))
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
