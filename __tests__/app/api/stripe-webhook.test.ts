@@ -21,10 +21,14 @@ jest.mock('next/headers', () => ({
 }))
 jest.mock('@/lib/webhook-service', () => ({ triggerWebhooks: jest.fn() }))
 jest.mock('@/lib/email-service', () => ({ sendPaymentReceivedEmail: jest.fn(async () => ({ id: 'email-1' })) }))
+jest.mock('@/lib/error-response', () => ({
+  jsonErrorResponse: jest.fn((_error: unknown, message: string) => Response.json({ error: message }, { status: 500 })),
+}))
 
 import { POST } from '@/app/api/stripe/webhook/route'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { sendPaymentReceivedEmail } from '@/lib/email-service'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 const INVOICE_ID = '33333333-3333-4333-8333-333333333333'
 
@@ -160,6 +164,16 @@ describe('payment_intent.succeeded', () => {
     expect(res.status).toBe(200)
     expect(invoice().status).toBe('sent')
     expect(invoice().stripePaymentStatus).toBe('processing')
+  })
+})
+
+describe('errors', () => {
+  it('reports a handler failure through jsonErrorResponse so Stripe retries', async () => {
+    const error = new Error('db down')
+    jest.spyOn(fake.db, 'update').mockImplementationOnce(() => { throw error })
+    const res = await POST(event('payment_intent.succeeded', {}))
+    expect(res.status).toBe(500)
+    expect(jsonErrorResponse).toHaveBeenCalledWith(error, 'Webhook handler failed')
   })
 })
 

@@ -7,6 +7,7 @@ import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { sendPaymentReceivedEmail } from '@/lib/email-service'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error('STRIPE_WEBHOOK_SECRET not configured')
-      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+      return jsonErrorResponse(new Error('STRIPE_WEBHOOK_SECRET not configured'), 'Webhook secret not configured')
     }
 
     let event
@@ -47,8 +47,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook error:', error)
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
+    return jsonErrorResponse(error, 'Webhook handler failed')
   }
 }
 
