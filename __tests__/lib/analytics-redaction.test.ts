@@ -3,6 +3,7 @@ import {
   isSensitivePath,
   redactPath,
   scrubEvent,
+  scrubProperties,
   scrubUrl,
 } from '@/lib/analytics-redaction'
 
@@ -18,6 +19,22 @@ describe('redactPath', () => {
     expect(redactPath('/invoice-templates/plumber')).toBe('/invoice-templates/plumber')
     expect(redactPath('/i')).toBe('/i')
     expect(redactPath('/blog/i/thing')).toBe('/blog/i/thing')
+  })
+})
+
+describe('share PDF route paths', () => {
+  it('redacts the token in /api/share/<token>/pdf', () => {
+    expect(redactPath(`/api/share/${TOKEN}/pdf`)).toBe('/api/share/[redacted]/pdf')
+    expect(hasTokenInPath(`/api/share/${TOKEN}/pdf`)).toBe(true)
+    expect(scrubUrl(`https://invoicecommand.com/api/share/${TOKEN}/pdf`)).toBe(
+      'https://invoicecommand.com/api/share/[redacted]/pdf'
+    )
+    expect(scrubProperties({ url: `/api/share/${TOKEN}/pdf` }).url).toBe('/api/share/[redacted]/pdf')
+  })
+
+  it('leaves other api paths alone', () => {
+    expect(redactPath('/api/shared/thing')).toBe('/api/shared/thing')
+    expect(hasTokenInPath('/api/invoices')).toBe(false)
   })
 })
 

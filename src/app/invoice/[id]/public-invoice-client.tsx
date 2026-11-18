@@ -12,6 +12,7 @@ import { toStripeAmount } from '@/lib/stripe-amount'
 import { formatDateOnly } from '@/lib/date-only'
 import { EstimateSignature, EstimateSignedBanner } from './estimate-signature'
 import { ShareQR } from '@/components/invoice/share-qr'
+import { downloadOwnerInvoicePdf, downloadSharedInvoicePdf } from '@/lib/download-pdf'
 
 interface InvoiceData {
   id: string
@@ -76,6 +77,25 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
     signatureData: invoice.signatureData,
   })
   const [pageUrl, setPageUrl] = useState<string>('')
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  const handleDownloadPdf = async () => {
+    setDownloadError(null)
+    setIsDownloading(true)
+    try {
+      if (viewMode === 'public') {
+        if (!shareToken) throw new Error('Could not download the PDF')
+        await downloadSharedInvoicePdf(shareToken)
+      } else {
+        await downloadOwnerInvoicePdf(invoice.id)
+      }
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : 'Could not download the PDF')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   useEffect(() => {
     setPageUrl(window.location.href)
@@ -449,10 +469,13 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                   <CardTitle>Actions</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={isDownloading}>
                     <Download className="w-4 h-4 mr-2" />
-                    Download PDF
+                    {isDownloading ? 'Generating PDF...' : 'Download PDF'}
                   </Button>
+                  {downloadError && (
+                    <p role="alert" className="mt-2 text-sm text-destructive">{downloadError}</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
