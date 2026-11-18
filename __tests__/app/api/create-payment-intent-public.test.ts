@@ -35,6 +35,8 @@ import { POST } from '@/app/api/stripe/create-payment-intent-public/route'
 
 const INVOICE_ID = '44444444-4444-4444-8444-444444444444'
 const TOKEN = 'share_token_abcdefghijklmnop'
+// updatedAt is the document version estimate signing checks.
+const DOCUMENT_VERSION = new Date('2026-01-01T00:00:00Z')
 
 function seed(overrides: Record<string, unknown> = {}) {
   fake.rows.length = 0
@@ -50,6 +52,7 @@ function seed(overrides: Record<string, unknown> = {}) {
     status: 'sent',
     stripePaymentStatus: 'unpaid',
     stripePaymentIntentId: null,
+    updatedAt: DOCUMENT_VERSION,
     ...overrides,
   })
   fake.tables.userProfiles = [{
@@ -72,8 +75,9 @@ const invoice = () => fake.rows[0]
 
 beforeEach(() => {
   seed()
-  jest.clearAllMocks()
+  jest.resetAllMocks()
   stripeMock.paymentIntents.create.mockResolvedValue({ id: 'pi_new', client_secret: 'secret_new' })
+  stripeMock.paymentIntents.cancel.mockResolvedValue({})
 })
 
 describe('POST /api/stripe/create-payment-intent-public', () => {
@@ -82,6 +86,19 @@ describe('POST /api/stripe/create-payment-intent-public', () => {
     expect(res.status).toBe(200)
     expect(invoice().stripePaymentIntentId).toBe('pi_new')
     expect(invoice().stripePaymentStatus).toBe('processing')
+    expect(invoice().updatedAt).toBe(DOCUMENT_VERSION)
+  })
+
+  it('does not overwrite an invoice that was paid while the intent was being created', async () => {
+    stripeMock.paymentIntents.create.mockImplementation(async () => {
+      Object.assign(invoice(), { status: 'paid', stripePaymentStatus: 'paid', stripePaymentIntentId: 'pi_winner' })
+      return { id: 'pi_new', client_secret: 'secret_new' }
+    })
+    const res = await POST(request())
+    expect(res.status).toBe(409)
+    expect(stripeMock.paymentIntents.cancel).toHaveBeenCalledWith('pi_new')
+    expect(invoice().stripePaymentIntentId).toBe('pi_winner')
+    expect(invoice().stripePaymentStatus).toBe('paid')
   })
 
   it.each([

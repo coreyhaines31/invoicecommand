@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { invoices, userProfiles } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, isNull, ne, or } from 'drizzle-orm'
 import { stripe, calculateApplicationFee } from '@/lib/stripe'
 import { toStripeAmount } from '@/lib/stripe-amount'
 import { checkIpRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
+
+function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentStatus) {
+  return or(isNull(column), ne(column, 'paid'))
+}
 
 function alreadyPaid() {
   return NextResponse.json({ error: 'This invoice has already been paid' }, { status: 409 })
@@ -136,16 +140,29 @@ export async function POST(request: NextRequest) {
       idempotencyKey: `public-invoice-${invoiceId}-${amount}-${invoice.stripePaymentIntentId ?? 'first'}`,
     })
 
-    await db
+    // No updatedAt: estimate signing uses it as the document version, and
+    // starting a payment is not a change to the document. The not-paid guard
+    // keeps a payment that landed meanwhile from being overwritten.
+    const stored = await db
       .update(invoices)
       .set({
         stripePaymentIntentId: paymentIntent.id,
         paymentAmountCents: amount,
         applicationFeeCents: applicationFeeAmount,
         stripePaymentStatus: 'processing',
-        updatedAt: new Date(),
       })
-      .where(eq(invoices.id, invoiceId))
+      .where(and(eq(invoices.id, invoiceId), notPaid(invoices.status), notPaid(invoices.stripePaymentStatus)))
+      .returning({ id: invoices.id })
+
+    if (stored.length === 0) {
+      // Paid while we were creating this intent: don't hand out a second way to pay.
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id)
+      } catch {
+        // Best effort: it is not stored anywhere, so nobody gets its secret.
+      }
+      return alreadyPaid()
+    }
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
