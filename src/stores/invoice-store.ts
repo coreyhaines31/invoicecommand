@@ -483,10 +483,18 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       // Turns the loaded invoice into an unsaved copy (Duplicate) and stores it for the builder mount
       detachAsCopy: () => {
-        set((state) => {
-          state.id = undefined
-          state.invoiceNumber = ''
-        })
+        set(() => ({
+          id: defaultInvoice.id,
+          invoiceNumber: '',
+          status: defaultInvoice.status,
+          convertedToInvoiceId: defaultInvoice.convertedToInvoiceId,
+          signedAt: defaultInvoice.signedAt,
+          signatureData: defaultInvoice.signatureData,
+          signerName: defaultInvoice.signerName,
+          signerEmail: defaultInvoice.signerEmail,
+          stripePaymentIntentId: defaultInvoice.stripePaymentIntentId,
+          stripePaymentStatus: defaultInvoice.stripePaymentStatus,
+        }))
         get().saveToStorage()
       },
 

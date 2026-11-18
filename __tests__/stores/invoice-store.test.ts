@@ -807,6 +807,40 @@ describe('InvoiceStore', () => {
       expect(useInvoiceStore.getState().clientName).toBe('Saved B')
     })
 
+    it('Duplicate: a paid, signed invoice becomes a clean unsaved copy', async () => {
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.setState({
+          status: 'paid',
+          convertedToInvoiceId: 'inv-c',
+          signedAt: '2026-01-01',
+          signatureData: 'data:image/png;base64,abc',
+          signerName: 'Signer',
+          signerEmail: 'signer@example.com',
+          stripePaymentIntentId: 'pi_123',
+          stripePaymentStatus: 'paid',
+        })
+        useInvoiceStore.getState().detachAsCopy()
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBeUndefined()
+      expect(state.status).toBeUndefined()
+      expect(state.convertedToInvoiceId).toBeUndefined()
+      expect(state.signedAt).toBeNull()
+      expect(state.signatureData).toBeNull()
+      expect(state.signerName).toBeNull()
+      expect(state.signerEmail).toBeNull()
+      expect(state.stripePaymentIntentId).toBeUndefined()
+      expect(state.stripePaymentStatus).toBe('unpaid')
+      expect(state.clientName).toBe('Saved B')
+    })
+
     it('Reset: clears the saved invoice identity and the stored draft', async () => {
       await act(async () => {
         await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
