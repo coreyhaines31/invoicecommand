@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { InvoiceList, type InvoiceListItem } from './invoice-list'
 import type { User } from 'better-auth'
 import Link from 'next/link'
-import { Plus, FileText, DollarSign, Users, Settings } from 'lucide-react'
+import { Plus, FileText, DollarSign, Users } from 'lucide-react'
 
 interface DashboardContentProps {
   user: User
@@ -111,12 +111,6 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold">Your Invoices</h3>
-            {invoices.length > 0 && (
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                Manage
-              </Button>
-            )}
           </div>
 
           <InvoiceList invoices={invoices} userId={user.id} />
