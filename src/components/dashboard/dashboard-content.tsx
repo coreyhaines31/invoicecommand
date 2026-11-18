@@ -99,8 +99,8 @@ export function DashboardContent({ user, invoices }: DashboardContentProps) {
                 <Badge variant="secondary">Stripe Integration</Badge>
               </div>
             </div>
-            <Button>
-              <Link href="/pricing">
+            <Button asChild>
+              <Link href="/billing">
                 Upgrade to Premium
               </Link>
             </Button>
