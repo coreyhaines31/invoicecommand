@@ -3,11 +3,12 @@ import { db } from '@/lib/db'
 import { user } from '@/lib/db/schema'
 import { sql } from 'drizzle-orm'
 import { timingSafeStringEqual } from '@/lib/cron-auth'
+import { jsonErrorResponse } from '@/lib/error-response'
 
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) {
-    return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 })
+    return jsonErrorResponse(new Error('CRON_SECRET is not configured'), 'CRON_SECRET is not configured')
   }
 
   if (!timingSafeStringEqual(request.headers.get('authorization'), `Bearer ${cronSecret}`)) {
