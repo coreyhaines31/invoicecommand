@@ -17,7 +17,6 @@ export const drizzleOrmMock = {
   lt: (col: Column, value: unknown): Predicate => (row) => row[col.key] != null && Number(row[col.key]) < Number(value),
   inArray: (col: Column, values: unknown[]): Predicate => (row) => values.includes(row[col.key]),
   desc: (col: Column) => col,
-  lt: (col: Column, value: number): Predicate => (row) => (row[col.key] as number) < value,
   // Supports only the `${column} + n` increment the voice usage routes use.
   sql: (strings: TemplateStringsArray, col: Column) => {
     const by = Number(strings[1].replace('+', '').trim())
