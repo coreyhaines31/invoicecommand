@@ -380,7 +380,7 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                       <Alert>
                         <Clock className="h-4 w-4" />
                         <AlertDescription>
-                          A payment for this invoice is in progress. Refresh in a few minutes to see its status.
+                          A payment for this invoice is being processed. This page will show it as paid once it completes, usually within a minute. If it does not, contact the sender.
                         </AlertDescription>
                       </Alert>
                     )}
@@ -406,8 +406,11 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
               </Card>
 
               {/* Scan-to-pay QR — public flow only, when payment is still
-                  possible, and once we know the current URL (client-side). */}
-              {viewMode === 'public' && invoice.paymentEnabled && paymentStatus === 'unpaid' && pageUrl && (
+                  possible, and once we know the current URL (client-side).
+                  Hidden while the stored status is processing: that payment
+                  may be in flight, and knowing would take a Stripe call per
+                  page view. */}
+              {viewMode === 'public' && invoice.paymentEnabled && paymentStatus === 'unpaid' && invoice.stripePaymentStatus !== 'processing' && pageUrl && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">

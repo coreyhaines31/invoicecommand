@@ -83,7 +83,7 @@ describe('share page payment panel', () => {
     await renderSharePage({ stripePaymentStatus: 'processing' })
     fireEvent.click(screen.getByRole('button', { name: 'Server says in progress' }))
     expect(screen.queryByRole('button', { name: 'Pay now' })).not.toBeInTheDocument()
-    expect(screen.getByText('A payment for this invoice is in progress. Refresh in a few minutes to see its status.')).toBeInTheDocument()
+    expect(screen.getByText('A payment for this invoice is being processed. This page will show it as paid once it completes, usually within a minute. If it does not, contact the sender.')).toBeInTheDocument()
   })
 
   it('shows the invoice as paid when the server says it already is', async () => {
@@ -91,5 +91,16 @@ describe('share page payment panel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Server says paid' }))
     expect(screen.queryByRole('button', { name: 'Pay now' })).not.toBeInTheDocument()
     expect(screen.getByText('This invoice has been paid. Thank you!')).toBeInTheDocument()
+  })
+
+  it('offers scan-to-pay for an unpaid invoice', async () => {
+    await renderSharePage({})
+    expect(await screen.findByText('Pay on your phone')).toBeInTheDocument()
+  })
+
+  it('hides scan-to-pay while a payment form is open or a payment is processing', async () => {
+    await renderSharePage({ stripePaymentStatus: 'processing' })
+    expect(screen.getByRole('button', { name: 'Pay now' })).toBeInTheDocument()
+    expect(screen.queryByText('Pay on your phone')).not.toBeInTheDocument()
   })
 })
