@@ -710,4 +710,58 @@ describe('InvoiceStore', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1)
     })
   })
+
+  // Issue #77: the builder calls loadFromStorage() on every mount, so the store
+  // and localStorage must agree on which document is being edited.
+  describe('document identity across navigation', () => {
+    const STORAGE_KEY = 'invoicecommand-draft-v1'
+    const originalFetch = global.fetch
+    const savedB = {
+      id: 'inv-b',
+      clientName: 'Saved B',
+      invoiceNumber: 'INV-0002',
+      items: [{ description: 'B item', quantity: 1, price: 50 }],
+    }
+
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => savedB,
+      }) as unknown as typeof fetch
+    })
+
+    afterEach(() => {
+      global.fetch = originalFetch
+    })
+
+    it('Edit: the builder mount after loadFromDatabase shows the loaded invoice, not an anonymous draft', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ clientName: 'Stale draft', invoiceNumber: 'INV-0001' }))
+
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      const state = useInvoiceStore.getState()
+      expect(state.id).toBe('inv-b')
+      expect(state.clientName).toBe('Saved B')
+      expect(state.invoiceNumber).toBe('INV-0002')
+    })
+
+    it('Edit: a stored draft of another saved invoice does not replace the loaded one', async () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 'inv-a', clientName: 'Saved A draft' }))
+
+      await act(async () => {
+        await useInvoiceStore.getState().loadFromDatabase('inv-b', 'user-1')
+      })
+      act(() => {
+        useInvoiceStore.getState().loadFromStorage()
+      })
+
+      expect(useInvoiceStore.getState().id).toBe('inv-b')
+      expect(useInvoiceStore.getState().clientName).toBe('Saved B')
+    })
+  })
 })

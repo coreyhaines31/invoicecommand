@@ -607,6 +607,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
             isDirty: false,
             lastUpdated: Date.now(),
           }))
+          // The builder reloads the stored draft on mount, so store the loaded invoice now
+          get().saveToStorage()
 
           return true
         } catch (error) {
