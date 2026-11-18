@@ -43,7 +43,8 @@ function seed(overrides: Record<string, unknown> = {}) {
     userId: 'user-a',
     invoiceNumber: 'INV-100',
     clientName: 'Client & Co',
-    senderEmail: 'owner@example.test',
+    // Free text on the invoice; the paid email must not go here.
+    senderEmail: 'typed-in@example.test',
     senderName: 'Owner',
     total: '120.50',
     currency: 'USD',
@@ -53,6 +54,7 @@ function seed(overrides: Record<string, unknown> = {}) {
     updatedAt: DOCUMENT_VERSION,
     ...overrides,
   })
+  fake.tables.user = [{ id: 'user-a', email: 'account@example.test' }]
 }
 
 function event(type: string, intent: Record<string, unknown>) {
@@ -116,7 +118,7 @@ describe('payment_intent.succeeded', () => {
     await POST(event('payment_intent.succeeded', {}))
     expect(sendPaymentReceivedEmail).toHaveBeenCalledTimes(1)
     expect(sendPaymentReceivedEmail).toHaveBeenCalledWith({
-      toEmail: 'owner@example.test',
+      toEmail: 'account@example.test',
       senderName: 'Owner',
       clientName: 'Client & Co',
       invoiceNumber: 'INV-100',
@@ -124,6 +126,12 @@ describe('payment_intent.succeeded', () => {
       currency: 'usd',
       invoiceId: INVOICE_ID,
     })
+  })
+
+  it('sends the paid email to the account email, never to the free-text sender email', async () => {
+    await POST(event('payment_intent.succeeded', {}))
+    expect(sendPaymentReceivedEmail).toHaveBeenCalledTimes(1)
+    expect(jest.mocked(sendPaymentReceivedEmail).mock.calls[0][0].toEmail).toBe('account@example.test')
   })
 
   it('does not fire invoice.paid or email for an invoice that was already paid', async () => {

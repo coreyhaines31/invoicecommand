@@ -30,6 +30,7 @@ function fakeTable(name: string): Table {
 export const schemaMock = {
   invoices: fakeTable('invoices'),
   userProfiles: fakeTable('userProfiles'),
+  user: fakeTable('user'),
 }
 
 // `rows` is the invoices table; other tables live in `tables`.

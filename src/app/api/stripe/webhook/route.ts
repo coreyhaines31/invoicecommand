@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
-import { invoices, userProfiles } from '@/lib/db/schema'
+import { invoices, user, userProfiles } from '@/lib/db/schema'
 import { and, eq, isNull, ne, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { triggerWebhooks } from '@/lib/webhook-service'
@@ -98,10 +98,16 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     reportError(error, 'Failed to queue invoice.paid webhook', { invoiceId: invoice.id })
   }
 
-  if (invoice.senderEmail) {
-    try {
+  // The account's auth email, not invoice.senderEmail: that one is free text
+  // anyone with edit access can point anywhere.
+  try {
+    const [owner] = await db
+      .select({ email: user.email })
+      .from(user)
+      .where(eq(user.id, invoice.userId))
+    if (owner?.email) {
       await sendPaymentReceivedEmail({
-        toEmail: invoice.senderEmail,
+        toEmail: owner.email,
         senderName: invoice.senderName ?? '',
         clientName: invoice.clientName,
         invoiceNumber: invoice.invoiceNumber,
@@ -109,9 +115,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
         currency: paymentIntent.currency,
         invoiceId: invoice.id,
       })
-    } catch (error) {
-      reportError(error, 'Failed to send payment received email', { invoiceId: invoice.id })
     }
+  } catch (error) {
+    reportError(error, 'Failed to send payment received email', { invoiceId: invoice.id })
   }
 }
 
