@@ -48,6 +48,7 @@ interface Invoice {
   createdAt: string | Date | null
   documentType?: 'invoice' | 'estimate' | null
   signedAt?: string | Date | null
+  collectSignature?: boolean | null
 }
 
 export type InvoiceListItem = Invoice
@@ -176,7 +177,7 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice #</TableHead>
+              <TableHead>Number</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
@@ -190,6 +191,21 @@ export function InvoiceList({ invoices, userId }: InvoiceListProps) {
               <TableRow key={invoice.id}>
                 <TableCell className="font-medium">
                   {invoice.invoiceNumber}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <Badge variant="outline" className="font-normal">
+                      {invoice.documentType === 'estimate' ? 'Estimate' : 'Invoice'}
+                    </Badge>
+                    {invoice.documentType === 'estimate' && invoice.signedAt && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 font-normal">
+                        Signed
+                      </Badge>
+                    )}
+                    {invoice.documentType === 'estimate' && !invoice.signedAt && invoice.collectSignature !== false && (
+                      <Badge variant="secondary" className="font-normal">
+                        Not signed
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{invoice.clientName || 'No client'}</TableCell>
                 <TableCell>{formatCurrency(invoice.total || 0)}</TableCell>
