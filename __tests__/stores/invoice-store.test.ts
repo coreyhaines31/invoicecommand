@@ -1107,4 +1107,41 @@ describe('InvoiceStore', () => {
       expect(state.clientName).toBe('')
     })
   })
+
+  // Issue #91: saves accept only inline logos, so an older row's remote logo must not block a save
+  describe('saveToDatabase logo', () => {
+    const originalFetch = global.fetch
+    let fetchMock: jest.Mock
+
+    beforeEach(() => {
+      fetchMock = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 'inv-1' }) })
+      global.fetch = fetchMock as unknown as typeof fetch
+    })
+
+    afterEach(() => {
+      global.fetch = originalFetch
+    })
+
+    async function savedBody(senderLogo: string) {
+      act(() => {
+        useInvoiceStore.setState({ id: 'inv-1', clientName: 'Client', senderLogo })
+      })
+      await act(async () => {
+        await useInvoiceStore.getState().saveToDatabase('user-1')
+      })
+      return JSON.parse(fetchMock.mock.calls[0][1].body)
+    }
+
+    it('sends an uploaded logo', async () => {
+      expect((await savedBody('data:image/png;base64,iVBORw0KGgo=')).senderLogo).toBe('data:image/png;base64,iVBORw0KGgo=')
+    })
+
+    it('sends an empty logo, so removing it still works', async () => {
+      expect((await savedBody(''))).toHaveProperty('senderLogo', '')
+    })
+
+    it('leaves out a remote logo, so the save succeeds and the stored value is untouched', async () => {
+      expect(await savedBody('https://example.com/logo.png')).not.toHaveProperty('senderLogo')
+    })
+  })
 })

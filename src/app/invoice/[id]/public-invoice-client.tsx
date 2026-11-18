@@ -70,7 +70,12 @@ interface PublicInvoiceClientProps {
 }
 
 export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }: PublicInvoiceClientProps) {
-  const [paymentStatus, setPaymentStatus] = useState(invoice.stripePaymentStatus)
+  // A stored 'processing' only means a payment form was opened, often then
+  // abandoned. On the share link the client may pay; the payment-intent route
+  // checks Stripe and reports a payment that is really in flight.
+  const [paymentStatus, setPaymentStatus] = useState(
+    viewMode === 'public' && invoice.stripePaymentStatus === 'processing' ? 'unpaid' : invoice.stripePaymentStatus
+  )
   const [signature, setSignature] = useState({
     signedAt: invoice.signedAt,
     signerName: invoice.signerName,
@@ -413,7 +418,18 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
                           invoiceNumber={invoice.invoiceNumber}
                           recipientName={invoice.senderName}
                           onSuccess={handlePaymentSuccess}
+                          onAlreadyPaid={() => setPaymentStatus('paid')}
+                          onInProgress={() => setPaymentStatus('processing')}
                         />
+                      )}
+
+                      {viewMode === 'public' && paymentStatus === 'processing' && (
+                        <Alert>
+                          <Clock className="h-4 w-4" />
+                          <AlertDescription>
+                            A payment for this invoice is being processed. This page will show it as paid once it completes, usually within a minute. If it does not, contact the sender.
+                          </AlertDescription>
+                        </Alert>
                       )}
 
                       {paymentStatus === 'paid' && (
@@ -438,8 +454,11 @@ export function PublicInvoiceClient({ invoice, viewMode = 'public', shareToken }
               )}
 
               {/* Scan-to-pay QR — public flow only, when payment is still
-                  possible, and once we know the current URL (client-side). */}
-              {viewMode === 'public' && !isEstimate && invoice.paymentEnabled && paymentStatus === 'unpaid' && pageUrl && (
+                  possible, and once we know the current URL (client-side).
+                  Hidden while the stored status is processing: that payment
+                  may be in flight, and knowing would take a Stripe call per
+                  page view. */}
+              {viewMode === 'public' && !isEstimate && invoice.paymentEnabled && paymentStatus === 'unpaid' && invoice.stripePaymentStatus !== 'processing' && pageUrl && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">

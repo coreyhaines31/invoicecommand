@@ -69,6 +69,7 @@ function seed(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date(RENDERED_AT),
     ...overrides,
   })
+  fake.tables.user = [{ id: 'user-a', email: 'owner@example.test', emailVerified: true }]
 }
 
 beforeEach(() => {
@@ -202,6 +203,16 @@ describe('POST /api/estimates/:id/accept', () => {
     expect(limited.status).toBe(429)
     expect(limited.headers.get('Retry-After')).toBeTruthy()
     expect(fake.rows[0].signedAt).toBeNull()
+  })
+
+  it('notifies the account email, not a different sender address on the estimate', async () => {
+    seed({ senderEmail: 'someone-else@example.test' })
+    fake.tables.user[0].emailVerified = false
+    const res = await acceptEstimate(req(ESTIMATE_ID, validBody()), ctx(ESTIMATE_ID))
+    expect(res.status).toBe(200)
+    expect(sendEstimateAcceptanceEmail).toHaveBeenCalledTimes(1)
+    const [[args]] = jest.mocked(sendEstimateAcceptanceEmail).mock.calls
+    expect(args.toEmail).toBe('owner@example.test')
   })
 
   it('requires the document version', async () => {

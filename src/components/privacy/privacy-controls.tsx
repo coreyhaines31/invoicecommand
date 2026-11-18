@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { posthog, optOutOfRecording, optInToRecording } from '@/lib/posthog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -127,7 +128,8 @@ export function PrivacyControls() {
               Privacy Settings
             </h3>
             <p className="text-xs text-muted-foreground">
-              We use analytics to improve your experience.
+              We use analytics to improve your experience.{' '}
+              <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>
             </p>
           </div>
           <div className="flex gap-2">

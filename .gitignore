@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# agent worktrees and scan output
+.claude/worktrees/
+.deepsec/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -58,3 +62,6 @@ packages/*/package-lock.json
 .e2e/failures/
 .e2e/logs/
 .e2e/videos/
+
+# voice eval output (scripts/eval-voice.mjs)
+evals/voice/results*.json

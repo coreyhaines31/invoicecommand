@@ -6,9 +6,10 @@ import { eq, and, isNull, inArray } from 'drizzle-orm'
 import { sendInvoiceEmail } from '@/lib/email-service'
 import { triggerWebhooks } from '@/lib/webhook-service'
 import { dbInvoiceToInvoiceData, isUuid } from '@/lib/api-utils'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkInvoiceSendRateLimit } from '@/lib/rate-limit'
 import { jsonErrorResponse } from '@/lib/error-response'
 import { renderInvoicePdf } from '@/lib/invoice-pdf-server'
+import { EMAIL_NOT_VERIFIED_API_MESSAGE, requireVerifiedEmail } from '@/lib/email-verification'
 
 const MAX_SENDER_MESSAGE_LENGTH = 5000
 
@@ -23,8 +24,11 @@ export async function POST(
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
+  const notVerified = await requireVerifiedEmail(authResult.userId, EMAIL_NOT_VERIFIED_API_MESSAGE)
+  if (notVerified) return notVerified
+
   // Cap per-user invoice-sending to bound Resend credit burn.
-  const rl = checkRateLimit(authResult.userId, { bucket: 'v1-send-invoice', max: 20, windowMs: 60 * 60 * 1000 })
+  const rl = checkInvoiceSendRateLimit(authResult.userId)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Too many invoice send requests. Please try again later.' },

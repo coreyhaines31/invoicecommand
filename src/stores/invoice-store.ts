@@ -5,6 +5,7 @@ import type { InvoiceItem } from '@/types/database'
 import { generateInvoiceNumber } from '@/lib/utils'
 import { calculateInvoiceTotals } from '@/lib/invoice-totals'
 import { toDateOnlyString } from '@/lib/date-only'
+import { isInlineLogo } from '@/lib/logo'
 
 // localStorage versioning for schema migrations
 const STORAGE_VERSION = 1
@@ -587,7 +588,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
             senderState: state.senderState,
             senderZip: state.senderZip,
             senderPhone: state.senderPhone,
-            senderLogo: state.senderLogo,
+            // Saves accept only inline logos; an older remote logo is left as stored
+            ...(!state.senderLogo || isInlineLogo(state.senderLogo) ? { senderLogo: state.senderLogo } : {}),
             clientEmail: state.clientEmail,
             clientAddress: state.clientAddress,
             clientCity: state.clientCity,

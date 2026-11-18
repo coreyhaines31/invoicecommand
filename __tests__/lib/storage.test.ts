@@ -57,19 +57,19 @@ describe('Storage Utilities', () => {
         expect(mockFetch).toHaveBeenCalled()
       })
 
-      it('should reject files larger than 2MB', async () => {
-        const file = createMockFile({ size: 3 * 1024 * 1024 })
+      it('should reject files larger than 200 KB', async () => {
+        const file = createMockFile({ size: 200 * 1024 + 1 })
 
         const result = await uploadLogo(file, 'user-123')
 
-        expect(result).toEqual({ success: false, error: 'File size must be less than 2MB' })
+        expect(result).toEqual({ success: false, error: 'Logo must be 200 KB or smaller' })
         expect(mockFetch).not.toHaveBeenCalled()
       })
 
-      it('should accept files exactly 2MB', async () => {
+      it('should accept files of exactly 200 KB', async () => {
         mockUploadResponse()
 
-        const result = await uploadLogo(createMockFile({ size: 2 * 1024 * 1024 }), 'user-123')
+        const result = await uploadLogo(createMockFile({ size: 200 * 1024 }), 'user-123')
 
         expect(result.success).toBe(true)
       })
@@ -106,6 +106,14 @@ describe('Storage Utilities', () => {
         const result = await uploadLogo(createMockFile(), 'user-123')
 
         expect(result).toEqual({ success: false, error: 'Failed to upload file' })
+      })
+
+      it('should pass on the error the API gives', async () => {
+        mockFetch.mockResolvedValue({ ok: false, json: async () => ({ error: 'Logo must be 200 KB or smaller' }) })
+
+        const result = await uploadLogo(createMockFile(), 'user-123')
+
+        expect(result).toEqual({ success: false, error: 'Logo must be 200 KB or smaller' })
       })
 
       it('should handle and log exceptions during upload', async () => {

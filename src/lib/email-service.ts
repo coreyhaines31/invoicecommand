@@ -524,3 +524,56 @@ https://invoicecommand.com`
     throw error
   }
 }
+
+export interface VerificationEmailData {
+  to: string
+  verifyUrl: string
+}
+
+export async function sendVerificationEmail({ to, verifyUrl }: VerificationEmailData) {
+  const subject = 'Verify your Invoice Command email'
+  const safeUrl = escapeHtml(verifyUrl)
+  const safeTo = escapeHtml(to)
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb;">
+  <div style="background: white; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <h1 style="color: #10b981; margin: 0 0 24px 0;">Verify your email</h1>
+    <p>Confirm that ${safeTo} is the email for your Invoice Command account. You need a verified email to send invoices and estimates by email. The link is valid for 24 hours.</p>
+    <p style="text-align: center; margin: 32px 0;">
+      <a href="${safeUrl}" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">Verify email</a>
+    </p>
+    <p style="color: #6b7280; font-size: 14px;">If you didn't create an account, you can ignore this email.</p>
+    <p style="color: #6b7280; font-size: 14px;">Or paste this URL into your browser:<br><span style="word-break: break-all;">${safeUrl}</span></p>
+    <p style="color: #6b7280; font-size: 14px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">Sent by <a href="https://invoicecommand.com" style="color: #10b981;">Invoice Command</a></p>
+  </div>
+</body>
+</html>`
+
+  const text = `Verify your Invoice Command email
+
+Confirm that ${to} is the email for your Invoice Command account. You need a verified email to send invoices and estimates by email. The link below is valid for 24 hours:
+
+${verifyUrl}
+
+If you didn't create an account, you can ignore this email.
+
+Invoice Command
+https://invoicecommand.com`
+
+  try {
+    return await sendMail({
+      from: appFromEmail(),
+      to,
+      subject,
+      html,
+      text,
+      replyTo: replyToEmail(),
+    })
+  } catch (error) {
+    console.error('Failed to send verification email:', error)
+    throw error
+  }
+}

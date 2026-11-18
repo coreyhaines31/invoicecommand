@@ -12,6 +12,7 @@ import { useUser } from '@/hooks/use-user'
 import { useInvoiceStore } from '@/stores/invoice-store'
 import { useUpgradeTriggers } from '@/hooks/use-upgrade-triggers'
 import { useUserTier } from '@/hooks/use-user-tier'
+import { MAX_LOGO_SIZE_LABEL } from '@/lib/logo'
 
 interface LogoUploadProps {
   currentLogo?: string
@@ -197,7 +198,7 @@ export function LogoUpload({ currentLogo, onLogoChange, disabled = false }: Logo
                 )}
               </Button>
               <p className="text-xs text-muted-foreground">
-                PNG, JPG up to 2MB
+                PNG, JPG, WebP or GIF up to {MAX_LOGO_SIZE_LABEL}
               </p>
             </div>
           )}

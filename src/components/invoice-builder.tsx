@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
+import Link from 'next/link'
 import { InvoicePreview } from './invoice-preview'
 import { InvoiceForm } from './invoice-form'
 import { InvoiceStyleDropdown } from './invoice-style-dropdown'
@@ -267,6 +268,10 @@ export function InvoiceBuilder({ title, description, children }: InvoiceBuilderP
         <div className="text-sm text-muted-foreground text-center">
           Drafts stay in your browser until you create an account. No signup needed to download an invoice.
         </div>
+        <nav aria-label="Legal" className="flex gap-4 text-sm text-muted-foreground">
+          <Link href="/privacy" className="hover:text-primary">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-primary">Terms of Service</Link>
+        </nav>
         <div className="text-sm text-muted-foreground text-center" suppressHydrationWarning>
           © {new Date().getFullYear()} Swipe Files LLC. All rights reserved.
         </div>

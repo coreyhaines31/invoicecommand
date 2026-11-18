@@ -33,5 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ]),
     entry('/blog', 0.7),
     ...getAllPosts().map((post) => entry(`/blog/${post.slug}`, 0.6, post.publishedAt)),
+    entry('/privacy', 0.3),
+    entry('/terms', 0.3),
   ]
 }
