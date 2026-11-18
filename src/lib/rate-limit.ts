@@ -65,6 +65,23 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
   }
 }
 
+const HOUR_MS = 60 * 60 * 1000
+
+export const INVOICE_SEND_LIMITS = {
+  perHour: { bucket: 'invoice-send-hour', max: 20, windowMs: HOUR_MS },
+  perDay: { bucket: 'invoice-send-day', max: 50, windowMs: 24 * HOUR_MS },
+} satisfies Record<string, RateLimitOptions>
+
+/**
+ * Per-account cap on emailing invoices, shared by the web and v1 send routes.
+ * A request is refused if either the hourly or the daily window is full.
+ */
+export function checkInvoiceSendRateLimit(userId: string): RateLimitResult {
+  const hourly = checkRateLimit(userId, INVOICE_SEND_LIMITS.perHour)
+  if (!hourly.allowed) return hourly
+  return checkRateLimit(userId, INVOICE_SEND_LIMITS.perDay)
+}
+
 /** Convenience: per-IP rate limit for unauthenticated endpoints. */
 export function checkIpRateLimit(request: NextRequest, options: RateLimitOptions): RateLimitResult {
   return checkRateLimit(getClientIp(request), options)

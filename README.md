@@ -4,14 +4,14 @@ Free, open-source invoicing. Build an invoice in the browser with a live preview
 
 - **Invoice and estimate builder** with live preview, three styles, and 400+ profession templates
 - **No account needed**: drafts are saved in the browser; sign up to save invoices and send them
-- **Voice dictation**: speak line items and details, and OpenAI turns them into form fields
+- **Voice dictation**: speak line items and details, and an OpenAI model (through the Vercel AI Gateway) turns them into form fields
 - **Payments**: Stripe Connect lets clients pay invoices by card
 - **E-signatures** on estimates, shareable invoice links, PDF export
 - **API, CLI, and MCP server** (`packages/cli`, `packages/mcp`) for creating and sending invoices from scripts or AI agents
 
 ## Tech stack
 
-Next.js 15 (App Router, Turbopack) · TypeScript · Tailwind CSS v4 + shadcn/ui · Postgres via Drizzle · Better Auth · Stripe Connect · PostShiba (Resend fallback) · OpenAI · Sentry · PostHog
+Next.js 15 (App Router, Turbopack) · TypeScript · Tailwind CSS v4 + shadcn/ui · Postgres via Drizzle · Better Auth · Stripe Connect · PostShiba (Resend fallback) · Vercel AI Gateway + AI SDK · Sentry · PostHog
 
 ## Running it locally
 
@@ -33,7 +33,8 @@ npm run dev       # http://localhost:3005
 | `POSTSHIBA_API_KEY` | Sending email through PostShiba. When unset, email goes through Resend with `RESEND_API_KEY` |
 | `MAIL_FROM_EMAIL`, `MAIL_APP_FROM_EMAIL`, `MAIL_REPLY_TO` | From addresses for invoices and app email, and the reply-to. Default to `invoices@` and `hello@mail.invoicecommand.com`, and `support@invoicecommand.com` (the mail subdomain has no inbox). The old `RESEND_FROM_EMAIL`, `RESEND_APP_FROM_EMAIL` and `RESEND_REPLY_TO` names are still read. With PostShiba on, a from address outside `mail.invoicecommand.com` is ignored |
 | `SUPPORT_EMAIL` | Inbox that receives the in-app support form |
-| `OPENAI_API_KEY` | Voice dictation |
+| `AI_GATEWAY_API_KEY` | Voice dictation, the voice eval (`npm run eval:voice`) and e2e agent steps, through the Vercel AI Gateway. Locally, set this or run `vercel env pull` on a linked project for a short-lived `VERCEL_OIDC_TOKEN`. On Vercel the deployment's OIDC token is used and no key is needed. `OPENAI_API_KEY` is no longer used |
+| `VOICE_MODEL` | Gateway model ID for voice dictation (optional, default `openai/gpt-6-luna`) |
 | `CRON_SECRET` | The scheduled jobs in `vercel.json` |
 | `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | Error tracking and analytics (optional) |
 

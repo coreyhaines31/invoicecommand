@@ -26,13 +26,16 @@ export function SignupForm({ next }: { next?: string | null }) {
     setIsLoading(true)
     setError(null)
     setMessage('')
+    // After success the button stays disabled until the redirect happens.
+    let succeeded = false
 
     try {
       const { data, error } = await signUp.email({
         email,
         password,
         name: email.split('@')[0],
-        callbackURL: redirectTo,
+        // Where the verification email's link lands after Better Auth verifies it.
+        callbackURL: withNextPath('/auth/verified', redirectTo),
       })
 
       if (error) {
@@ -44,12 +47,13 @@ export function SignupForm({ next }: { next?: string | null }) {
       if (data?.user?.id) identifyUser(data.user.id)
       trackUserSignup('email')
 
-      setMessage('Account created. Redirecting...')
+      succeeded = true
+      setMessage(`Account created. We sent a verification email to ${email}. Redirecting...`)
       setTimeout(() => { window.location.href = redirectTo }, 1000)
     } catch {
       setError(getAuthErrorMessage(null))
     } finally {
-      setIsLoading(false)
+      if (!succeeded) setIsLoading(false)
     }
   }
 

@@ -63,6 +63,11 @@ function seedInvoice() {
     shareToken: null,
     shareEnabled: false,
   })
+  fake.tables.user = [{ id: 'user-a', email: 'me@example.test', emailVerified: true }]
+}
+
+function setVerified(emailVerified: boolean) {
+  fake.tables.user[0].emailVerified = emailVerified
 }
 
 function request(url: string, body: unknown, headers: Record<string, string> = {}) {
@@ -122,5 +127,58 @@ describe('invoice send attaches only the server-rendered PDF', () => {
     const [[args]] = (sendInvoiceEmail as jest.Mock).mock.calls
     expect(args.pdfBuffer.toString()).toBe('%PDF-server-rendered')
     expect(args.invoice.clientEmail).toBe('other@example.test')
+  })
+})
+
+describe('sending requires a verified account email', () => {
+  const v1Request = () =>
+    v1Send(
+      request(`http://localhost/api/v1/invoices/${INVOICE_ID}/send`, {}, { authorization: 'Bearer sk_live_test' }),
+      { params: Promise.resolve({ id: INVOICE_ID }) }
+    )
+  const webRequest = () => webSend(request('http://localhost/api/send-invoice', { invoiceId: INVOICE_ID }))
+
+  it('web: a verified account can send', async () => {
+    const res = await webRequest()
+    expect(res.status).toBe(200)
+    expect(sendInvoiceEmail).toHaveBeenCalledTimes(1)
+  })
+
+  it('web: an unverified account gets 403 EMAIL_NOT_VERIFIED and nothing is sent', async () => {
+    setVerified(false)
+    const res = await webRequest()
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.code).toBe('EMAIL_NOT_VERIFIED')
+    expect(body.error).toMatch(/verify/i)
+    expect(sendInvoiceEmail).not.toHaveBeenCalled()
+    expect(fake.rows[0].status).toBe('draft')
+    expect(fake.rows[0].shareEnabled).toBe(false)
+  })
+
+  it('v1: an API key for an unverified account gets 403 and nothing is sent', async () => {
+    setVerified(false)
+    const res = await v1Request()
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.code).toBe('EMAIL_NOT_VERIFIED')
+    expect(body.error).toBe(
+      'Verify your account email: sign in at invoicecommand.com, open Send via Email on any invoice and request a verification link.'
+    )
+    expect(sendInvoiceEmail).not.toHaveBeenCalled()
+    expect(fake.rows[0].status).toBe('draft')
+  })
+
+  it('v1: a key whose user row is missing is treated as unverified', async () => {
+    fake.tables.user = []
+    const res = await v1Request()
+    expect(res.status).toBe(403)
+    expect(sendInvoiceEmail).not.toHaveBeenCalled()
+  })
+
+  it('v1: a verified account can send', async () => {
+    const res = await v1Request()
+    expect(res.status).toBe(200)
+    expect(sendInvoiceEmail).toHaveBeenCalledTimes(1)
   })
 })

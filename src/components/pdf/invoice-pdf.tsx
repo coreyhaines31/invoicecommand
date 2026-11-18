@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
 import type { InvoiceData } from '@/stores/invoice-store'
 import { formatDateOnly } from '@/lib/date-only'
+import { isInlineLogo } from '@/lib/logo'
 
 interface InvoicePDFProps {
   invoice: InvoiceData
@@ -265,7 +266,11 @@ const styles = StyleSheet.create({
   },
 })
 
-export function InvoicePDF({ invoice }: InvoicePDFProps) {
+export function InvoicePDF({ invoice: input }: InvoicePDFProps) {
+  // Every server-side PDF route renders through here; a stored logo that is not an
+  // inline image (older rows) is dropped so the renderer never fetches a remote address.
+  const invoice = { ...input, senderLogo: isInlineLogo(input.senderLogo) ? input.senderLogo : '' }
+
   const formatCurrency = (amount: number) => {
     try {
       return new Intl.NumberFormat('en-US', {

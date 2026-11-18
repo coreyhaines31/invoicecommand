@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { EMAIL_NOT_VERIFIED, EMAIL_NOT_VERIFIED_API_MESSAGE } from '@/lib/email-verification'
 
 const openApiSpec = {
   openapi: '3.1.0',
@@ -299,7 +300,7 @@ const openApiSpec = {
     '/invoices/{id}/send': {
       post: {
         summary: 'Send invoice',
-        description: 'Send an invoice to the client via email. The server renders the PDF attachment from the stored invoice.',
+        description: 'Send an invoice to the client via email. The server renders the PDF attachment from the stored invoice. The account email must be verified.',
         operationId: 'sendInvoice',
         tags: ['Invoices'],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
@@ -323,6 +324,27 @@ const openApiSpec = {
             content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, emailId: { type: 'string' }, message: { type: 'string' } } } } },
           },
           '400': { description: 'Invalid request' },
+          '403': {
+            description: `Missing the invoices:write scope, or the account email is not verified (code ${EMAIL_NOT_VERIFIED}). To verify, sign in at invoicecommand.com, open Send via Email on any invoice and request a verification link.`,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string' },
+                    code: { type: 'string', enum: [EMAIL_NOT_VERIFIED] },
+                  },
+                  required: ['error'],
+                },
+                examples: {
+                  emailNotVerified: {
+                    summary: 'Account email not verified',
+                    value: { error: EMAIL_NOT_VERIFIED_API_MESSAGE, code: EMAIL_NOT_VERIFIED },
+                  },
+                },
+              },
+            },
+          },
           '404': { description: 'Invoice not found' },
         },
       },
