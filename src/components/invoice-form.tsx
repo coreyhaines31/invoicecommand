@@ -61,9 +61,7 @@ export function InvoiceForm() {
     await downloadPDF(invoice)
   }
 
-  const handleVoiceCommand = async (transcript: string) => {
-    await processVoiceCommand(transcript)
-  }
+  const handleVoiceCommand = (transcript: string) => processVoiceCommand(transcript)
 
   const handleSaveInvoice = async () => {
     // Don't trigger the paywall during initial session load — useUserTier
