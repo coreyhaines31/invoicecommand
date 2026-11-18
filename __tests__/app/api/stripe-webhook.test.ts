@@ -32,6 +32,9 @@ import { sendPaymentReceivedEmail } from '@/lib/email-service'
 import { jsonErrorResponse, reportError } from '@/lib/error-response'
 
 const INVOICE_ID = '33333333-3333-4333-8333-333333333333'
+// updatedAt is the document version estimate signing checks, so payment
+// bookkeeping must not bump it.
+const DOCUMENT_VERSION = new Date('2026-01-01T00:00:00Z')
 
 function seed(overrides: Record<string, unknown> = {}) {
   fake.rows.length = 0
@@ -47,6 +50,7 @@ function seed(overrides: Record<string, unknown> = {}) {
     status: 'sent',
     stripePaymentIntentId: 'pi_current',
     stripePaymentStatus: 'processing',
+    updatedAt: DOCUMENT_VERSION,
     ...overrides,
   })
 }
@@ -87,6 +91,7 @@ describe('payment_intent.succeeded', () => {
     expect(res.status).toBe(200)
     expect(invoice().status).toBe('paid')
     expect(invoice().stripePaymentStatus).toBe('paid')
+    expect(invoice().updatedAt).toBe(DOCUMENT_VERSION)
   })
 
   it('leaves the invoice untouched when the same event is delivered again', async () => {
@@ -185,6 +190,7 @@ describe('payment_intent.payment_failed', () => {
     await POST(event('payment_intent.payment_failed', {}))
     expect(invoice().stripePaymentStatus).toBe('failed')
     expect(invoice().status).toBe('sent')
+    expect(invoice().updatedAt).toBe(DOCUMENT_VERSION)
   })
 
   it('never undoes a payment that already succeeded', async () => {

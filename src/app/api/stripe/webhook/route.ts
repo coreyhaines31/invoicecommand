@@ -56,6 +56,9 @@ function notPaid(column: typeof invoices.status | typeof invoices.stripePaymentS
   return or(isNull(column), ne(column, 'paid'))
 }
 
+// Payment bookkeeping never touches updatedAt: estimate signing uses it as the
+// document version, and a payment is not a change to the document.
+//
 // Stripe delivers events at least once and in any order, so the handlers are
 // idempotent by state. The conditional UPDATE lets only one delivery win the
 // transition to paid, even when two arrive at the same time.
@@ -67,7 +70,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     status: 'paid' as const,
     stripePaymentStatus: 'paid' as const,
     stripePaymentIntentId: paymentIntent.id,
-    updatedAt: new Date(),
   }
 
   const transitioned = await db
@@ -120,7 +122,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   if (!invoiceId) return
   await db
     .update(invoices)
-    .set({ stripePaymentStatus: 'failed', updatedAt: new Date() })
+    .set({ stripePaymentStatus: 'failed' })
     .where(and(
       eq(invoices.id, invoiceId),
       eq(invoices.stripePaymentIntentId, paymentIntent.id),
