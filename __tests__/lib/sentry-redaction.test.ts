@@ -95,6 +95,34 @@ describe('scrubSentryPayload', () => {
     redactDeep(a)
     expect(a.url).toBe('/i/[redacted]')
   })
+
+  it('skips getter-only properties and still redacts the rest', () => {
+    const event: Record<string, unknown> = { url: `/i/${TOKEN}` }
+    Object.defineProperty(event, '$', { get: () => 'plain', enumerable: true })
+
+    expect(() => scrubSentryPayload(event)).not.toThrow()
+    expect(event.$).toBe('plain')
+    expect(event.url).toBe('/i/[redacted]')
+  })
+
+  it('does not throw on frozen nested objects', () => {
+    const event = {
+      url: `/i/${TOKEN}`,
+      contexts: Object.freeze({ app: Object.freeze({ name: 'web', path: `/i/${TOKEN}` }) }),
+    }
+
+    expect(() => scrubSentryPayload(event)).not.toThrow()
+    expect(event.url).toBe('/i/[redacted]')
+    expect(event.contexts.app.name).toBe('web')
+  })
+
+  it('deletes a getter-only property whose value holds a token', () => {
+    const event: Record<string, unknown> = {}
+    Object.defineProperty(event, 'href', { get: () => `/i/${TOKEN}`, enumerable: true, configurable: true })
+
+    expect(() => scrubSentryPayload(event)).not.toThrow()
+    expect(JSON.stringify(event)).not.toContain(TOKEN)
+  })
 })
 
 describe('isReplayBlockedPath', () => {
