@@ -5,7 +5,9 @@ import { scrubSentryPayload } from "@/lib/sentry-redaction";
 // errors only. Tracing and session replay stay off: it would discard both.
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 0,
+  // No tracing, and no tally of dropped events: HoneyWarden keeps errors only,
+  // and that tally was a request to it after every request served here.
+  sendClientReports: false,
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
